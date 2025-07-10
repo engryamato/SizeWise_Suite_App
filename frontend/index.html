@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="SizeWise Suite - HVAC engineering and estimating platform">
+    <meta name="theme-color" content="#1976d2">
+    
+    <!-- PWA Meta Tags -->
+    <link rel="manifest" href="/manifest.json">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="SizeWise Suite">
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+    <link rel="icon" type="image/png" href="/favicon.png">
+    
+    <title>SizeWise Suite - HVAC Engineering Platform</title>
+    
+    <!-- Preload critical resources -->
+    <link rel="preload" href="/styles/main.css" as="style">
+    <link rel="preload" href="/js/main.js" as="script">
+    
+    <!-- Critical CSS -->
+    <style>
+        /* Critical CSS for initial render */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background-color: #f5f5f5;
+        }
+        
+        .loading {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            font-size: 1.2rem;
+            color: #666;
+        }
+        
+        .loading::after {
+            content: '';
+            width: 20px;
+            height: 20px;
+            margin-left: 10px;
+            border: 2px solid #ddd;
+            border-top: 2px solid #1976d2;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <!-- Loading screen -->
+    <div id="loading" class="loading">
+        Loading SizeWise Suite
+    </div>
+    
+    <!-- Main application container -->
+    <div id="app" class="hidden">
+        <!-- Header -->
+        <header id="app-header">
+            <nav class="navbar">
+                <div class="nav-brand">
+                    <h1>SizeWise Suite</h1>
+                    <span class="version">v0.1.0</span>
+                </div>
+                <div class="nav-menu">
+                    <button id="menu-toggle" class="menu-toggle" aria-label="Toggle menu">
+                        ☰
+                    </button>
+                </div>
+            </nav>
+        </header>
+        
+        <!-- Sidebar Navigation -->
+        <aside id="sidebar" class="sidebar">
+            <nav class="sidebar-nav">
+                <ul class="nav-list">
+                    <li><a href="#dashboard" class="nav-link active">Dashboard</a></li>
+                    <li class="nav-section">
+                        <span class="nav-section-title">HVAC Modules</span>
+                        <ul class="nav-subsection">
+                            <li><a href="#air-duct-sizer" class="nav-link">Air Duct Sizer</a></li>
+                            <li><a href="#grease-duct-sizer" class="nav-link">Grease Duct Sizer</a></li>
+                            <li><a href="#engine-exhaust-sizer" class="nav-link">Engine Exhaust Sizer</a></li>
+                            <li><a href="#boiler-vent-sizer" class="nav-link">Boiler Vent Sizer</a></li>
+                        </ul>
+                    </li>
+                    <li class="nav-section">
+                        <span class="nav-section-title">Tools</span>
+                        <ul class="nav-subsection">
+                            <li><a href="#estimating-app" class="nav-link">Estimating App</a></li>
+                            <li><a href="#unit-converter" class="nav-link">Unit Converter</a></li>
+                            <li><a href="#standards-checker" class="nav-link">Standards Checker</a></li>
+                        </ul>
+                    </li>
+                    <li class="nav-section">
+                        <span class="nav-section-title">Data</span>
+                        <ul class="nav-subsection">
+                            <li><a href="#projects" class="nav-link">Projects</a></li>
+                            <li><a href="#exports" class="nav-link">Exports</a></li>
+                            <li><a href="#settings" class="nav-link">Settings</a></li>
+                        </ul>
+                    </li>
+                </ul>
+            </nav>
+        </aside>
+        
+        <!-- Main Content Area -->
+        <main id="main-content" class="main-content">
+            <div id="content-area" class="content-area">
+                <!-- Dynamic content will be loaded here -->
+                <div id="dashboard" class="module-content active">
+                    <h2>Welcome to SizeWise Suite</h2>
+                    <p>Select a module from the sidebar to get started with your HVAC calculations.</p>
+                    
+                    <div class="quick-actions">
+                        <div class="action-card">
+                            <h3>Air Duct Sizer</h3>
+                            <p>Calculate duct sizes per SMACNA standards</p>
+                            <button class="btn btn-primary" data-module="air-duct-sizer">Start Calculation</button>
+                        </div>
+                        
+                        <div class="action-card">
+                            <h3>Estimating App</h3>
+                            <p>Generate project estimates and takeoffs</p>
+                            <button class="btn btn-primary" data-module="estimating-app">Create Estimate</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+        
+        <!-- Status Bar -->
+        <footer id="status-bar" class="status-bar">
+            <div class="status-left">
+                <span id="connection-status" class="status-indicator online">Online</span>
+                <span id="sync-status" class="status-text">Last sync: Never</span>
+            </div>
+            <div class="status-right">
+                <span id="units-display" class="status-text">Units: Imperial</span>
+                <button id="units-toggle" class="btn btn-small">Switch to Metric</button>
+            </div>
+        </footer>
+    </div>
+    
+    <!-- Error boundary -->
+    <div id="error-boundary" class="hidden">
+        <div class="error-content">
+            <h2>Something went wrong</h2>
+            <p id="error-message">An unexpected error occurred.</p>
+            <button id="reload-app" class="btn btn-primary">Reload Application</button>
+        </div>
+    </div>
+    
+    <!-- Scripts -->
+    <script type="module" src="/js/main.js"></script>
+</body>
+</html>

@@ -5,7 +5,14 @@ Handles all calculation endpoints for HVAC modules.
 """
 
 from flask import Blueprint, request, jsonify
+import sys
+import os
 import structlog
+
+# Add project root to path for imports
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+
+from app.modules.air_duct_sizer.logic.calculator import AirDuctSizerLogic
 
 logger = structlog.get_logger()
 
@@ -15,47 +22,98 @@ calculations_bp = Blueprint('calculations', __name__)
 def calculate_air_duct():
     """
     Calculate air duct sizing based on SMACNA standards.
-    
+
     Expected input:
     {
-        "airflow": float,  # CFM
+        "airflow": float,  # CFM or L/s
         "duct_type": str,  # "rectangular" or "round"
-        "friction_rate": float,  # inches of water per 100 feet
-        "units": str  # "imperial" or "metric"
+        "friction_rate": float,  # inches of water per 100 feet or Pa/m
+        "units": str,  # "imperial" or "metric"
+        "material": str,  # optional, default "galvanized_steel"
+        "insulation": bool  # optional, default false
     }
     """
     try:
         data = request.get_json()
-        
-        # Validate required fields
-        required_fields = ['airflow', 'duct_type', 'friction_rate']
-        for field in required_fields:
-            if field not in data:
-                return jsonify({'error': f'Missing required field: {field}'}), 400
-        
-        # TODO: Implement actual air duct calculation logic
-        # This is a placeholder implementation
-        result = {
-            'input': data,
-            'results': {
-                'duct_size': '12x8',  # Placeholder
-                'velocity': 1200,  # FPM
-                'pressure_loss': 0.08,  # inches of water
-                'equivalent_diameter': 9.8  # inches
-            },
-            'compliance': {
-                'smacna_compliant': True,
-                'velocity_within_limits': True,
-                'notes': []
-            }
-        }
-        
-        logger.info("Air duct calculation completed", input_data=data)
-        return jsonify(result)
-        
+
+        if not data:
+            return jsonify({'error': 'No data provided'}), 400
+
+        # Initialize the Air Duct Sizer logic
+        air_duct_logic = AirDuctSizerLogic()
+
+        # Perform calculation
+        result = air_duct_logic.calculate_duct_size(data)
+
+        if result['success']:
+            logger.info("Air duct calculation completed", input_data=data)
+            return jsonify(result)
+        else:
+            logger.warning("Air duct calculation failed validation",
+                         errors=result.get('errors', []),
+                         warnings=result.get('warnings', []))
+            return jsonify(result), 400
+
     except Exception as e:
         logger.error("Air duct calculation failed", error=str(e))
         return jsonify({'error': 'Calculation failed', 'message': str(e)}), 500
+
+@calculations_bp.route('/air-duct/validate', methods=['POST'])
+def validate_air_duct_input():
+    """Validate air duct calculation input without performing calculation."""
+    try:
+        data = request.get_json()
+
+        if not data:
+            return jsonify({'error': 'No data provided'}), 400
+
+        air_duct_logic = AirDuctSizerLogic()
+        result = air_duct_logic.validate_input(data)
+
+        return jsonify(result)
+
+    except Exception as e:
+        logger.error("Air duct input validation failed", error=str(e))
+        return jsonify({'error': 'Validation failed', 'message': str(e)}), 500
+
+@calculations_bp.route('/air-duct/standard-sizes/<duct_type>', methods=['GET'])
+def get_air_duct_standard_sizes(duct_type):
+    """Get standard sizes for air ducts."""
+    try:
+        air_duct_logic = AirDuctSizerLogic()
+        result = air_duct_logic.get_standard_sizes(duct_type)
+
+        return jsonify(result)
+
+    except Exception as e:
+        logger.error("Failed to get standard sizes", error=str(e))
+        return jsonify({'error': 'Failed to get standard sizes', 'message': str(e)}), 500
+
+@calculations_bp.route('/air-duct/materials', methods=['GET'])
+def get_air_duct_materials():
+    """Get available duct materials."""
+    try:
+        air_duct_logic = AirDuctSizerLogic()
+        result = air_duct_logic.get_material_options()
+
+        return jsonify(result)
+
+    except Exception as e:
+        logger.error("Failed to get materials", error=str(e))
+        return jsonify({'error': 'Failed to get materials', 'message': str(e)}), 500
+
+@calculations_bp.route('/air-duct/info', methods=['GET'])
+def get_air_duct_info():
+    """Get information about the air duct calculation module."""
+    try:
+        air_duct_logic = AirDuctSizerLogic()
+        result = air_duct_logic.get_calculation_info()
+
+        return jsonify(result)
+
+    except Exception as e:
+        logger.error("Failed to get module info", error=str(e))
+        return jsonify({'error': 'Failed to get module info', 'message': str(e)}), 500
 
 @calculations_bp.route('/grease-duct', methods=['POST'])
 def calculate_grease_duct():

@@ -81,6 +81,22 @@ export class ApiClient {
     async calculateAirDuct(data) {
         return this.post('/calculations/air-duct', data);
     }
+
+    async validateAirDuctInput(data) {
+        return this.post('/calculations/air-duct/validate', data);
+    }
+
+    async getAirDuctStandardSizes(ductType) {
+        return this.get(`/calculations/air-duct/standard-sizes/${ductType}`);
+    }
+
+    async getAirDuctMaterials() {
+        return this.get('/calculations/air-duct/materials');
+    }
+
+    async getAirDuctInfo() {
+        return this.get('/calculations/air-duct/info');
+    }
     
     async calculateGreaseDuct(data) {
         return this.post('/calculations/grease-duct', data);

@@ -384,6 +384,60 @@ body {
   margin-bottom: var(--spacing-xs);
 }
 
+.compliance-check {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-xs) 0;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.check-parameter {
+  font-weight: 500;
+  min-width: 120px;
+}
+
+.check-status {
+  font-weight: 600;
+  min-width: 20px;
+}
+
+.check-status.passed {
+  color: var(--success-color);
+}
+
+.check-status.failed {
+  color: var(--error-color);
+}
+
+.check-message {
+  font-size: var(--font-size-small);
+  color: var(--text-secondary);
+  flex: 1;
+}
+
+.warnings-section {
+  margin-top: var(--spacing-lg);
+  padding: var(--spacing-md);
+  background-color: #fff3cd;
+  border: 1px solid #ffeaa7;
+  border-radius: var(--border-radius);
+}
+
+.warnings-section h4 {
+  color: var(--warning-color);
+  margin-bottom: var(--spacing-sm);
+}
+
+.warning-note {
+  font-size: var(--font-size-small);
+  color: #856404;
+  margin-bottom: var(--spacing-xs);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+}
+
 /* Status bar */
 #status-bar {
   grid-area: status;

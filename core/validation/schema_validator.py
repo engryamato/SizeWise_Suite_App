@@ -81,11 +81,11 @@ class SchemaValidator:
                 },
                 "insulation": {
                     "type": "boolean",
-                    "default": false
+                    "default": False
                 }
             },
             "required": ["airflow", "duct_type", "friction_rate", "units"],
-            "additionalProperties": false
+            "additionalProperties": False
         }
         
         # Project Schema
@@ -120,7 +120,7 @@ class SchemaValidator:
                 }
             },
             "required": ["name", "units"],
-            "additionalProperties": false
+            "additionalProperties": False
         }
         
         # Calculation Result Schema
@@ -140,7 +140,7 @@ class SchemaValidator:
                 "version": {"type": "string"}
             },
             "required": ["module_id", "input_data", "results"],
-            "additionalProperties": false
+            "additionalProperties": False
         }
         
         logger.info("Loaded validation schemas", schema_count=len(self.schemas))
@@ -213,10 +213,10 @@ class SchemaValidator:
 class AirDuctInput(BaseModel):
     """Pydantic model for air duct calculation input."""
     airflow: float = Field(..., gt=0, le=100000, description="Airflow in CFM or L/s")
-    duct_type: str = Field(..., regex="^(rectangular|round)$", description="Type of duct")
+    duct_type: str = Field(..., pattern="^(rectangular|round)$", description="Type of duct")
     friction_rate: float = Field(..., gt=0, le=1.0, description="Friction rate")
-    units: str = Field(..., regex="^(imperial|metric)$", description="Unit system")
-    material: str = Field("galvanized_steel", regex="^(galvanized_steel|aluminum|stainless_steel|pvc|fiberglass)$")
+    units: str = Field(..., pattern="^(imperial|metric)$", description="Unit system")
+    material: str = Field("galvanized_steel", pattern="^(galvanized_steel|aluminum|stainless_steel|pvc|fiberglass)$")
     insulation: bool = Field(False, description="Whether duct is insulated")
 
 class Project(BaseModel):
@@ -226,7 +226,7 @@ class Project(BaseModel):
     description: Optional[str] = Field(None, max_length=1000)
     created: Optional[str] = None
     modified: Optional[str] = None
-    units: str = Field(..., regex="^(imperial|metric)$")
+    units: str = Field(..., pattern="^(imperial|metric)$")
     calculations: List[Dict[str, Any]] = Field(default_factory=list)
 
 class CalculationResult(BaseModel):

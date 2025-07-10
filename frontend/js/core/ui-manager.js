@@ -247,46 +247,49 @@ export class UIManager {
         try {
             const formData = new FormData(form);
             const data = Object.fromEntries(formData.entries());
-            
+
             // Convert numeric fields
             data.airflow = parseFloat(data.airflow);
             data.friction_rate = parseFloat(data.friction_rate);
-            
+
             console.log('Air duct calculation data:', data);
-            
+
             // Show loading state
             const submitButton = form.querySelector('button[type="submit"]');
             const originalText = submitButton.textContent;
             submitButton.textContent = 'Calculating...';
             submitButton.disabled = true;
-            
-            // Make API call (placeholder for now)
-            const result = {
-                input: data,
-                results: {
-                    duct_size: data.duct_type === 'round' ? '12" diameter' : '12" x 8"',
-                    velocity: Math.round(data.airflow / (data.duct_type === 'round' ? 113 : 96)),
-                    pressure_loss: data.friction_rate,
-                    equivalent_diameter: data.duct_type === 'rectangular' ? 9.8 : 12
-                },
-                compliance: {
-                    smacna_compliant: true,
-                    velocity_within_limits: true,
-                    notes: ['Calculation completed successfully']
+
+            // Make API call to backend
+            const apiClient = window.sizeWiseApp?.apiClient;
+            if (!apiClient) {
+                throw new Error('API client not available');
+            }
+
+            const result = await apiClient.calculateAirDuct(data);
+
+            if (result.success) {
+                // Display results
+                this.displayAirDuctResults(result);
+            } else {
+                // Show validation errors
+                const errorMessages = result.errors || ['Unknown error occurred'];
+                this.showError('Calculation Error', errorMessages.join(', '));
+
+                // Show warnings if any
+                if (result.warnings && result.warnings.length > 0) {
+                    console.warn('Calculation warnings:', result.warnings);
                 }
-            };
-            
-            // Display results
-            this.displayAirDuctResults(result);
-            
+            }
+
             // Restore button state
             submitButton.textContent = originalText;
             submitButton.disabled = false;
-            
+
         } catch (error) {
             console.error('Air duct calculation failed:', error);
             this.showError('Calculation Error', error.message);
-            
+
             // Restore button state
             const submitButton = form.querySelector('button[type="submit"]');
             submitButton.textContent = 'Calculate';
@@ -297,39 +300,103 @@ export class UIManager {
     displayAirDuctResults(result) {
         const resultsSection = document.getElementById('calculation-results');
         const resultsContent = document.getElementById('results-content');
-        
+
         if (resultsSection && resultsContent) {
+            const results = result.results || {};
+            const compliance = result.compliance || {};
+
+            // Helper function to format result values
+            const formatResult = (key) => {
+                const value = results[key];
+                if (typeof value === 'object' && value.value !== undefined) {
+                    return `${value.value} ${value.unit || ''}`;
+                }
+                return value || 'N/A';
+            };
+
             resultsContent.innerHTML = `
                 <div class="results-grid">
                     <div class="result-item">
                         <label>Duct Size:</label>
-                        <span>${result.results.duct_size}</span>
+                        <span>${results.duct_size || 'N/A'}</span>
                     </div>
                     <div class="result-item">
                         <label>Velocity:</label>
-                        <span>${result.results.velocity} FPM</span>
+                        <span>${formatResult('velocity')}</span>
+                    </div>
+                    <div class="result-item">
+                        <label>Area:</label>
+                        <span>${formatResult('area')}</span>
                     </div>
                     <div class="result-item">
                         <label>Pressure Loss:</label>
-                        <span>${result.results.pressure_loss} in. w.g./100 ft</span>
+                        <span>${formatResult('pressure_loss')}</span>
                     </div>
                     <div class="result-item">
                         <label>Equivalent Diameter:</label>
-                        <span>${result.results.equivalent_diameter}"</span>
+                        <span>${formatResult('equivalent_diameter')}</span>
                     </div>
                 </div>
-                
+
                 <div class="compliance-section">
                     <h4>SMACNA Compliance</h4>
-                    <div class="compliance-status ${result.compliance.smacna_compliant ? 'compliant' : 'non-compliant'}">
-                        ${result.compliance.smacna_compliant ? '✓ Compliant' : '✗ Non-Compliant'}
-                    </div>
-                    ${result.compliance.notes.map(note => `<p class="compliance-note">${note}</p>`).join('')}
+                    ${this.renderComplianceStatus(compliance)}
                 </div>
+
+                ${result.warnings && result.warnings.length > 0 ? `
+                    <div class="warnings-section">
+                        <h4>Warnings</h4>
+                        ${result.warnings.map(warning => `<p class="warning-note">⚠ ${warning}</p>`).join('')}
+                    </div>
+                ` : ''}
             `;
-            
+
             resultsSection.classList.remove('hidden');
         }
+    }
+
+    renderComplianceStatus(compliance) {
+        if (!compliance || Object.keys(compliance).length === 0) {
+            return '<p class="compliance-note">No compliance data available</p>';
+        }
+
+        let html = '';
+
+        // Check for SMACNA compliance
+        if (compliance.smacna) {
+            const smacnaChecks = compliance.smacna;
+            let allPassed = true;
+
+            for (const [parameter, check] of Object.entries(smacnaChecks)) {
+                if (!check.passed) {
+                    allPassed = false;
+                    break;
+                }
+            }
+
+            html += `
+                <div class="compliance-status ${allPassed ? 'compliant' : 'non-compliant'}">
+                    ${allPassed ? '✓ SMACNA Compliant' : '✗ SMACNA Non-Compliant'}
+                </div>
+            `;
+
+            // Show individual checks
+            for (const [parameter, check] of Object.entries(smacnaChecks)) {
+                html += `
+                    <div class="compliance-check">
+                        <span class="check-parameter">${parameter}:</span>
+                        <span class="check-status ${check.passed ? 'passed' : 'failed'}">
+                            ${check.passed ? '✓' : '✗'}
+                        </span>
+                        ${check.message ? `<span class="check-message">${check.message}</span>` : ''}
+                    </div>
+                `;
+            }
+        } else {
+            html += '<p class="compliance-note">Compliance checking not available</p>';
+        }
+
+        return html;
     }
     
     updateUnitsDisplay() {

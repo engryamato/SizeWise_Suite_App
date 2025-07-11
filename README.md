@@ -1,6 +1,6 @@
 # SizeWise Suite
 
-A modular, offline-capable HVAC engineering and estimating platform designed to unify duct sizing, vent design, and cost estimating in a single, standards-driven workspace.
+A modular, offline-capable HVAC engineering and estimating platform designed to unify duct sizing, vent design, and cost estimating in a single, standards-driven workspace with beautiful glassmorphism UI.
 
 ## Overview
 
@@ -17,6 +17,23 @@ SizeWise Suite is specifically crafted for:
 - **Offline-First Design**: Reliable operation in remote or disconnected environments
 - **Structured Export System**: Automated PDF, Excel, CSV, and BIM-compatible exports
 - **Plugin-Ready Architecture**: Highly scalable with minimal integration overhead
+- **Glassmorphism UI**: Beautiful glass-effect components with backdrop blur and animations
+- **Dual Frontend Options**: Choose between HTML/JS frontend or advanced Next.js frontend
+
+## Frontend Options
+
+### 1. HTML/CSS/JS Frontend (Original)
+- Lightweight and fast
+- Offline-first design
+- Progressive Web App capabilities
+- Located in `frontend/` directory
+
+### 2. Next.js Glassmorphism Frontend (New)
+- Modern React-based interface
+- Beautiful glassmorphism UI components
+- TypeScript for type safety
+- Tailwind CSS with custom animations
+- Located in `frontend-nextjs/` directory
 
 ## Core Modules (Phase 0.0)
 
@@ -38,7 +55,9 @@ Comprehensive estimating solution addressing labor/material takeoffs and automat
 ## Technology Stack
 
 - **Backend**: Python (Flask) for API, calculations, and export logic
-- **Frontend**: Modular JavaScript (offline-first, upgradeable to React/TypeScript)
+- **Frontend Options**:
+  - HTML/CSS/JS (offline-first, PWA)
+  - Next.js 15 with TypeScript and glassmorphism UI
 - **Documentation**: MkDocs (guides), Sphinx (API)
 - **Local Data**: IndexedDB/JSON for persistent offline storage
 - **Deployment**: Progressive Web App (PWA) with future Electron desktop support
@@ -47,6 +66,37 @@ Comprehensive estimating solution addressing labor/material takeoffs and automat
 
 ```
 ├── app/
+<<<<<<< HEAD
+│   ├── demo/
+│   │   └── page.tsx         # Components demo page
+│   ├── globals.css          # Global styles with keyframes
+│   ├── layout.tsx           # Root layout
+│   └── page.tsx             # Main page with demo
+├── components/
+│   └── glassmorphism/       # Glassmorphism components
+│       ├── GlassEffect.tsx  # Base glass effect wrapper
+│       ├── GlassDock.tsx    # Icon dock component
+│       ├── GlassButton.tsx  # Glass button component
+│       ├── GlassCard.tsx    # Glass card component
+│       ├── GlassFilter.tsx  # SVG filter effects
+│       └── index.ts         # Component exports
+├── next.config.js           # Next.js configuration
+├── tailwind.config.js       # Tailwind configuration with custom animations
+└── package.json
+```
+
+## Technologies Used
+
+- **Next.js 15**: React framework with App Router
+- **React 18**: UI library
+- **TypeScript**: Type safety
+- **Tailwind CSS**: Styling
+- **tailwindcss-animate**: Additional animation utilities
+
+## License
+
+MIT License - see [LICENSE](LICENSE) file for details.
+=======
 │   └── modules/           # Individual HVAC modules
 │       ├── air-duct-sizer/
 │       ├── grease-duct-sizer/
@@ -109,16 +159,78 @@ Comprehensive estimating solution addressing labor/material takeoffs and automat
    npm install
    ```
 
-4. Start the development server:
+4. **For Next.js Glassmorphism Frontend** (optional):
+   ```bash
+   cd frontend-nextjs
+   npm install
+   cd ..
+   ```
+
+5. Start the development server:
+
+   **Option A: Original HTML Frontend**
    ```bash
    # Backend
    python backend/app.py
-   
+
    # Frontend (in another terminal)
    npm run dev
    ```
 
-5. Open your browser to `http://localhost:3000`
+   **Option B: Next.js Glassmorphism Frontend**
+   ```bash
+   # Backend
+   python backend/app.py
+
+   # Next.js Frontend (in another terminal)
+   npm run dev:nextjs
+   ```
+
+6. Open your browser:
+   - Original frontend: `http://localhost:3000`
+   - Next.js frontend: `http://localhost:3000` (Next.js)
+
+## Glassmorphism Components (Next.js Frontend)
+
+The Next.js frontend includes several reusable glassmorphism components:
+
+### GlassEffect
+Base wrapper component that provides glass effect styling with backdrop blur, layered glass effects, and smooth transitions.
+
+### GlassDock
+Interactive icon dock with hover animations. Perfect for navigation or app launchers.
+
+### GlassButton
+Button component with glass effect and interactive animations. Supports both regular buttons and link buttons.
+
+### GlassCard
+Card component with glass effect, perfect for displaying content with beautiful backdrop blur.
+
+### GlassFilter
+SVG filter component that provides glass distortion effects using advanced SVG filters.
+
+### Usage Examples
+
+```tsx
+import { GlassEffect, GlassButton, GlassDock } from '@/components/glassmorphism';
+
+// Basic glass effect
+<GlassEffect className="rounded-3xl p-6">
+  <div className="text-white">Your content here</div>
+</GlassEffect>
+
+// Glass button
+<GlassButton href="/calculator">
+  <span className="text-white">Open Calculator</span>
+</GlassButton>
+
+// Glass dock
+const icons = [
+  { src: "/icon1.png", alt: "App 1" },
+  { src: "/icon2.png", alt: "App 2" },
+];
+<GlassDock icons={icons} />
+```
 
 ## Development
 
@@ -128,6 +240,7 @@ Comprehensive estimating solution addressing labor/material takeoffs and automat
 - **Schema-Driven**: AJV/Zod validation ensures data integrity
 - **Offline-First**: All functionality works without internet connection
 - **Standards Compliance**: Built-in validation against HVAC industry codes
+- **Dual Frontend**: Choose between lightweight HTML or modern React interface
 
 ### Adding New Modules
 
@@ -183,3 +296,4 @@ make html
 ## Support
 
 For questions and support, please refer to the documentation or create an issue in the repository.
+>>>>>>> main

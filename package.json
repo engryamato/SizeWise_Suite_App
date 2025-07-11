@@ -54,8 +54,8 @@
     "jest-environment-jsdom": "^29.7.0",
     "prettier": "^3.0.3",
     "typescript": "^5.2.2",
-    "vite": "^4.4.9",
-    "vite-plugin-pwa": "^0.16.5",
+    "vite": "^7.0.4",
+    "vite-plugin-pwa": "^1.0.1",
     "workbox-cli": "^7.0.0"
   },
   "dependencies": {

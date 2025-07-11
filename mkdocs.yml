@@ -1,0 +1,110 @@
+site_name: SizeWise Suite Documentation
+site_description: Comprehensive documentation for SizeWise Suite - A modular HVAC engineering and estimating platform
+site_author: SizeWise Suite Team
+site_url: https://sizewise-suite.github.io/
+
+# Repository
+repo_name: sizewise-suite/sizewise-suite
+repo_url: https://github.com/sizewise-suite/sizewise-suite
+edit_uri: edit/main/docs/
+
+# Configuration
+theme:
+  name: material
+  palette:
+    # Palette toggle for light mode
+    - scheme: default
+      primary: blue
+      accent: blue
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    # Palette toggle for dark mode
+    - scheme: slate
+      primary: blue
+      accent: blue
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.expand
+    - navigation.top
+    - search.highlight
+    - search.share
+    - content.code.copy
+    - content.action.edit
+    - content.action.view
+  icon:
+    repo: fontawesome/brands/github
+
+# Plugins
+plugins:
+  - search
+  - mermaid2:
+      arguments:
+        theme: base
+        themeVariables:
+          primaryColor: '#1976d2'
+          primaryTextColor: '#ffffff'
+
+# Extensions
+markdown_extensions:
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:mermaid2.fence_mermaid
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.tabbed:
+      alternate_style: true
+  - tables
+  - toc:
+      permalink: true
+
+# Navigation
+nav:
+  - Home: index.md
+  - Getting Started:
+    - Installation: getting-started/installation.md
+    - Quick Start: getting-started/quick-start.md
+    - System Requirements: getting-started/requirements.md
+  - User Guide:
+    - Overview: user-guide/overview.md
+    - Air Duct Sizer: user-guide/air-duct-sizer.md
+    - Project Management: user-guide/project-management.md
+    - Units and Standards: user-guide/units-standards.md
+    - Offline Usage: user-guide/offline-usage.md
+  - API Reference:
+    - Overview: api/overview.md
+    - Air Duct Calculator: api/air-duct-calculator.md
+    - Validation: api/validation.md
+    - Data Models: api/data-models.md
+  - Developer Guide:
+    - Architecture: developer/architecture.md
+    - Contributing: developer/contributing.md
+    - Testing: developer/testing.md
+    - Building: developer/building.md
+  - Examples:
+    - Basic Calculations: examples/basic-calculations.md
+    - Advanced Usage: examples/advanced-usage.md
+    - Integration: examples/integration.md
+
+# Extra
+extra:
+  version:
+    provider: mike
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/sizewise-suite/sizewise-suite
+    - icon: fontawesome/solid/globe
+      link: https://sizewise-suite.github.io/
+
+# Copyright
+copyright: Copyright &copy; 2024 SizeWise Suite Team

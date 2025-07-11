@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SizeWise Suite - Storage Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        button {
+            background: #1976d2;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 3px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #1565c0;
+        }
+        .results {
+            background: #f5f5f5;
+            padding: 10px;
+            border-radius: 3px;
+            margin: 10px 0;
+            white-space: pre-wrap;
+        }
+    </style>
+</head>
+<body>
+    <h1>SizeWise Suite - Local Storage Test</h1>
+    
+    <div class="test-section">
+        <h2>Project Management</h2>
+        <button onclick="createTestProject()">Create Test Project</button>
+        <button onclick="listProjects()">List All Projects</button>
+        <button onclick="deleteAllProjects()">Delete All Projects</button>
+        <div id="project-results" class="results"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>Calculation Management</h2>
+        <button onclick="createTestCalculation()">Create Test Calculation</button>
+        <button onclick="listCalculations()">List All Calculations</button>
+        <button onclick="deleteAllCalculations()">Delete All Calculations</button>
+        <div id="calculation-results" class="results"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>API Integration Test</h2>
+        <button onclick="testApiCalculation()">Test API + Storage</button>
+        <div id="api-results" class="results"></div>
+    </div>
+
+    <script type="module">
+        import { StorageManager } from './js/core/storage-manager.js';
+        import { DataService } from './js/services/data-service.js';
+        import { Project } from './js/models/project.js';
+        import { Calculation } from './js/models/calculation.js';
+        import { ApiClient } from './js/core/api-client.js';
+
+        // Initialize services
+        const storageManager = new StorageManager();
+        const dataService = new DataService(storageManager);
+        const apiClient = new ApiClient();
+        
+        await storageManager.init();
+        await dataService.init();
+        
+        // Make functions global for button onclick
+        window.createTestProject = async function() {
+            try {
+                const project = await dataService.createProject(
+                    'Test Project ' + Date.now(),
+                    'imperial',
+                    'A test project for storage verification'
+                );
+                document.getElementById('project-results').textContent = 
+                    'Created project: ' + JSON.stringify(project.getSummary(), null, 2);
+            } catch (error) {
+                document.getElementById('project-results').textContent = 'Error: ' + error.message;
+            }
+        };
+        
+        window.listProjects = async function() {
+            try {
+                const projects = await dataService.getAllProjects();
+                document.getElementById('project-results').textContent = 
+                    'Projects (' + projects.length + '):\n' + 
+                    JSON.stringify(projects.map(p => p.getSummary()), null, 2);
+            } catch (error) {
+                document.getElementById('project-results').textContent = 'Error: ' + error.message;
+            }
+        };
+        
+        window.deleteAllProjects = async function() {
+            try {
+                const projects = await dataService.getAllProjects();
+                for (const project of projects) {
+                    await dataService.deleteProject(project.id);
+                }
+                document.getElementById('project-results').textContent = 
+                    'Deleted ' + projects.length + ' projects';
+            } catch (error) {
+                document.getElementById('project-results').textContent = 'Error: ' + error.message;
+            }
+        };
+        
+        window.createTestCalculation = async function() {
+            try {
+                const calculation = Calculation.create(
+                    'air-duct-sizer',
+                    'Test Calculation ' + Date.now(),
+                    {
+                        airflow: 1000,
+                        duct_type: 'rectangular',
+                        friction_rate: 0.08,
+                        units: 'imperial'
+                    }
+                );
+                
+                calculation.results = {
+                    duct_size: '12" x 8"',
+                    velocity: { value: 1500, unit: 'fpm' },
+                    area: { value: 0.67, unit: 'sq_ft' }
+                };
+                
+                const saved = await dataService.saveCalculation(calculation);
+                document.getElementById('calculation-results').textContent = 
+                    'Created calculation: ' + JSON.stringify(saved.getSummary(), null, 2);
+            } catch (error) {
+                document.getElementById('calculation-results').textContent = 'Error: ' + error.message;
+            }
+        };
+        
+        window.listCalculations = async function() {
+            try {
+                const calculations = await dataService.getAllCalculations();
+                document.getElementById('calculation-results').textContent = 
+                    'Calculations (' + calculations.length + '):\n' + 
+                    JSON.stringify(calculations.map(c => c.getSummary()), null, 2);
+            } catch (error) {
+                document.getElementById('calculation-results').textContent = 'Error: ' + error.message;
+            }
+        };
+        
+        window.deleteAllCalculations = async function() {
+            try {
+                const calculations = await dataService.getAllCalculations();
+                for (const calculation of calculations) {
+                    await dataService.deleteCalculation(calculation.id);
+                }
+                document.getElementById('calculation-results').textContent = 
+                    'Deleted ' + calculations.length + ' calculations';
+            } catch (error) {
+                document.getElementById('calculation-results').textContent = 'Error: ' + error.message;
+            }
+        };
+        
+        window.testApiCalculation = async function() {
+            try {
+                // Create a test project first
+                const project = await dataService.createProject(
+                    'API Test Project',
+                    'imperial',
+                    'Testing API integration with storage'
+                );
+                dataService.setCurrentProject(project);
+                
+                // Make API call
+                const inputData = {
+                    airflow: 2000,
+                    duct_type: 'round',
+                    friction_rate: 0.1,
+                    units: 'imperial'
+                };
+                
+                const apiResponse = await apiClient.calculateAirDuct(inputData);
+                
+                if (apiResponse.success) {
+                    // Save to storage
+                    const calculation = await dataService.createCalculationFromApi(
+                        'air-duct-sizer',
+                        'API Test Calculation',
+                        inputData,
+                        apiResponse,
+                        project.id
+                    );
+                    
+                    document.getElementById('api-results').textContent = 
+                        'API + Storage test successful!\n' +
+                        'Project: ' + JSON.stringify(project.getSummary(), null, 2) + '\n\n' +
+                        'Calculation: ' + JSON.stringify(calculation.getSummary(), null, 2) + '\n\n' +
+                        'API Response: ' + JSON.stringify(apiResponse, null, 2);
+                } else {
+                    document.getElementById('api-results').textContent = 
+                        'API call failed: ' + JSON.stringify(apiResponse, null, 2);
+                }
+            } catch (error) {
+                document.getElementById('api-results').textContent = 'Error: ' + error.message;
+            }
+        };
+        
+        console.log('Storage test page loaded successfully');
+    </script>
+</body>
+</html>

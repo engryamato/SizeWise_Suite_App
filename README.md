@@ -1,102 +1,72 @@
-# SizeWise Suite App
+# SizeWise Suite
 
-A modular, offline-first HVAC engineering and estimating platform with Air Duct Sizer, standards compliance (SMACNA/NFPA/ASHRAE), and Progressive Web App capabilities.
+A modular, offline-capable HVAC engineering and estimating platform designed to unify duct sizing, vent design, and cost estimating in a single, standards-driven workspace with beautiful glassmorphism UI.
 
-## Features
+## Overview
 
-- **Glassmorphism UI Demo**: Beautiful glass-effect components with backdrop blur and animations
-- **Next.js 15**: Latest Next.js with App Router
-- **TypeScript**: Full type safety
-- **Tailwind CSS**: Utility-first CSS framework with custom animations
-- **Responsive Design**: Works on all device sizes
+SizeWise Suite is specifically crafted for:
+- **Mechanical Engineers**: Efficiently validate duct and vent designs against industry standards
+- **Estimators**: Conduct precise quantity takeoffs and cost estimations
+- **QA Professionals**: Utilize built-in validation features for standards compliance
+- **Project Managers**: Access real-time project insights regarding costs, progress, and compliance
 
-## Getting Started
+## Core Features
 
-### Prerequisites
+- **Unified HVAC Toolchain**: One platform for duct sizing, vent design, and estimating
+- **Standards-Aligned Logic**: Integrated dynamic validation per SMACNA, NFPA, and ASHRAE
+- **Offline-First Design**: Reliable operation in remote or disconnected environments
+- **Structured Export System**: Automated PDF, Excel, CSV, and BIM-compatible exports
+- **Plugin-Ready Architecture**: Highly scalable with minimal integration overhead
+- **Glassmorphism UI**: Beautiful glass-effect components with backdrop blur and animations
+- **Dual Frontend Options**: Choose between HTML/JS frontend or advanced Next.js frontend
 
-- Node.js 18+ 
-- npm or yarn
+## Frontend Options
 
-### Installation
+### 1. HTML/CSS/JS Frontend (Original)
+- Lightweight and fast
+- Offline-first design
+- Progressive Web App capabilities
+- Located in `frontend/` directory
 
-1. Clone the repository:
-```bash
-git clone https://github.com/engryamato/SizeWise_Suite_App.git
-cd SizeWise_Suite_App
-```
+### 2. Next.js Glassmorphism Frontend (New)
+- Modern React-based interface
+- Beautiful glassmorphism UI components
+- TypeScript for type safety
+- Tailwind CSS with custom animations
+- Located in `frontend-nextjs/` directory
 
-2. Install dependencies:
-```bash
-npm install
-```
+## Core Modules (Phase 0.0)
 
-3. Run the development server:
-```bash
-npm run dev
-```
+### Air Duct Sizer
+Friction-loss sizing per SMACNA standards, including velocity and gauge validation.
 
-4. Open [http://localhost:3000](http://localhost:3000) in your browser.
+### Grease Duct Sizer
+Comprehensive NFPA 96 compliance, hood airflow optimization, and clearance management.
 
-## Glassmorphism Components
+### Engine Exhaust Sizer
+High-velocity exhaust design for generators and Combined Heat and Power (CHP) systems.
 
-The app includes several reusable glassmorphism components:
+### Boiler Vent Sizer
+Detailed sizing for Category I–IV appliance vents, incorporating draft pressures and temperature management.
 
-### GlassEffect
-Base wrapper component that provides the glass effect styling with backdrop blur, layered glass effects, and smooth transitions.
+### Estimating App
+Comprehensive estimating solution addressing labor/material takeoffs and automated bid exports.
 
-### GlassDock
-A dock component that displays icons with glass effect and hover animations. Perfect for navigation or app launchers.
+## Technology Stack
 
-### GlassButton
-A button component with glass effect and interactive animations. Supports both regular buttons and link buttons.
-
-### GlassCard
-A card component with glass effect, perfect for displaying content with beautiful backdrop blur.
-
-### GlassFilter
-SVG filter component that provides the glass distortion effect using advanced SVG filters.
-
-## Demo Pages
-
-- **Home Page** (`/`): Main glassmorphism demo with animated background
-- **Demo Page** (`/demo`): Comprehensive showcase of all glassmorphism components
-
-## Usage Examples
-
-### Basic Glass Effect
-```tsx
-import { GlassEffect } from '@/components/glassmorphism';
-
-<GlassEffect className="rounded-3xl p-6">
-  <div className="text-white">Your content here</div>
-</GlassEffect>
-```
-
-### Glass Button
-```tsx
-import { GlassButton } from '@/components/glassmorphism';
-
-<GlassButton href="/demo">
-  <span className="text-white">Click me</span>
-</GlassButton>
-```
-
-### Glass Dock
-```tsx
-import { GlassDock, type DockIcon } from '@/components/glassmorphism';
-
-const icons: DockIcon[] = [
-  { src: "/icon1.png", alt: "App 1" },
-  { src: "/icon2.png", alt: "App 2" },
-];
-
-<GlassDock icons={icons} />
-```
+- **Backend**: Python (Flask) for API, calculations, and export logic
+- **Frontend Options**:
+  - HTML/CSS/JS (offline-first, PWA)
+  - Next.js 15 with TypeScript and glassmorphism UI
+- **Documentation**: MkDocs (guides), Sphinx (API)
+- **Local Data**: IndexedDB/JSON for persistent offline storage
+- **Deployment**: Progressive Web App (PWA) with future Electron desktop support
 
 ## Project Structure
 
 ```
 ├── app/
+<<<<<<< HEAD
 │   ├── demo/
 │   │   └── page.tsx         # Components demo page
 │   ├── globals.css          # Global styles with keyframes
@@ -126,3 +96,204 @@ const icons: DockIcon[] = [
 ## License
 
 MIT License - see [LICENSE](LICENSE) file for details.
+=======
+│   └── modules/           # Individual HVAC modules
+│       ├── air-duct-sizer/
+│       ├── grease-duct-sizer/
+│       ├── engine-exhaust-sizer/
+│       ├── boiler-vent-sizer/
+│       └── estimating-app/
+├── core/                  # Shared calculation logic and validation
+│   ├── calculations/
+│   ├── validation/
+│   ├── units/
+│   └── standards/
+├── services/              # API, storage, and export services
+│   ├── api/
+│   ├── storage/
+│   └── export/
+├── frontend/              # UI components and PWA assets
+│   ├── components/
+│   ├── styles/
+│   ├── assets/
+│   └── workers/
+├── backend/               # Flask API and calculation endpoints
+│   ├── api/
+│   ├── calculations/
+│   └── exports/
+├── docs/                  # Documentation
+│   ├── user-guides/
+│   ├── api-reference/
+│   └── examples/
+└── tests/                 # Testing infrastructure
+    ├── unit/
+    ├── integration/
+    └── e2e/
+```
+
+## Getting Started
+
+### Prerequisites
+
+- Python 3.8+
+- Node.js 16+
+- Modern web browser with PWA support
+
+### Installation
+
+1. Clone the repository:
+   ```bash
+   git clone <repository-url>
+   cd sizewise-suite
+   ```
+
+2. Set up Python environment:
+   ```bash
+   python -m venv venv
+   source venv/bin/activate  # On Windows: venv\Scripts\activate
+   pip install -r requirements.txt
+   ```
+
+3. Install frontend dependencies:
+   ```bash
+   npm install
+   ```
+
+4. **For Next.js Glassmorphism Frontend** (optional):
+   ```bash
+   cd frontend-nextjs
+   npm install
+   cd ..
+   ```
+
+5. Start the development server:
+
+   **Option A: Original HTML Frontend**
+   ```bash
+   # Backend
+   python backend/app.py
+
+   # Frontend (in another terminal)
+   npm run dev
+   ```
+
+   **Option B: Next.js Glassmorphism Frontend**
+   ```bash
+   # Backend
+   python backend/app.py
+
+   # Next.js Frontend (in another terminal)
+   npm run dev:nextjs
+   ```
+
+6. Open your browser:
+   - Original frontend: `http://localhost:3000`
+   - Next.js frontend: `http://localhost:3000` (Next.js)
+
+## Glassmorphism Components (Next.js Frontend)
+
+The Next.js frontend includes several reusable glassmorphism components:
+
+### GlassEffect
+Base wrapper component that provides glass effect styling with backdrop blur, layered glass effects, and smooth transitions.
+
+### GlassDock
+Interactive icon dock with hover animations. Perfect for navigation or app launchers.
+
+### GlassButton
+Button component with glass effect and interactive animations. Supports both regular buttons and link buttons.
+
+### GlassCard
+Card component with glass effect, perfect for displaying content with beautiful backdrop blur.
+
+### GlassFilter
+SVG filter component that provides glass distortion effects using advanced SVG filters.
+
+### Usage Examples
+
+```tsx
+import { GlassEffect, GlassButton, GlassDock } from '@/components/glassmorphism';
+
+// Basic glass effect
+<GlassEffect className="rounded-3xl p-6">
+  <div className="text-white">Your content here</div>
+</GlassEffect>
+
+// Glass button
+<GlassButton href="/calculator">
+  <span className="text-white">Open Calculator</span>
+</GlassButton>
+
+// Glass dock
+const icons = [
+  { src: "/icon1.png", alt: "App 1" },
+  { src: "/icon2.png", alt: "App 2" },
+];
+<GlassDock icons={icons} />
+```
+
+## Development
+
+### Architecture Principles
+
+- **Modular Design**: Each HVAC tool is a self-contained module
+- **Schema-Driven**: AJV/Zod validation ensures data integrity
+- **Offline-First**: All functionality works without internet connection
+- **Standards Compliance**: Built-in validation against HVAC industry codes
+- **Dual Frontend**: Choose between lightweight HTML or modern React interface
+
+### Adding New Modules
+
+1. Create module directory structure in `app/modules/`
+2. Implement calculation logic in `logic/`
+3. Create UI components in `ui/`
+4. Define schemas in `schemas/`
+5. Add tests in `tests/`
+
+## Testing
+
+```bash
+# Run all tests
+npm test
+
+# Run specific test suites
+npm run test:unit
+npm run test:integration
+npm run test:e2e
+
+# Python backend tests
+python -m pytest tests/
+```
+
+## Documentation
+
+- User guides: `docs/user-guides/`
+- API reference: `docs/api-reference/`
+- Examples: `docs/examples/`
+
+Build documentation:
+```bash
+# User guides (MkDocs)
+mkdocs serve
+
+# API reference (Sphinx)
+cd docs/api-reference
+make html
+```
+
+## Contributing
+
+1. Follow the established folder structure and naming conventions
+2. Maintain sorted lists for files, arrays, and exports
+3. Update all relevant references when making structural changes
+4. Run tests and ensure they pass before committing
+5. Update documentation for any public API changes
+
+## License
+
+[License information to be added]
+
+## Support
+
+For questions and support, please refer to the documentation or create an issue in the repository.
+>>>>>>> main

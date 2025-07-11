@@ -271,6 +271,9 @@ export class UIManager {
             if (result.success) {
                 // Display results
                 this.displayAirDuctResults(result);
+
+                // Save calculation to local storage
+                await this.saveCalculationToStorage('air-duct-sizer', data, result);
             } else {
                 // Show validation errors
                 const errorMessages = result.errors || ['Unknown error occurred'];
@@ -398,7 +401,93 @@ export class UIManager {
 
         return html;
     }
-    
+
+    async saveCalculationToStorage(moduleId, inputData, result) {
+        try {
+            const dataService = window.sizeWiseApp?.dataService;
+            if (!dataService) {
+                console.warn('Data service not available');
+                return;
+            }
+
+            // Generate a name for the calculation
+            const timestamp = new Date().toLocaleString();
+            const name = `${moduleId} - ${timestamp}`;
+
+            // Get current project if any
+            const currentProject = dataService.getCurrentProject();
+            const projectId = currentProject ? currentProject.id : null;
+
+            // Save the calculation
+            const calculation = await dataService.createCalculationFromApi(
+                moduleId,
+                name,
+                inputData,
+                result,
+                projectId
+            );
+
+            console.log('Calculation saved to local storage:', calculation.getSummary());
+
+            // Show success message
+            this.showSuccessMessage('Calculation saved successfully');
+
+        } catch (error) {
+            console.error('Failed to save calculation:', error);
+            this.showWarningMessage('Calculation completed but could not be saved locally');
+        }
+    }
+
+    showSuccessMessage(message) {
+        // Simple success notification - could be enhanced with a toast system
+        const notification = document.createElement('div');
+        notification.className = 'notification success';
+        notification.textContent = message;
+        notification.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: var(--success-color);
+            color: white;
+            padding: 12px 20px;
+            border-radius: 4px;
+            z-index: 10000;
+            animation: slideIn 0.3s ease;
+        `;
+
+        document.body.appendChild(notification);
+
+        setTimeout(() => {
+            notification.style.animation = 'slideOut 0.3s ease';
+            setTimeout(() => notification.remove(), 300);
+        }, 3000);
+    }
+
+    showWarningMessage(message) {
+        // Simple warning notification
+        const notification = document.createElement('div');
+        notification.className = 'notification warning';
+        notification.textContent = message;
+        notification.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: var(--warning-color);
+            color: white;
+            padding: 12px 20px;
+            border-radius: 4px;
+            z-index: 10000;
+            animation: slideIn 0.3s ease;
+        `;
+
+        document.body.appendChild(notification);
+
+        setTimeout(() => {
+            notification.style.animation = 'slideOut 0.3s ease';
+            setTimeout(() => notification.remove(), 300);
+        }, 4000);
+    }
+
     updateUnitsDisplay() {
         // This will be called by the main app when units change
         const unitsSelects = document.querySelectorAll('select[name="units"]');

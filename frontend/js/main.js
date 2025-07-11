@@ -10,6 +10,7 @@ import { StorageManager } from './core/storage-manager.js';
 import { ApiClient } from './core/api-client.js';
 import { UIManager } from './core/ui-manager.js';
 import { UnitsManager } from './core/units-manager.js';
+import { DataService } from './services/data-service.js';
 
 class SizeWiseApp {
     constructor() {
@@ -18,10 +19,11 @@ class SizeWiseApp {
         this.apiClient = new ApiClient();
         this.uiManager = new UIManager();
         this.unitsManager = new UnitsManager();
-        
+        this.dataService = new DataService(this.storageManager);
+
         this.isOnline = navigator.onLine;
         this.currentModule = null;
-        
+
         this.init();
     }
     
@@ -31,6 +33,7 @@ class SizeWiseApp {
             
             // Initialize core services
             await this.storageManager.init();
+            await this.dataService.init();
             await this.setupEventListeners();
             await this.loadModules();
             

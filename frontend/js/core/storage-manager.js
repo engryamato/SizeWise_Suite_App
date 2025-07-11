@@ -152,10 +152,43 @@ export class StorageManager {
         const transaction = this.db.transaction(['calculations'], 'readonly');
         const store = transaction.objectStore('calculations');
         const index = store.index('moduleId');
-        
+
         return new Promise((resolve, reject) => {
             const request = index.getAll(moduleId);
             request.onsuccess = () => resolve(request.result);
+            request.onerror = () => reject(request.error);
+        });
+    }
+
+    async getCalculation(id) {
+        const transaction = this.db.transaction(['calculations'], 'readonly');
+        const store = transaction.objectStore('calculations');
+
+        return new Promise((resolve, reject) => {
+            const request = store.get(id);
+            request.onsuccess = () => resolve(request.result);
+            request.onerror = () => reject(request.error);
+        });
+    }
+
+    async getAllCalculations() {
+        const transaction = this.db.transaction(['calculations'], 'readonly');
+        const store = transaction.objectStore('calculations');
+
+        return new Promise((resolve, reject) => {
+            const request = store.getAll();
+            request.onsuccess = () => resolve(request.result);
+            request.onerror = () => reject(request.error);
+        });
+    }
+
+    async deleteCalculation(id) {
+        const transaction = this.db.transaction(['calculations'], 'readwrite');
+        const store = transaction.objectStore('calculations');
+
+        return new Promise((resolve, reject) => {
+            const request = store.delete(id);
+            request.onsuccess = () => resolve();
             request.onerror = () => reject(request.error);
         });
     }

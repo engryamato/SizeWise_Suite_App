@@ -56,6 +56,12 @@ export default function HomePage() {
             <p>View Components Demo</p>
           </div>
         </GlassButton>
+
+        <GlassButton href="/air-duct-sizer">
+          <div className="text-lg text-white">
+            <p>Air Duct Sizer Tool</p>
+          </div>
+        </GlassButton>
       </div>
     </div>
   );

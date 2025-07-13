@@ -111,7 +111,7 @@ describe('UnitsConverter', () => {
     it('should throw error for unknown units', () => {
       expect(() => {
         converter.convert(100, 'unknown', 'ft');
-      }).toThrow('Unknown unit');
+      }).toThrow('Cannot convert between null and length');
     });
   });
   

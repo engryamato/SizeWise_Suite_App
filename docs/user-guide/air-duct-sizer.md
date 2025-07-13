@@ -1,264 +1,170 @@
-# Air Duct Sizer User Guide
+# Air Duct Sizer Module – User Guide & Implementation Blueprint
+**For the SizeWise Suite Platform**
+_Last updated: 2025-07-13_
 
-The Air Duct Sizer is SizeWise Suite's flagship module for calculating optimal duct sizes in HVAC systems. It provides SMACNA-compliant calculations with comprehensive validation and standards checking.
+---
 
-## Overview
+## 1. Vision and Strategic Purpose
 
-The Air Duct Sizer helps you:
+The Air Duct Sizer is the centerpiece HVAC engineering tool within the SizeWise Suite, designed for both everyday field professionals and advanced consultants. Its mission is to replace static, error-prone spreadsheets and legacy “ductulator” calculators with an interactive, code-compliant platform that *actually models* real ductwork systems—start to finish.
 
-- **Calculate optimal duct dimensions** for given airflow requirements
-- **Validate designs** against SMACNA standards
-- **Analyze pressure losses** and system performance
-- **Compare rectangular vs. round duct options**
-- **Ensure velocity compliance** with industry standards
+**Unlike legacy tools, this module is:**
+- **Fully graphical**: Enables users to *draw* entire duct runs, rooms, and outlet systems—not just crunch numbers
+- **Standards-driven**: Provides live validation, code references, and compliance warnings as you work
+- **Collaboration-ready**: Every project, calculation, and decision is exportable and traceable for team collaboration and auditability
 
-## Getting Started
+---
 
-### Accessing the Air Duct Sizer
+## 2. Who It’s For
 
-1. **Open SizeWise Suite** in your browser
-2. **Navigate to the Air Duct Sizer** module from the main dashboard
-3. **Select your preferred units** (Imperial or Metric)
+- **Beginners and Experts**: The UI is friendly enough for HVAC apprentices, but supports every detail a veteran mechanical engineer expects.
+- **Estimators, Designers, Installers**: Not just office-based engineers; anyone who needs to model, validate, and deliver a compliant duct system.
+- **Solo users or teams**: All calculations are project-based, saved, and ready for export or collaboration.
 
-### Basic Calculation
+---
 
-To perform a basic duct sizing calculation:
+## 3. Core Value: The Two-Tier Approach
 
-1. **Enter the airflow rate** (CFM for Imperial, L/s for Metric)
-2. **Select duct type** (Rectangular or Round)
-3. **Set friction rate** (in. w.g./100 ft for Imperial, Pa/m for Metric)
-4. **Click "Calculate"** to get results
+To make SizeWise Suite accessible to the widest audience, Air Duct Sizer is split into **Core (Free)** and **Pro (Premium)** tiers:
 
-## Input Parameters
+- **Free users** get a full-featured *single-room/single-run* calculator and layout tool, with essential compliance checking
+- **Pro users** unlock the entire power of the system: unlimited projects, full-building layouts, advanced physics, simulation, exports, and enhanced support
 
-### Required Fields
+---
 
-#### Airflow Rate
-- **Imperial**: CFM (Cubic Feet per Minute)
-- **Metric**: L/s (Liters per Second)
-- **Range**: 25 - 50,000 CFM (12 - 24,000 L/s)
-- **Validation**: Must be positive number
+## 4. Primary Workflows and Features
 
-#### Duct Type
-- **Rectangular**: Traditional rectangular ductwork
-- **Round**: Circular ductwork (typically more efficient)
+### 4.1 Drawing and Layout
 
-#### Friction Rate
-- **Imperial**: in. w.g./100 ft (inches water gauge per 100 feet)
-- **Metric**: Pa/m (Pascals per meter)
-- **Typical Range**: 0.05 - 0.5 in. w.g./100 ft (0.4 - 4.0 Pa/m)
-- **Recommended**: 0.08 - 0.15 in. w.g./100 ft for most applications
+- **Core**: Draw up to 3 rooms and 25 duct segments in an interactive canvas. Place outlets, elbows, branches, and connect to manually-entered equipment. Snap-to-grid is disabled
+- **Pro**: Draw *unlimited* rooms, branches, and segments. Snap-to-grid toggle ON. Lay out whole-building systems without constraint
+- In both tiers, users can always move, edit, or delete elements before export
 
-### Optional Parameters
+### 4.2 Input, Calculation, and Validation
 
-#### Material Type
-- **Galvanized Steel** (default): Standard ductwork material
-- **Aluminum**: Lightweight alternative
-- **Stainless Steel**: Corrosion-resistant option
-- **Flexible Duct**: For short runs and connections
+- **Room data**: Enter area, function, appliance(s). System performs D-Calc/J-Calc for airflow needs
+- **Equipment**:
+  - *Core*: Enter all specs manually
+  - *Pro*: Pick from a built-in, searchable HVAC equipment catalog or enter custom data
+- **Duct segment**: Choose shape, material, insulation, set length/connections
+  - *Core*: All sizing is manual; warnings are for basic velocity and friction only
+  - *Pro*: Auto-suggest sizes, gauges, joint/seam types per SMACNA/ASHRAE/UL. Advanced mode toggles on pressure, temp, altitude, humidity logic
 
-#### System Pressure Class
-- **Low Pressure**: Up to 2 in. w.g. (500 Pa)
-- **Medium Pressure**: 2-6 in. w.g. (500-1500 Pa)
-- **High Pressure**: 6-10 in. w.g. (1500-2500 Pa)
+### 4.3 Modes and Toggles
 
-## Understanding Results
+All toggles are persistent (per user/project) and visible:
 
-### Duct Dimensions
+- **Layout Mode** (always on): Draw, connect, and edit
+- **Snap-to-Grid**:
+  - *Pro*: Toggle on/off
+  - *Core*: Off only
+- **Sizing/Selection**:
+  - *Core*: Manual entry
+  - *Pro*: Manual or Auto
+- **Run Mode**:
+  - *Core*: Single-run analysis only
+  - *Pro*: Full-system analysis (all branches, outlets, and rooms)
+- **Advanced Mode**:
+  - *Core*: Not available
+  - *Pro*: On/off toggle; environmental factors and physics calculations enabled
+- **Simulation Mode**:
+  - *Core*: Not available
+  - *Pro*: On/off; animates flow, velocity, pressure, temp, with warning highlights
+- **Educated Mode**:
+  - *Core*: Off
+  - *Pro*: On; shows tooltips with code/standard snippets (≤75 words or paraphrased)
 
-#### Rectangular Ducts
-- **Width × Height**: Optimized dimensions in inches or millimeters
-- **Aspect Ratio**: Typically between 1:1 and 4:1 for efficiency
-- **Standard Sizes**: Rounded to nearest standard dimensions
+### 4.4 Validation and Warnings
 
-#### Round Ducts
-- **Diameter**: Optimal diameter in inches or millimeters
-- **Standard Sizes**: Rounded to nearest standard pipe size
+- **Free users** get inline warnings (velocity, friction) with simple text
+- **Pro users** get grouped warnings, in-canvas highlights, exportable warnings, and full code/standard references per violation (SMACNA, ASHRAE, UL, regional)
+- All validations are warning-only: never blocks; always real-time; segment, branch, and room-specific
 
-### Performance Metrics
+### 4.5 Simulation & Export
 
-#### Velocity
-- **Value**: Air velocity in FPM (feet per minute) or m/s (meters per second)
-- **SMACNA Limits**: 
-  - Supply ducts: 1000-2500 FPM (5-13 m/s)
-  - Return ducts: 800-1500 FPM (4-8 m/s)
-- **Status**: Pass/Fail indication for velocity compliance
+- **Simulation** (*Pro only*):
+  - Manual trigger. Animates airflow through the system. Visualizes velocity zones, pressure drops, temperature gradients. Highlights any segment with code violations
+- **Export**:
+  - *Core*: PDF summary (single run, basic warnings)
+  - *Pro*: PDF (full project), Excel, JSON; all segment/system data, all warnings, simulation images, compliance tables
 
-#### Pressure Loss
-- **Value**: Friction loss per unit length
-- **Units**: in. w.g./100 ft or Pa/m
-- **Calculation**: Based on Darcy-Weisbach equation with duct-specific factors
+### 4.6 Saving, Loading, and Data Model
 
-#### Cross-Sectional Area
-- **Value**: Internal duct area
-- **Units**: sq. ft or sq. m
-- **Usage**: For airflow density calculations
+- **Core**: One active project, up to 5 saved layouts; only manual inputs
+- **Pro**: Unlimited projects and versions. Auto-saves all inputs, settings, toggles, and results
+- **All data models** (Room, Segment, Equipment, Project) follow explicit JSON schemas, fully documented
 
-#### Equivalent Diameter
-- **Rectangular Ducts**: Hydraulic diameter for pressure loss calculations
-- **Round Ducts**: Same as actual diameter
-- **Formula**: De = 1.3 × (a × b)^0.625 / (a + b)^0.25
+---
 
-## Standards Compliance
+## 5. Example Scenario: The Pro Workflow
 
-### SMACNA Standards
+An HVAC engineer logs in as a Pro user, sets their project location (Utah, US), draws a building with five rooms, and connects an AHU from the catalog. They use Advanced Mode to factor in altitude and seasonal temperatures. Snap-to-grid is on for precise layout.
 
-The Air Duct Sizer validates designs against SMACNA (Sheet Metal and Air Conditioning Contractors' National Association) standards:
+As they draw branches, the system auto-suggests duct sizes and gauges per SMACNA, and flags a branch where velocity exceeds 1500 FPM. The engineer clicks the warning, reads the cited standard, and adjusts the segment.
 
-#### Velocity Limits
-- **Supply Air**: Maximum 2500 FPM (13 m/s) for noise control
-- **Return Air**: Maximum 1500 FPM (8 m/s) for energy efficiency
-- **Exhaust Air**: Maximum 2000 FPM (10 m/s) depending on application
+With Simulation Mode, they visualize airflow and pressure, capturing a color-coded PDF export (with warnings and code references) for their submittal.
 
-#### Pressure Classifications
-- **Low Pressure**: Residential and light commercial
-- **Medium Pressure**: Commercial and industrial
-- **High Pressure**: Industrial and specialized applications
+---
 
-#### Construction Standards
-- **Sealing Requirements**: Based on pressure class and leakage rates
-- **Support Spacing**: Maximum distances between hangers
-- **Joint Types**: Appropriate connection methods for pressure class
+## 6. Strategic Rationale
 
-### Validation Warnings
+**Why this feature split?**
 
-The system provides warnings for:
+- **Free tier** gives real value to any user and lets them solve basic jobs
+- **Pro tier** unlocks everything a consultant, large contractor, or designer needs to justify the price:
+  - Full-system analysis
+  - Advanced physics
+  - Code traceability
+  - Visual simulation
+  - Rich export
+  - Unlimited data and support
 
-- **Very Low Airflow**: Below 25 CFM (12 L/s) - verify requirements
-- **Very High Airflow**: Above 50,000 CFM (24,000 L/s) - consider multiple ducts
-- **Low Friction Rate**: Below 0.05 in. w.g./100 ft - may result in oversized ducts
-- **High Friction Rate**: Above 0.5 in. w.g./100 ft - may result in undersized ducts
-- **Velocity Exceedance**: Above SMACNA recommended limits
+---
 
-## Best Practices
+## 7. Implementation & QA Notes
 
-### Friction Rate Selection
+- Every feature is **gated via feature flags**—one code base, safe premium gating
+- All validation, warning, and code reference logic must be explicit in UI, backend, and export logic
+- All user actions and system outputs must be auditable and re-importable
+- Pro features should always appear (with a lock or tooltip) for free users—upsell must be non-intrusive, but visible
 
-#### Low Friction (0.05-0.08 in. w.g./100 ft)
-- **Pros**: Lower energy costs, quieter operation
-- **Cons**: Larger ducts, higher material costs
-- **Use**: Long duct runs, energy-efficient designs
+---
 
-#### Medium Friction (0.08-0.15 in. w.g./100 ft)
-- **Pros**: Balanced approach, standard practice
-- **Cons**: Moderate energy and material costs
-- **Use**: Most commercial applications
+## 8. References & Compliance
 
-#### High Friction (0.15-0.5 in. w.g./100 ft)
-- **Pros**: Smaller ducts, lower material costs
-- **Cons**: Higher energy costs, potential noise issues
-- **Use**: Short runs, space-constrained applications
+- All validation, sizing, and gauge selection must cite and comply with:
+  - SMACNA HVAC Duct Construction Standards – 4th Edition
+  - ASHRAE Fundamentals Handbook (2025)
+  - UL, IMC, and local codes where relevant
+- All code citations must respect fair use and licensing rules
 
-### Duct Type Selection
+---
 
-#### Rectangular Ducts
-- **Advantages**: Fits in tight spaces, easier to insulate
-- **Disadvantages**: Higher pressure loss, more complex fabrication
-- **Best For**: Space-constrained installations, architectural integration
+## 9. Future-Proofing
 
-#### Round Ducts
-- **Advantages**: Lower pressure loss, easier fabrication, better airflow
-- **Disadvantages**: Requires more space, harder to conceal
-- **Best For**: Exposed installations, energy efficiency priority
+- All data and layouts saved in Pro must be portable to future SizeWise modules (Estimating, Reports, BIM integration, etc.)
+- Core/Pro logic should be easily upgradable if tiers evolve
 
-## Troubleshooting
+---
 
-### Common Issues
+## 10. Feature Comparison Table
 
-#### "Velocity Too High" Warning
-- **Cause**: Friction rate too high or airflow too high for duct size
-- **Solution**: Reduce friction rate or consider larger duct/multiple ducts
+| Functional Area           | Free (Core User)                           | Pro (Premium User)                   |
+|--------------------------|--------------------------------------------|--------------------------------------|
+| **Projects & Layouts**   | 1 active project, 5 saved layouts          | Unlimited projects and versions      |
+| **Rooms/Segments**       | Max 3 rooms, 25 duct segments per project  | Unlimited rooms, unlimited segments  |
+| **Drawing Features**     | Draw/edit ducts, outlets, equipment        | All Free features + snap-to-grid     |
+| **Input Modes**          | Manual entry only                          | Manual + Auto-suggest (sizes, gauges)|
+| **Run Mode**             | Single-run analysis only                   | Full-system (multi-branch) analysis  |
+| **Standards Validation** | Basic: velocity/friction warnings (SMACNA) | Full: SMACNA/ASHRAE/UL, rule-linked  |
+| **Advanced Mode**        | Not available                              | Full pressure, temp, altitude, env.  |
+| **Equipment**            | Manual input only                          | Built-in searchable catalog + manual |
+| **Simulation Mode**      | Not available                              | Airflow/pressure/temp animation      |
+| **Export**               | PDF summary (single run)                   | PDF (full), Excel, JSON; simulation  |
+| **Warnings**             | Inline simple text                         | Grouped panel, in-canvas, exportable |
+| **Educated Mode**        | Off                                        | On (tooltips, code refs ≤75 words)   |
+| **Support/Updates**      | Community forum, quarterly updates         | Priority support, frequent updates   |
 
-#### "Unrealistic Dimensions" Error
-- **Cause**: Input parameters result in impractical duct sizes
-- **Solution**: Adjust friction rate or verify airflow requirements
+---
 
-#### "Standards Violation" Warning
-- **Cause**: Design exceeds SMACNA recommended limits
-- **Solution**: Review design parameters and adjust as needed
-
-### Validation Errors
-
-#### Missing Required Fields
-- Ensure all required inputs are provided
-- Check for valid numeric values
-
-#### Out of Range Values
-- Verify airflow is within supported range
-- Check friction rate is reasonable for application
-
-#### Invalid Combinations
-- Some parameter combinations may not be physically realizable
-- Adjust inputs to achieve practical results
-
-## Advanced Features
-
-### Material Properties
-
-Different duct materials have varying roughness factors that affect pressure loss:
-
-- **Galvanized Steel**: Roughness factor 0.0003 ft
-- **Aluminum**: Roughness factor 0.0002 ft
-- **Stainless Steel**: Roughness factor 0.0002 ft
-- **Flexible Duct**: Roughness factor 0.003 ft (much higher)
-
-### Pressure Loss Calculations
-
-The system uses the Darcy-Weisbach equation with duct-specific modifications:
-
-```
-ΔP = f × (L/D) × (ρ × V²/2)
-```
-
-Where:
-- ΔP = Pressure loss
-- f = Friction factor (based on Reynolds number and roughness)
-- L = Duct length
-- D = Hydraulic diameter
-- ρ = Air density
-- V = Air velocity
-
-### Standard Sizes
-
-The calculator rounds results to standard duct sizes:
-
-#### Round Ducts (inches)
-4, 5, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32, 34, 36
-
-#### Rectangular Ducts
-Standard increments based on SMACNA guidelines, typically in 2-inch increments for smaller sizes and 4-inch increments for larger sizes.
-
-## Integration with Projects
-
-### Saving Calculations
-
-All calculations are automatically saved to your current project (if one is active) or as standalone calculations. Saved data includes:
-
-- Input parameters
-- Calculated results
-- Compliance status
-- Timestamp and metadata
-
-### Exporting Results
-
-Results can be exported in various formats:
-
-- **PDF Report**: Formatted calculation summary
-- **CSV Data**: Raw data for spreadsheet analysis
-- **JSON**: Machine-readable format for integration
-
-### Project Management
-
-Organize your calculations by:
-
-- **Creating projects** for different buildings or systems
-- **Grouping calculations** by system type or zone
-- **Adding notes** and descriptions for future reference
-- **Comparing alternatives** side-by-side
-
-## Next Steps
-
-- **[Project Management Guide](project-management.md)**: Learn to organize your work
-- **[Units and Standards](units-standards.md)**: Understand unit conversions and standards
-- **[API Reference](../api/air-duct-calculator.md)**: Technical integration details
-- **[Examples](../examples/basic-calculations.md)**: Practical calculation examples
+*This narrative supersedes all prior drafts and must guide all implementation, QA, documentation, and product decisions for the Air Duct Sizer module.*

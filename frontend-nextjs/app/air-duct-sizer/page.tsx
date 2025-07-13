@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useEffect, useState } from 'react'
-import { CanvasContainer } from '@/components/canvas/CanvasContainer'
+import { ClientOnlyCanvas } from '@/components/canvas/ClientOnlyCanvas'
 import { Toolbar } from '@/components/ui/Toolbar'
 import { Sidebar } from '@/components/ui/Sidebar'
 import { useProjectStore } from '@/stores/project-store'
@@ -181,7 +181,7 @@ export default function AirDuctSizerPage() {
         
         {/* Canvas area */}
         <div className="flex-1 relative">
-          <CanvasContainer width={canvasSize.width} height={canvasSize.height} />
+          <ClientOnlyCanvas width={canvasSize.width} height={canvasSize.height} />
         </div>
         
         {/* Sidebar */}

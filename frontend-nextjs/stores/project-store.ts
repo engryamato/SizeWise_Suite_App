@@ -272,10 +272,18 @@ export const useProjectStore = create<ProjectState>()(
           const { currentProject } = get()
           if (!currentProject) return
 
+          const currentProps = currentProject.computational_properties || {
+            default_velocity: 1200,
+            pressure_class: 'Medium',
+            altitude: 0,
+            r_value: 4.2,
+            friction_rate: 0.08,
+          }
+
           const updatedProject: Project = {
             ...currentProject,
             computational_properties: {
-              ...currentProject.computational_properties,
+              ...currentProps,
               ...properties,
             },
             last_modified: new Date().toISOString(),

@@ -28,7 +28,7 @@ export const SegmentPanel: React.FC<SegmentPanelProps> = ({ segment }) => {
     if (formData.airflow > 0 && (formData.size.width || formData.size.diameter)) {
       const calculationInput = {
         airflow: formData.airflow,
-        duct_type: formData.size.diameter ? 'round' : 'rectangular',
+        duct_type: (formData.size.diameter ? 'round' : 'rectangular') as 'round' | 'rectangular',
         friction_rate: 0.08, // Default friction rate
         units: 'imperial' as const,
         material: formData.material,
@@ -187,7 +187,7 @@ export const SegmentPanel: React.FC<SegmentPanelProps> = ({ segment }) => {
                 max="48"
               />
             ) : (
-              <p className="text-gray-900">Ø{segment.size.diameter}"</p>
+              <p className="text-gray-900">Ø{segment.size.diameter}&quot;</p>
             )}
           </div>
         ) : (
@@ -210,7 +210,7 @@ export const SegmentPanel: React.FC<SegmentPanelProps> = ({ segment }) => {
                   max="48"
                 />
               ) : (
-                <p className="text-gray-900">{segment.size.width}"</p>
+                <p className="text-gray-900">{segment.size.width}&quot;</p>
               )}
             </div>
             
@@ -231,7 +231,7 @@ export const SegmentPanel: React.FC<SegmentPanelProps> = ({ segment }) => {
                   max="48"
                 />
               ) : (
-                <p className="text-gray-900">{segment.size.height}"</p>
+                <p className="text-gray-900">{segment.size.height}&quot;</p>
               )}
             </div>
           </div>
@@ -241,7 +241,7 @@ export const SegmentPanel: React.FC<SegmentPanelProps> = ({ segment }) => {
           <div className="text-sm text-gray-600 space-y-1">
             <div>Area: {area.toFixed(2)} sq ft</div>
             {equivalentDiameter > 0 && !formData.size.diameter && (
-              <div>Equivalent Diameter: {equivalentDiameter.toFixed(1)}"</div>
+              <div>Equivalent Diameter: {equivalentDiameter.toFixed(1)}&quot;</div>
             )}
           </div>
         </div>

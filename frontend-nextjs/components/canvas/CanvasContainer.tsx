@@ -243,6 +243,7 @@ export const CanvasContainer: React.FC<CanvasContainerProps> = ({ width, height 
             size: { width: 12, height: 8 }, // Default size
             length: distance / 12, // Convert pixels to feet
             points: [start.x, start.y, end.x, end.y],
+            warnings: [],
           })
         }
         break

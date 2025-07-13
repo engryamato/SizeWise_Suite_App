@@ -57,8 +57,7 @@ const createDefaultProject = (): Project => ({
 
 export const useProjectStore = create<ProjectState>()(
   devtools(
-    persist(
-      (set, get) => ({
+    (set, get) => ({
         currentProject: null,
 
         createProject: (projectData) => {
@@ -320,11 +319,6 @@ export const useProjectStore = create<ProjectState>()(
           return currentProject?.segments.length || 0
         },
       }),
-      {
-        name: 'air-duct-sizer-project',
-        partialize: (state) => ({ currentProject: state.currentProject }),
-      }
-    ),
     { name: 'ProjectStore' }
   )
 )

@@ -1,67 +1,179 @@
 "use client";
 
 import React from "react";
-import { GlassDock, GlassButton, GlassFilter, type DockIcon } from "@/components/glassmorphism";
+import Link from "next/link";
+import {
+  Wrench,
+  FileText,
+  FolderOpen,
+  BarChart3,
+  Clock,
+  Star,
+  TrendingUp,
+  Users,
+  CheckCircle
+} from "lucide-react";
 
-// Main Component
+// Dashboard Component with App Shell
 export default function HomePage() {
-  const dockIcons: DockIcon[] = [
-    {
-      src: "https://parsefiles.back4app.com/JPaQcFfEEQ1ePBxbf6wvzkPMEqKYHhPYv8boI1Rc/a13d1acfd046f503f987c1c95af582c8_low_res_Claude.png",
-      alt: "Claude",
-    },
-    {
-      src: "https://parsefiles.back4app.com/JPaQcFfEEQ1ePBxbf6wvzkPMEqKYHhPYv8boI1Rc/9e80c50a5802d3b0a7ec66f3fe4ce348_low_res_Finder.png",
-      alt: "Finder",
-    },
-    {
-      src: "https://parsefiles.back4app.com/JPaQcFfEEQ1ePBxbf6wvzkPMEqKYHhPYv8boI1Rc/c2c4a538c2d42a8dc0927d7d6530d125_low_res_ChatGPT___Liquid_Glass__Default_.png",
-      alt: "Chatgpt",
-    },
-    {
-      src: "https://parsefiles.back4app.com/JPaQcFfEEQ1ePBxbf6wvzkPMEqKYHhPYv8boI1Rc/6d26d432bd65c522b0708185c0768ec3_low_res_Maps.png",
-      alt: "Maps",
-    },
-    {
-      src: "https://parsefiles.back4app.com/JPaQcFfEEQ1ePBxbf6wvzkPMEqKYHhPYv8boI1Rc/7c59c945731aecf4f91eb8c2c5f867ce_low_res_Safari.png",
-      alt: "Safari",
-    },
-    {
-      src: "https://parsefiles.back4app.com/JPaQcFfEEQ1ePBxbf6wvzkPMEqKYHhPYv8boI1Rc/b7f24edc7183f63dbe34c1943bef2967_low_res_Steam___Liquid_Glass__Default_.png",
-      alt: "Steam",
-    },
-  ];
-
   return (
-    <div
-      className="min-h-screen h-full flex items-center justify-center font-light relative overflow-hidden w-full"
-      style={{
-        background: `url("https://images.unsplash.com/photo-1432251407527-504a6b4174a2?q=80&w=1480&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D") center center`,
-        animation: "moveBackground 60s linear infinite",
-      }}
-    >
-      <GlassFilter />
+    <div className="p-6 space-y-8">
+      {/* Welcome Section */}
+      <div className="text-center mb-8">
+        <h1 className="text-3xl font-bold text-neutral-900 dark:text-white mb-4">
+          Welcome to SizeWise Suite
+        </h1>
+        <p className="text-lg text-neutral-600 dark:text-neutral-300 max-w-2xl mx-auto">
+          A modular, offline-first HVAC engineering and estimating platform with standards compliance
+        </p>
+      </div>
 
-      <div className="flex flex-col gap-6 items-center justify-center w-full">
-        <GlassDock icons={dockIcons} href="https://x.com/notsurajgaud" />
-
-        <GlassButton href="https://x.com/notsurajgaud">
-          <div className="text-xl text-white">
-            <p>How can i help you today?</p>
+      {/* Quick Actions */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <Link
+          href="/projects/new"
+          className="group p-6 bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-lg shadow-sm hover:shadow-md transition-all hover:scale-105"
+        >
+          <div className="flex items-center space-x-3 mb-3">
+            <div className="p-2 bg-blue-100 dark:bg-blue-900 rounded-lg">
+              <FolderOpen className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+            </div>
+            <h3 className="text-lg font-semibold text-neutral-900 dark:text-white">
+              Start New Project
+            </h3>
           </div>
-        </GlassButton>
+          <p className="text-neutral-600 dark:text-neutral-300">
+            Create a new HVAC project with templates
+          </p>
+        </Link>
 
-        <GlassButton href="/demo">
-          <div className="text-lg text-white">
-            <p>View Components Demo</p>
+        <Link
+          href="/air-duct-sizer"
+          className="group p-6 bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-lg shadow-sm hover:shadow-md transition-all hover:scale-105"
+        >
+          <div className="flex items-center space-x-3 mb-3">
+            <div className="p-2 bg-green-100 dark:bg-green-900 rounded-lg">
+              <Wrench className="w-6 h-6 text-green-600 dark:text-green-400" />
+            </div>
+            <h3 className="text-lg font-semibold text-neutral-900 dark:text-white">
+              Air Duct Sizer
+            </h3>
           </div>
-        </GlassButton>
+          <p className="text-neutral-600 dark:text-neutral-300">
+            SMACNA standards-compliant duct sizing
+          </p>
+        </Link>
 
-        <GlassButton href="/air-duct-sizer">
-          <div className="text-lg text-white">
-            <p>Air Duct Sizer Tool</p>
+        <Link
+          href="/reports"
+          className="group p-6 bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-lg shadow-sm hover:shadow-md transition-all hover:scale-105"
+        >
+          <div className="flex items-center space-x-3 mb-3">
+            <div className="p-2 bg-purple-100 dark:bg-purple-900 rounded-lg">
+              <BarChart3 className="w-6 h-6 text-purple-600 dark:text-purple-400" />
+            </div>
+            <h3 className="text-lg font-semibold text-neutral-900 dark:text-white">
+              View Reports
+            </h3>
           </div>
-        </GlassButton>
+          <p className="text-neutral-600 dark:text-neutral-300">
+            Export history and project reports
+          </p>
+        </Link>
+
+        <Link
+          href="/demo"
+          className="group p-6 bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-lg shadow-sm hover:shadow-md transition-all hover:scale-105"
+        >
+          <div className="flex items-center space-x-3 mb-3">
+            <div className="p-2 bg-orange-100 dark:bg-orange-900 rounded-lg">
+              <FileText className="w-6 h-6 text-orange-600 dark:text-orange-400" />
+            </div>
+            <h3 className="text-lg font-semibold text-neutral-900 dark:text-white">
+              Components Demo
+            </h3>
+          </div>
+          <p className="text-neutral-600 dark:text-neutral-300">
+            View UI components and design system
+          </p>
+        </Link>
+      </div>
+
+      {/* Recent Activity & Stats */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Recent Projects */}
+        <div className="lg:col-span-2 bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-lg p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-semibold text-neutral-900 dark:text-white">
+              Recent Projects
+            </h2>
+            <Link href="/projects" className="text-blue-600 hover:text-blue-700 text-sm font-medium">
+              View All
+            </Link>
+          </div>
+          <div className="space-y-3">
+            <div className="flex items-center space-x-3 p-3 bg-neutral-50 dark:bg-neutral-700 rounded-lg">
+              <Clock className="w-5 h-5 text-neutral-500" />
+              <div className="flex-1">
+                <div className="font-medium text-neutral-900 dark:text-white">Office Building HVAC</div>
+                <div className="text-sm text-neutral-500">Last modified 2 hours ago</div>
+              </div>
+              <CheckCircle className="w-5 h-5 text-green-500" />
+            </div>
+            <div className="flex items-center space-x-3 p-3 bg-neutral-50 dark:bg-neutral-700 rounded-lg">
+              <Clock className="w-5 h-5 text-neutral-500" />
+              <div className="flex-1">
+                <div className="font-medium text-neutral-900 dark:text-white">Warehouse Ventilation</div>
+                <div className="text-sm text-neutral-500">Last modified yesterday</div>
+              </div>
+              <div className="w-5 h-5"></div>
+            </div>
+          </div>
+        </div>
+
+        {/* Quick Stats */}
+        <div className="space-y-4">
+          <div className="bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-lg p-6">
+            <div className="flex items-center space-x-3">
+              <div className="p-2 bg-blue-100 dark:bg-blue-900 rounded-lg">
+                <TrendingUp className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+              </div>
+              <div>
+                <div className="text-2xl font-bold text-neutral-900 dark:text-white">12</div>
+                <div className="text-sm text-neutral-500">Active Projects</div>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-lg p-6">
+            <div className="flex items-center space-x-3">
+              <div className="p-2 bg-green-100 dark:bg-green-900 rounded-lg">
+                <Users className="w-6 h-6 text-green-600 dark:text-green-400" />
+              </div>
+              <div>
+                <div className="text-2xl font-bold text-neutral-900 dark:text-white">3</div>
+                <div className="text-sm text-neutral-500">Team Members</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Status Notice */}
+      <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 text-center">
+        <p className="text-blue-800 dark:text-blue-200 mb-3">
+          🚀 New app shell with laser background is now active! Explore the navigation and features.
+        </p>
+        <button
+          type="button"
+          onClick={() => {
+            // In a real app, this would be passed down from AppShell context
+            console.log("Starting onboarding tour...");
+          }}
+          className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-medium text-sm underline"
+        >
+          Take the guided tour →
+        </button>
       </div>
     </div>
   );

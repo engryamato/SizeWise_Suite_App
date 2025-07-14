@@ -1,18 +1,20 @@
 'use client'
 
-import React from 'react'
-import { 
-  MousePointer, 
-  Square, 
-  Minus, 
-  Settings, 
-  Hand, 
+import React, { useRef, useEffect } from 'react'
+import {
+  MousePointer,
+  Square,
+  Minus,
+  Settings,
+  Hand,
   Grid3X3,
   ZoomIn,
   ZoomOut,
-  RotateCcw
+  RotateCcw,
+  Zap
 } from 'lucide-react'
 import { useUIStore } from '@/stores/ui-store'
+import { TierEnforcement, UsageCounter } from '@/components/tier/TierEnforcement'
 import { DrawingTool } from '@/types/air-duct-sizer'
 
 interface ToolbarProps {
@@ -36,36 +38,46 @@ export const Toolbar: React.FC<ToolbarProps> = ({ className = '' }) => {
     icon: React.ReactNode
     label: string
     shortcut?: string
+    description: string
+    tierFeature?: 'rooms' | 'segments' | 'equipment'
   }> = [
     {
       id: 'select',
       icon: <MousePointer size={20} />,
       label: 'Select',
       shortcut: 'V',
+      description: 'Select and move objects',
     },
     {
       id: 'room',
       icon: <Square size={20} />,
       label: 'Room',
       shortcut: 'R',
+      description: 'Draw rooms and spaces',
+      tierFeature: 'rooms',
     },
     {
       id: 'duct',
       icon: <Minus size={20} />,
       label: 'Duct',
       shortcut: 'D',
+      description: 'Draw duct segments',
+      tierFeature: 'segments',
     },
     {
       id: 'equipment',
-      icon: <Settings size={20} />,
+      icon: <Zap size={20} />,
       label: 'Equipment',
       shortcut: 'E',
+      description: 'Place HVAC equipment',
+      tierFeature: 'equipment',
     },
     {
       id: 'pan',
       icon: <Hand size={20} />,
       label: 'Pan',
       shortcut: 'H',
+      description: 'Pan and navigate the canvas',
     },
   ]
   
@@ -98,27 +110,34 @@ export const Toolbar: React.FC<ToolbarProps> = ({ className = '' }) => {
   return (
     <div className={`bg-white border border-gray-200 rounded-lg shadow-sm p-2 ${className}`}>
       {/* Drawing Tools */}
-      <div className="flex flex-col space-y-1 mb-3">
+      <div className="flex flex-col space-y-1 mb-3" role="group" aria-label="Drawing tools">
         <div className="text-xs font-medium text-gray-500 px-2 py-1">Tools</div>
         {tools.map((tool) => (
-          <button
-            key={tool.id}
-            onClick={() => handleToolSelect(tool.id)}
-            className={`
-              flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium transition-colors
-              ${drawingState.tool === tool.id
-                ? 'bg-blue-100 text-blue-700 border border-blue-200'
-                : 'text-gray-700 hover:bg-gray-100'
-              }
-            `}
-            title={`${tool.label} (${tool.shortcut})`}
-          >
-            {tool.icon}
-            <span>{tool.label}</span>
-            {tool.shortcut && (
-              <span className="ml-auto text-xs text-gray-400">{tool.shortcut}</span>
-            )}
-          </button>
+          <TierEnforcement key={tool.id} feature={tool.tierFeature}>
+            <button
+              type="button"
+              onClick={() => handleToolSelect(tool.id)}
+              className={`
+                flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium transition-colors
+                focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1
+                ${drawingState.tool === tool.id
+                  ? 'bg-blue-100 text-blue-700 border border-blue-200'
+                  : 'text-gray-700 hover:bg-gray-100'
+                }
+              `}
+              title={`${tool.description} (${tool.shortcut})`}
+              aria-label={`${tool.label} tool - ${tool.description}`}
+              aria-pressed={drawingState.tool === tool.id}
+            >
+              {tool.icon}
+              <span>{tool.label}</span>
+              {tool.shortcut && (
+                <span className="ml-auto text-xs text-gray-400" aria-label={`Keyboard shortcut: ${tool.shortcut}`}>
+                  {tool.shortcut}
+                </span>
+              )}
+            </button>
+          </TierEnforcement>
         ))}
       </div>
       
@@ -195,6 +214,14 @@ export const Toolbar: React.FC<ToolbarProps> = ({ className = '' }) => {
         <div className="text-xs text-gray-500 px-2 py-1">
           Grid: {grid.size}px
         </div>
+      </div>
+
+      {/* Usage Counters for Free tier */}
+      <div className="border-t border-gray-200 pt-3 space-y-2">
+        <div className="text-xs font-medium text-gray-500 px-2 py-1">Usage</div>
+        <UsageCounter type="rooms" />
+        <UsageCounter type="segments" />
+        <UsageCounter type="equipment" />
       </div>
     </div>
   )

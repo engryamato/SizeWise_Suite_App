@@ -12,7 +12,8 @@ import structlog
 # Add project root to path for imports
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
-from app.modules.air_duct_sizer.logic.calculator import AirDuctSizerLogic
+# Import the core calculator directly instead of the module wrapper
+from core.calculations.air_duct_calculator import AirDuctCalculator
 
 logger = structlog.get_logger()
 
@@ -39,11 +40,22 @@ def calculate_air_duct():
         if not data:
             return jsonify({'error': 'No data provided'}), 400
 
-        # Initialize the Air Duct Sizer logic
-        air_duct_logic = AirDuctSizerLogic()
+        # Initialize the Air Duct Calculator
+        calculator = AirDuctCalculator()
 
         # Perform calculation
-        result = air_duct_logic.calculate_duct_size(data)
+        calc_result = calculator.calculate(data)
+
+        # Format response to match expected API format
+        result = {
+            'success': calc_result.is_valid(),
+            'input_data': calc_result.input_data,
+            'results': calc_result.results,
+            'compliance': calc_result.compliance,
+            'warnings': calc_result.warnings,
+            'errors': calc_result.errors,
+            'metadata': calc_result.metadata
+        }
 
         if result['success']:
             logger.info("Air duct calculation completed", input_data=data)
@@ -67,8 +79,14 @@ def validate_air_duct_input():
         if not data:
             return jsonify({'error': 'No data provided'}), 400
 
-        air_duct_logic = AirDuctSizerLogic()
-        result = air_duct_logic.validate_input(data)
+        calculator = AirDuctCalculator()
+        validation_result = calculator.validate_input(data)
+
+        result = {
+            'is_valid': validation_result['is_valid'],
+            'errors': validation_result['errors'],
+            'warnings': validation_result['warnings']
+        }
 
         return jsonify(result)
 
@@ -80,8 +98,14 @@ def validate_air_duct_input():
 def get_air_duct_standard_sizes(duct_type):
     """Get standard sizes for air ducts."""
     try:
-        air_duct_logic = AirDuctSizerLogic()
-        result = air_duct_logic.get_standard_sizes(duct_type)
+        calculator = AirDuctCalculator()
+        sizes = calculator.get_standard_sizes(duct_type)
+
+        result = {
+            'success': True,
+            'duct_type': duct_type,
+            'sizes': sizes
+        }
 
         return jsonify(result)
 
@@ -93,8 +117,39 @@ def get_air_duct_standard_sizes(duct_type):
 def get_air_duct_materials():
     """Get available duct materials."""
     try:
-        air_duct_logic = AirDuctSizerLogic()
-        result = air_duct_logic.get_material_options()
+        # Return material options directly
+        materials = {
+            'galvanized_steel': {
+                'name': 'Galvanized Steel',
+                'roughness': 0.0003,
+                'description': 'Standard galvanized steel ductwork'
+            },
+            'aluminum': {
+                'name': 'Aluminum',
+                'roughness': 0.0002,
+                'description': 'Lightweight aluminum ductwork'
+            },
+            'stainless_steel': {
+                'name': 'Stainless Steel',
+                'roughness': 0.0002,
+                'description': 'Corrosion-resistant stainless steel'
+            },
+            'pvc': {
+                'name': 'PVC',
+                'roughness': 0.0001,
+                'description': 'Plastic PVC ductwork'
+            },
+            'fiberglass': {
+                'name': 'Fiberglass',
+                'roughness': 0.0005,
+                'description': 'Insulated fiberglass ductwork'
+            }
+        }
+
+        result = {
+            'success': True,
+            'materials': materials
+        }
 
         return jsonify(result)
 
@@ -106,8 +161,28 @@ def get_air_duct_materials():
 def get_air_duct_info():
     """Get information about the air duct calculation module."""
     try:
-        air_duct_logic = AirDuctSizerLogic()
-        result = air_duct_logic.get_calculation_info()
+        # Return module information
+        result = {
+            'module_id': 'air-duct-sizer',
+            'name': 'Air Duct Sizer',
+            'version': '0.1.0',
+            'description': 'SMACNA-compliant air duct sizing calculations with enhanced Darcy-Weisbach pressure loss',
+            'standards': ['SMACNA 2021', 'ASHRAE 2021'],
+            'supported_units': ['imperial', 'metric'],
+            'duct_types': ['round', 'rectangular'],
+            'features': [
+                'Darcy-Weisbach pressure loss calculations',
+                'SMACNA equivalent diameter',
+                'Hydraulic diameter calculations',
+                'Aspect ratio validation',
+                'Material roughness factors',
+                'Velocity validation per ASHRAE'
+            ],
+            'parameters': {
+                'required': ['airflow', 'duct_type', 'friction_rate', 'units'],
+                'optional': ['material', 'insulation']
+            }
+        }
 
         return jsonify(result)
 

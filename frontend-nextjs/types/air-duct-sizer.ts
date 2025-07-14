@@ -150,6 +150,8 @@ export interface CalculationResult {
     velocity: number
     pressure_loss: number
     equivalent_diameter?: number
+    hydraulic_diameter?: number
+    aspect_ratio?: number
   }
   compliance?: Record<string, any>
   warnings: string[]

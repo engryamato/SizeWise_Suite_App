@@ -13,6 +13,8 @@ export const SimpleCanvas: React.FC<SimpleCanvasProps> = ({ width, height }) => 
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const [isDrawing, setIsDrawing] = useState(false)
   const [startPoint, setStartPoint] = useState<{ x: number; y: number } | null>(null)
+  const [currentPoint, setCurrentPoint] = useState<{ x: number; y: number } | null>(null)
+  const [isPanning, setIsPanning] = useState(false)
   
   const {
     drawingState,
@@ -182,8 +184,72 @@ export const SimpleCanvas: React.FC<SimpleCanvasProps> = ({ width, height }) => 
 
   const drawUI = (ctx: CanvasRenderingContext2D) => {
     // Draw drawing preview if active
-    if (isDrawing && startPoint && drawingState.tool !== 'select') {
-      // This would show the preview while drawing
+    if (isDrawing && startPoint && currentPoint && drawingState.tool !== 'select' && drawingState.tool !== 'pan') {
+      ctx.save()
+      ctx.translate(viewport.x, viewport.y)
+      ctx.scale(viewport.scale, viewport.scale)
+
+      ctx.strokeStyle = '#3b82f6'
+      ctx.fillStyle = 'rgba(59, 130, 246, 0.1)'
+      ctx.lineWidth = 2
+      ctx.setLineDash([5, 5])
+
+      switch (drawingState.tool) {
+        case 'room':
+          const width = Math.abs(currentPoint.x - startPoint.x)
+          const height = Math.abs(currentPoint.y - startPoint.y)
+          const x = Math.min(startPoint.x, currentPoint.x)
+          const y = Math.min(startPoint.y, currentPoint.y)
+
+          ctx.fillRect(x, y, width, height)
+          ctx.strokeRect(x, y, width, height)
+
+          // Show dimensions
+          ctx.fillStyle = '#374151'
+          ctx.font = '12px Arial'
+          ctx.textAlign = 'center'
+          ctx.fillText(`${(width / 12).toFixed(1)}' × ${(height / 12).toFixed(1)}'`, x + width / 2, y + height / 2)
+          break
+
+        case 'duct':
+          ctx.beginPath()
+          ctx.moveTo(startPoint.x, startPoint.y)
+          ctx.lineTo(currentPoint.x, currentPoint.y)
+          ctx.stroke()
+
+          // Show length
+          const length = Math.sqrt(
+            Math.pow(currentPoint.x - startPoint.x, 2) +
+            Math.pow(currentPoint.y - startPoint.y, 2)
+          ) / 12
+          const midX = (startPoint.x + currentPoint.x) / 2
+          const midY = (startPoint.y + currentPoint.y) / 2
+
+          ctx.fillStyle = '#374151'
+          ctx.font = '12px Arial'
+          ctx.textAlign = 'center'
+          ctx.fillText(`${length.toFixed(1)}'`, midX, midY - 10)
+          break
+
+        case 'equipment':
+          const size = 40
+          ctx.fillRect(startPoint.x - size / 2, startPoint.y - size / 2, size, size)
+          ctx.strokeRect(startPoint.x - size / 2, startPoint.y - size / 2, size, size)
+          break
+      }
+
+      ctx.restore()
+    }
+  }
+
+  // Snap to grid helper
+  const snapToGrid = (x: number, y: number): { x: number; y: number } => {
+    if (!grid.snapEnabled) return { x, y }
+
+    const gridSize = grid.size
+    return {
+      x: Math.round(x / gridSize) * gridSize,
+      y: Math.round(y / gridSize) * gridSize
     }
   }
 
@@ -193,8 +259,15 @@ export const SimpleCanvas: React.FC<SimpleCanvasProps> = ({ width, height }) => 
     if (!canvas) return
 
     const rect = canvas.getBoundingClientRect()
-    const x = (e.clientX - rect.left - viewport.x) / viewport.scale
-    const y = (e.clientY - rect.top - viewport.y) / viewport.scale
+    let x = (e.clientX - rect.left - viewport.x) / viewport.scale
+    let y = (e.clientY - rect.top - viewport.y) / viewport.scale
+
+    // Apply snap to grid for drawing tools
+    if (drawingState.tool !== 'select' && drawingState.tool !== 'pan') {
+      const snapped = snapToGrid(x, y)
+      x = snapped.x
+      y = snapped.y
+    }
 
     setStartPoint({ x, y })
     setIsDrawing(true)
@@ -217,8 +290,15 @@ export const SimpleCanvas: React.FC<SimpleCanvasProps> = ({ width, height }) => 
     if (!canvas) return
 
     const rect = canvas.getBoundingClientRect()
-    const x = (e.clientX - rect.left - viewport.x) / viewport.scale
-    const y = (e.clientY - rect.top - viewport.y) / viewport.scale
+    let x = (e.clientX - rect.left - viewport.x) / viewport.scale
+    let y = (e.clientY - rect.top - viewport.y) / viewport.scale
+
+    // Apply snap to grid for drawing tools
+    if (drawingState.tool !== 'select' && drawingState.tool !== 'pan') {
+      const snapped = snapToGrid(x, y)
+      x = snapped.x
+      y = snapped.y
+    }
 
     const width = Math.abs(x - startPoint.x)
     const height = Math.abs(y - startPoint.y)
@@ -226,26 +306,34 @@ export const SimpleCanvas: React.FC<SimpleCanvasProps> = ({ width, height }) => 
     // Create objects based on tool
     switch (drawingState.tool) {
       case 'room':
-        if (width > 10 && height > 10) {
+        if (width > 20 && height > 20) { // Minimum room size
+          const roomLength = width / 12 // Convert pixels to feet
+          const roomWidth = height / 12
+
           addRoom({
             name: `Room ${(currentProject?.rooms.length || 0) + 1}`,
+            function: 'office',
             dimensions: {
-              length: width / 12, // Convert pixels to feet
-              width: height / 12,
+              length: Math.max(roomLength, 1), // Minimum 1 foot
+              width: Math.max(roomWidth, 1),
               height: 10,
             },
+            airflow: Math.round(roomLength * roomWidth * 2), // 2 CFM per sq ft estimate
             x: Math.min(startPoint.x, x),
             y: Math.min(startPoint.y, y),
           })
         }
         break
       case 'duct':
-        if (width > 20 || height > 20) {
+        if (width > 20 || height > 20) { // Minimum duct length
+          const ductLength = Math.sqrt(width * width + height * height) / 12
+
           addSegment({
             type: 'straight',
             material: 'galvanized_steel',
-            size: { width: 12, height: 8 },
-            length: Math.sqrt(width * width + height * height) / 12,
+            size: { width: 12, height: 8 }, // Default rectangular size
+            length: Math.max(ductLength, 1), // Minimum 1 foot
+            airflow: 1000, // Default airflow
             points: [startPoint.x, startPoint.y, x, y],
             warnings: [],
           })
@@ -255,6 +343,7 @@ export const SimpleCanvas: React.FC<SimpleCanvasProps> = ({ width, height }) => 
         addEquipment({
           type: 'AHU',
           airflow: 1000,
+          static_pressure: 1.0,
           x: startPoint.x,
           y: startPoint.y,
         })
@@ -263,6 +352,43 @@ export const SimpleCanvas: React.FC<SimpleCanvasProps> = ({ width, height }) => 
 
     setIsDrawing(false)
     setStartPoint(null)
+    setCurrentPoint(null)
+  }
+
+  const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    const canvas = canvasRef.current
+    if (!canvas) return
+
+    const rect = canvas.getBoundingClientRect()
+    let x = (e.clientX - rect.left - viewport.x) / viewport.scale
+    let y = (e.clientY - rect.top - viewport.y) / viewport.scale
+
+    // Apply snap to grid for drawing tools
+    if (drawingState.tool !== 'select' && drawingState.tool !== 'pan') {
+      const snapped = snapToGrid(x, y)
+      x = snapped.x
+      y = snapped.y
+    }
+
+    setCurrentPoint({ x, y })
+
+    if (isDrawing && startPoint) {
+      if (drawingState.tool === 'pan' || isPanning) {
+        // Pan the viewport
+        const deltaX = (x - startPoint.x) * viewport.scale
+        const deltaY = (y - startPoint.y) * viewport.scale
+
+        useUIStore.getState().setViewport({
+          x: viewport.x + deltaX,
+          y: viewport.y + deltaY
+        })
+
+        setStartPoint({ x, y })
+      }
+
+      // Redraw to show preview
+      draw()
+    }
   }
 
   const findObjectAt = (x: number, y: number): string | null => {
@@ -294,6 +420,50 @@ export const SimpleCanvas: React.FC<SimpleCanvasProps> = ({ width, height }) => 
     return null
   }
 
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Prevent default for our shortcuts
+      const shortcuts = ['v', 'r', 'd', 'e', 'h', 'g', 's', 'Escape']
+      if (shortcuts.includes(e.key)) {
+        e.preventDefault()
+      }
+
+      switch (e.key.toLowerCase()) {
+        case 'v':
+          setDrawingTool('select')
+          break
+        case 'r':
+          setDrawingTool('room')
+          break
+        case 'd':
+          setDrawingTool('duct')
+          break
+        case 'e':
+          setDrawingTool('equipment')
+          break
+        case 'h':
+          setDrawingTool('pan')
+          break
+        case 'g':
+          // Toggle grid visibility
+          useUIStore.getState().setGridVisible(!grid.visible)
+          break
+        case 's':
+          // Toggle snap to grid
+          useUIStore.getState().setSnapToGrid(!grid.snapEnabled)
+          break
+        case 'escape':
+          clearSelection()
+          setDrawingTool('select')
+          break
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [grid.visible, grid.snapEnabled, setDrawingTool, clearSelection])
+
   // Redraw when state changes
   useEffect(() => {
     draw()
@@ -305,14 +475,31 @@ export const SimpleCanvas: React.FC<SimpleCanvasProps> = ({ width, height }) => 
         ref={canvasRef}
         width={width}
         height={height}
-        className="cursor-crosshair"
+        className={`${drawingState.tool === 'pan' ? 'cursor-grab' : 'cursor-crosshair'}`}
         onMouseDown={handleMouseDown}
+        onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
       />
       
       {/* Canvas info overlay */}
-      <div className="absolute top-4 left-4 bg-white bg-opacity-90 rounded px-2 py-1 text-xs text-gray-600">
-        Simple Canvas Mode - {drawingState.tool} tool active
+      <div className="absolute top-4 left-4 bg-white bg-opacity-90 rounded px-3 py-2 text-xs text-gray-600 space-y-1">
+        <div className="font-medium">Tool: {drawingState.tool.toUpperCase()}</div>
+        <div>Grid: {grid.visible ? 'ON' : 'OFF'} | Snap: {grid.snapEnabled ? 'ON' : 'OFF'}</div>
+        <div>Zoom: {(viewport.scale * 100).toFixed(0)}%</div>
+        {currentProject && (
+          <div>
+            Rooms: {currentProject.rooms.length} |
+            Segments: {currentProject.segments.length} |
+            Equipment: {currentProject.equipment.length}
+          </div>
+        )}
+      </div>
+
+      {/* Keyboard shortcuts help */}
+      <div className="absolute bottom-4 right-4 bg-white bg-opacity-90 rounded px-3 py-2 text-xs text-gray-600">
+        <div className="font-medium mb-1">Shortcuts:</div>
+        <div>V: Select | R: Room | D: Duct | E: Equipment | H: Pan</div>
+        <div>G: Toggle Grid | S: Toggle Snap | ESC: Clear Selection</div>
       </div>
     </div>
   )

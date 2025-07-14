@@ -15,15 +15,15 @@ logger = structlog.get_logger()
 
 class AirDuctCalculator(BaseCalculator):
     """Calculator for air duct sizing per SMACNA standards."""
-    
+
     def __init__(self):
         super().__init__('air-duct-sizer')
         self.units_converter = UnitsConverter()
         self.hvac_validator = HVACValidator()
-        
+
         # SMACNA friction chart data (simplified)
         self.friction_chart = self._initialize_friction_chart()
-        
+
         # Material roughness factors (feet)
         self.roughness_factors = {
             'galvanized_steel': 0.0003,
@@ -34,7 +34,7 @@ class AirDuctCalculator(BaseCalculator):
             'concrete': 0.003,
             'brick': 0.01
         }
-    
+
     def _initialize_friction_chart(self) -> Dict[str, Any]:
         """Initialize simplified SMACNA friction chart data."""
         return {
@@ -195,121 +195,290 @@ class AirDuctCalculator(BaseCalculator):
         area = (width * height) / 144  # sq ft
         velocity = airflow / area  # FPM
         
-        # Calculate equivalent diameter
+        # Calculate equivalent diameter and hydraulic diameter
         equivalent_diameter = self.hvac_validator.calculate_equivalent_diameter(width, height)
-        
+        hydraulic_diameter = self.hvac_validator.calculate_hydraulic_diameter(width, height)
+        aspect_ratio = self.hvac_validator.calculate_aspect_ratio(width, height)
+
+        # Validate aspect ratio
+        aspect_validation = self.hvac_validator.validate_aspect_ratio(width, height)
+
         # Calculate pressure loss
         pressure_loss = self._calculate_pressure_loss(velocity, 100, equivalent_diameter, data.get('material', 'galvanized_steel'))
-        
-        return {
+
+        results = {
             'duct_size': f'{width:.0f}" x {height:.0f}"',
             'width': {'value': width, 'unit': 'in'},
             'height': {'value': height, 'unit': 'in'},
             'area': {'value': self._round_result(area), 'unit': 'sq_ft'},
             'velocity': {'value': self._round_result(velocity), 'unit': 'fpm'},
             'equivalent_diameter': {'value': self._round_result(equivalent_diameter), 'unit': 'in'},
+            'hydraulic_diameter': {'value': self._round_result(hydraulic_diameter), 'unit': 'in'},
+            'aspect_ratio': {'value': self._round_result(aspect_ratio, 2), 'unit': 'ratio'},
             'pressure_loss': {'value': self._round_result(pressure_loss, 4), 'unit': 'in_wg_per_100ft'}
         }
+
+        # Add aspect ratio validation warnings to the result
+        if not aspect_validation['compliant']:
+            # This will be handled by the validation system
+            pass
+
+        return results
     
     def _find_optimal_round_diameter(self, airflow: float, target_friction: float) -> float:
-        """Find optimal round duct diameter for given airflow and friction rate."""
-        # Start with a reasonable estimate
-        estimated_area = airflow / 1500  # Assume 1500 FPM velocity
-        estimated_diameter = math.sqrt(4 * estimated_area / math.pi) * 12  # inches
-        
-        # Round to nearest standard size
-        standard_sizes = [4, 5, 6, 7, 8, 9, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32, 36]
-        
-        best_diameter = min(standard_sizes, key=lambda d: abs(d - estimated_diameter))
-        
-        # Ensure minimum velocity requirements
-        area = math.pi * (best_diameter / 12) ** 2 / 4
-        velocity = airflow / area
-        
-        if velocity < 600:  # Too low velocity
-            # Find smaller diameter that gives at least 600 FPM
-            for diameter in reversed(standard_sizes):
-                area = math.pi * (diameter / 12) ** 2 / 4
-                velocity = airflow / area
-                if velocity >= 600:
-                    best_diameter = diameter
-                    break
-        elif velocity > 2500:  # Too high velocity
-            # Find larger diameter that gives at most 2500 FPM
-            for diameter in standard_sizes:
-                area = math.pi * (diameter / 12) ** 2 / 4
-                velocity = airflow / area
-                if velocity <= 2500:
-                    best_diameter = diameter
-                    break
-        
+        """
+        Find optimal round duct diameter using SMACNA friction chart method.
+
+        Args:
+            airflow: Airflow in CFM
+            target_friction: Target friction rate in inches w.g. per 100 feet
+
+        Returns:
+            Optimal diameter in inches
+        """
+        # SMACNA standard round duct sizes (inches)
+        standard_sizes = [
+            3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 14, 16, 18, 20, 22, 24,
+            26, 28, 30, 32, 36, 40, 42, 48
+        ]
+
+        best_diameter = None
+        best_score = float('inf')
+
+        for diameter in standard_sizes:
+            # Calculate area and velocity
+            area = math.pi * (diameter / 12) ** 2 / 4  # sq ft
+            velocity = airflow / area  # FPM
+
+            # Check ASHRAE velocity limits
+            if velocity < 400:  # Too low - poor air distribution
+                continue
+            if velocity > 2500:  # Too high - noise and pressure loss
+                continue
+
+            # Calculate actual friction rate
+            actual_friction = self._calculate_pressure_loss(velocity, 100, diameter, 'galvanized_steel')
+
+            # Score based on how close to target friction and optimal velocity range
+            friction_score = abs(actual_friction - target_friction) / target_friction
+
+            # Prefer velocities in optimal range (1000-2000 FPM for supply ducts)
+            if 1000 <= velocity <= 2000:
+                velocity_score = 0
+            elif 800 <= velocity < 1000 or 2000 < velocity <= 2200:
+                velocity_score = 0.1
+            else:
+                velocity_score = 0.3
+
+            total_score = friction_score + velocity_score
+
+            if total_score < best_score:
+                best_score = total_score
+                best_diameter = diameter
+
+        # Fallback if no suitable diameter found
+        if best_diameter is None:
+            # Use simple area calculation with 1500 FPM target
+            estimated_area = airflow / 1500
+            estimated_diameter = math.sqrt(4 * estimated_area / math.pi) * 12
+            best_diameter = min(standard_sizes, key=lambda d: abs(d - estimated_diameter))
+
         return float(best_diameter)
     
     def _find_optimal_rectangular_dimensions(self, airflow: float, target_friction: float) -> Tuple[float, float]:
-        """Find optimal rectangular duct dimensions."""
-        # Start with a reasonable estimate
-        estimated_area = airflow / 1500  # Assume 1500 FPM velocity
-        
-        # Try to maintain reasonable aspect ratio (2:1 to 4:1)
-        # Start with 3:1 ratio
-        height = math.sqrt(estimated_area / 3) * 12  # inches
-        width = 3 * height
-        
-        # Round to nearest standard sizes
-        standard_sizes = [4, 5, 6, 7, 8, 9, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32, 36, 40, 42, 48]
-        
-        height = min(standard_sizes, key=lambda h: abs(h - height))
-        width = min(standard_sizes, key=lambda w: abs(w - width))
-        
-        # Ensure reasonable aspect ratio
-        aspect_ratio = max(width, height) / min(width, height)
-        if aspect_ratio > 4:
-            if width > height:
-                width = height * 4
+        """
+        Find optimal rectangular duct dimensions using SMACNA standards.
+
+        Args:
+            airflow: Airflow in CFM
+            target_friction: Target friction rate in inches w.g. per 100 feet
+
+        Returns:
+            Tuple of (width, height) in inches
+        """
+        # SMACNA standard rectangular duct sizes (inches)
+        standard_sizes = [
+            4, 5, 6, 7, 8, 9, 10, 12, 14, 16, 18, 20, 22, 24,
+            26, 28, 30, 32, 36, 40, 42, 48, 54, 60
+        ]
+
+        best_width = None
+        best_height = None
+        best_score = float('inf')
+
+        # Try different aspect ratios (SMACNA recommends 1:1 to 4:1)
+        aspect_ratios = [1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0]
+
+        for aspect_ratio in aspect_ratios:
+            # Calculate dimensions for this aspect ratio
+            estimated_area = airflow / 1500  # Target 1500 FPM
+            height = math.sqrt(estimated_area / aspect_ratio) * 12  # inches
+            width = aspect_ratio * height
+
+            # Round to nearest standard sizes
+            height_std = min(standard_sizes, key=lambda h: abs(h - height))
+            width_std = min(standard_sizes, key=lambda w: abs(w - width))
+
+            # Calculate actual area and velocity
+            area = (width_std * height_std) / 144  # sq ft
+            velocity = airflow / area  # FPM
+
+            # Check ASHRAE velocity limits
+            if velocity < 400 or velocity > 2500:
+                continue
+
+            # Calculate equivalent diameter and friction
+            equiv_diameter = self.hvac_validator.calculate_equivalent_diameter(width_std, height_std)
+            actual_friction = self._calculate_pressure_loss(velocity, 100, equiv_diameter, 'galvanized_steel')
+
+            # Calculate actual aspect ratio
+            actual_aspect_ratio = max(width_std, height_std) / min(width_std, height_std)
+
+            # Score the solution
+            friction_score = abs(actual_friction - target_friction) / target_friction
+
+            # Prefer velocities in optimal range (1000-2000 FPM)
+            if 1000 <= velocity <= 2000:
+                velocity_score = 0
+            elif 800 <= velocity < 1000 or 2000 < velocity <= 2200:
+                velocity_score = 0.1
             else:
-                height = width * 4
-            
-            # Re-round to standard sizes
-            width = min(standard_sizes, key=lambda w: abs(w - width))
-            height = min(standard_sizes, key=lambda h: abs(h - height))
-        
-        # Check velocity constraints
-        area = (width * height) / 144
-        velocity = airflow / area
-        
-        if velocity < 600:  # Too low velocity, reduce duct size
-            scale_factor = math.sqrt(600 / velocity)
-            width = min(standard_sizes, key=lambda w: abs(w - width * scale_factor))
-            height = min(standard_sizes, key=lambda h: abs(h - height * scale_factor))
-        elif velocity > 2500:  # Too high velocity, increase duct size
-            scale_factor = math.sqrt(velocity / 2500)
-            width = min(standard_sizes, key=lambda w: abs(w - width * scale_factor))
-            height = min(standard_sizes, key=lambda h: abs(h - height * scale_factor))
-        
-        return float(width), float(height)
+                velocity_score = 0.3
+
+            # Prefer aspect ratios closer to 2:1 or 3:1 (optimal for fabrication)
+            if 2.0 <= actual_aspect_ratio <= 3.0:
+                aspect_score = 0
+            elif 1.5 <= actual_aspect_ratio < 2.0 or 3.0 < actual_aspect_ratio <= 3.5:
+                aspect_score = 0.1
+            else:
+                aspect_score = 0.2
+
+            total_score = friction_score + velocity_score + aspect_score
+
+            if total_score < best_score:
+                best_score = total_score
+                best_width = width_std
+                best_height = height_std
+
+        # Fallback if no suitable dimensions found
+        if best_width is None or best_height is None:
+            estimated_area = airflow / 1500
+            height = math.sqrt(estimated_area / 2.5) * 12  # 2.5:1 aspect ratio
+            width = 2.5 * height
+
+            best_height = min(standard_sizes, key=lambda h: abs(h - height))
+            best_width = min(standard_sizes, key=lambda w: abs(w - width))
+
+        return float(best_width), float(best_height)
 
     def _calculate_pressure_loss(self, velocity: float, length: float, diameter: float, material: str) -> float:
-        """Calculate pressure loss using Darcy-Weisbach equation."""
+        """
+        Calculate pressure loss using Darcy-Weisbach equation per SMACNA standards.
+
+        Args:
+            velocity: Air velocity in FPM
+            length: Duct length in feet
+            diameter: Hydraulic diameter in inches
+            material: Duct material type
+
+        Returns:
+            Pressure loss in inches of water per 100 feet
+        """
         if velocity <= 0 or length <= 0 or diameter <= 0:
             return 0.0
 
-        # Get roughness factor
+        # Get material roughness factor (feet)
         roughness = self.roughness_factors.get(material, 0.0003)
 
-        # Calculate Reynolds number (simplified for air at standard conditions)
-        reynolds = (velocity * diameter / 12) / 1.5e-4  # Approximate kinematic viscosity for air
+        # Convert inputs to consistent units
+        velocity_fps = velocity / 60  # Convert FPM to FPS
+        diameter_ft = diameter / 12   # Convert inches to feet
 
-        # Calculate friction factor
-        if reynolds > 2300:  # Turbulent flow
-            # Colebrook equation (simplified)
-            friction_factor = 0.25 / (math.log10(roughness / (3.7 * diameter / 12) + 5.74 / (reynolds ** 0.9))) ** 2
-        else:  # Laminar flow
-            friction_factor = 64 / reynolds
+        # Air properties at standard conditions (70°F, 14.7 psia)
+        air_density = 0.075  # lb/ft³
+        kinematic_viscosity = 1.57e-4  # ft²/s
 
-        # Pressure loss in inches of water per 100 feet
-        pressure_loss = friction_factor * (length / (diameter / 12)) * (velocity ** 2) / (2 * 32.174 * 12 * 5.2)
+        # Calculate Reynolds number
+        reynolds = (velocity_fps * diameter_ft) / kinematic_viscosity
 
-        return pressure_loss
+        # Calculate friction factor using Colebrook-White equation
+        friction_factor = self._calculate_friction_factor(reynolds, roughness, diameter_ft)
+
+        # Darcy-Weisbach equation for pressure loss
+        # ΔP = f * (L/D) * (ρ * V²) / (2 * gc)
+        # Convert to inches of water per 100 feet
+
+        velocity_head = (velocity_fps ** 2) / (2 * 32.174)  # ft
+        pressure_loss_ft = friction_factor * (length / diameter_ft) * velocity_head
+
+        # Convert to inches of water per 100 feet
+        pressure_loss_in_wg_per_100ft = (pressure_loss_ft * 12) * (100 / length) * (air_density / 62.4)
+
+        return pressure_loss_in_wg_per_100ft
+
+    def _calculate_friction_factor(self, reynolds: float, roughness: float, diameter: float) -> float:
+        """
+        Calculate friction factor using Colebrook-White equation with iterative solution.
+
+        Args:
+            reynolds: Reynolds number
+            roughness: Surface roughness in feet
+            diameter: Diameter in feet
+
+        Returns:
+            Friction factor (dimensionless)
+        """
+        if reynolds <= 0:
+            return 0.0
+
+        # Relative roughness
+        relative_roughness = roughness / diameter
+
+        if reynolds < 2300:
+            # Laminar flow
+            return 64 / reynolds
+        elif reynolds < 4000:
+            # Transition region - use interpolation
+            f_laminar = 64 / 2300
+            f_turbulent = self._colebrook_white_turbulent(4000, relative_roughness)
+            # Linear interpolation
+            factor = (reynolds - 2300) / (4000 - 2300)
+            return f_laminar * (1 - factor) + f_turbulent * factor
+        else:
+            # Turbulent flow - use Colebrook-White equation
+            return self._colebrook_white_turbulent(reynolds, relative_roughness)
+
+    def _colebrook_white_turbulent(self, reynolds: float, relative_roughness: float) -> float:
+        """
+        Solve Colebrook-White equation for turbulent flow using iterative method.
+
+        1/√f = -2 * log10(ε/D/3.7 + 2.51/(Re*√f))
+        """
+        # Initial guess using Swamee-Jain approximation
+        f = 0.25 / (math.log10(relative_roughness / 3.7 + 5.74 / (reynolds ** 0.9))) ** 2
+
+        # Iterative solution (Newton-Raphson method)
+        for _ in range(10):  # Usually converges in 3-4 iterations
+            f_sqrt = math.sqrt(f)
+            term1 = relative_roughness / 3.7
+            term2 = 2.51 / (reynolds * f_sqrt)
+
+            # Function: F = 1/√f + 2*log10(ε/D/3.7 + 2.51/(Re*√f))
+            F = 1 / f_sqrt + 2 * math.log10(term1 + term2)
+
+            # Derivative: F' = -0.5/f^(3/2) - 2*2.51/(ln(10)*Re*f*(ε/D/3.7 + 2.51/(Re*√f)))
+            df_df = -0.5 / (f ** 1.5) - (2 * 2.51) / (math.log(10) * reynolds * f * (term1 + term2))
+
+            # Newton-Raphson update
+            f_new = f - F / df_df
+
+            # Check convergence
+            if abs(f_new - f) < 1e-8:
+                break
+
+            f = max(f_new, 1e-6)  # Ensure positive value
+
+        return f
 
     def _convert_to_imperial(self, data: Dict[str, Any]) -> Dict[str, Any]:
         """Convert metric input data to imperial for calculation."""

@@ -26,14 +26,14 @@ SizeWise Suite is specifically crafted for:
 - Lightweight and fast
 - Offline-first design
 - Progressive Web App capabilities
-- Located in `frontend/` directory
+ - Located in `app/templates/frontend/` directory
 
 ### 2. Next.js Glassmorphism Frontend (New)
 - Modern React-based interface
 - Beautiful glassmorphism UI components
 - TypeScript for type safety
 - Tailwind CSS with custom animations
-- Located in `frontend-nextjs/` directory
+ - Located in `app/templates/nextjs/` directory
 
 ## Core Modules (Phase 0.0)
 
@@ -66,23 +66,24 @@ Comprehensive estimating solution addressing labor/material takeoffs and automat
 
 ```
 ├── app/
-<<<<<<< HEAD
-│   ├── demo/
-│   │   └── page.tsx         # Components demo page
-│   ├── globals.css          # Global styles with keyframes
-│   ├── layout.tsx           # Root layout
-│   └── page.tsx             # Main page with demo
-├── components/
-│   └── glassmorphism/       # Glassmorphism components
-│       ├── GlassEffect.tsx  # Base glass effect wrapper
-│       ├── GlassDock.tsx    # Icon dock component
-│       ├── GlassButton.tsx  # Glass button component
-│       ├── GlassCard.tsx    # Glass card component
-│       ├── GlassFilter.tsx  # SVG filter effects
-│       └── index.ts         # Component exports
-├── next.config.js           # Next.js configuration
-├── tailwind.config.js       # Tailwind configuration with custom animations
-└── package.json
+│   ├── assets/
+│   ├── config/
+│   │   └── environment/
+│   ├── core/
+│   ├── data/
+│   ├── docs/
+│   ├── hooks/
+│   ├── i18n/
+│   ├── plugins/
+│   ├── services/
+│   │   └── backend/
+│   ├── simulations/
+│   ├── static/
+│   ├── templates/
+│   │   ├── frontend/
+│   │   └── nextjs/
+│   ├── tests/
+│   └── tools/
 ```
 
 ## Technologies Used
@@ -96,40 +97,6 @@ Comprehensive estimating solution addressing labor/material takeoffs and automat
 ## License
 
 MIT License - see [LICENSE](LICENSE) file for details.
-=======
-│   └── modules/           # Individual HVAC modules
-│       ├── air-duct-sizer/
-│       ├── grease-duct-sizer/
-│       ├── engine-exhaust-sizer/
-│       ├── boiler-vent-sizer/
-│       └── estimating-app/
-├── core/                  # Shared calculation logic and validation
-│   ├── calculations/
-│   ├── validation/
-│   ├── units/
-│   └── standards/
-├── services/              # API, storage, and export services
-│   ├── api/
-│   ├── storage/
-│   └── export/
-├── frontend/              # UI components and PWA assets
-│   ├── components/
-│   ├── styles/
-│   ├── assets/
-│   └── workers/
-├── backend/               # Flask API and calculation endpoints
-│   ├── api/
-│   ├── calculations/
-│   └── exports/
-├── docs/                  # Documentation
-│   ├── user-guides/
-│   ├── api-reference/
-│   └── examples/
-└── tests/                 # Testing infrastructure
-    ├── unit/
-    ├── integration/
-    └── e2e/
-```
 
 ## Getting Started
 
@@ -151,7 +118,7 @@ MIT License - see [LICENSE](LICENSE) file for details.
    ```bash
    python -m venv venv
    source venv/bin/activate  # On Windows: venv\Scripts\activate
-   pip install -r requirements.txt
+   pip install -r app/requirements.txt
    ```
 
 3. Install frontend dependencies:
@@ -161,7 +128,7 @@ MIT License - see [LICENSE](LICENSE) file for details.
 
 4. **For Next.js Glassmorphism Frontend** (optional):
    ```bash
-   cd frontend-nextjs
+   cd app/templates/nextjs
    npm install
    cd ..
    ```
@@ -171,7 +138,7 @@ MIT License - see [LICENSE](LICENSE) file for details.
    **Option A: Original HTML Frontend**
    ```bash
    # Backend
-   python backend/app.py
+   python app/services/run_backend.py
 
    # Frontend (in another terminal)
    npm run dev
@@ -180,7 +147,7 @@ MIT License - see [LICENSE](LICENSE) file for details.
    **Option B: Next.js Glassmorphism Frontend**
    ```bash
    # Backend
-   python backend/app.py
+   python app/services/run_backend.py
 
    # Next.js Frontend (in another terminal)
    npm run dev:nextjs
@@ -267,17 +234,17 @@ python -m pytest tests/
 
 ## Documentation
 
-- User guides: `docs/user-guides/`
-- API reference: `docs/api-reference/`
-- Examples: `docs/examples/`
+ - User guides: `app/docs/user-guides/`
+ - API reference: `app/docs/api-reference/`
+ - Examples: `app/docs/examples/`
 
 Build documentation:
 ```bash
 # User guides (MkDocs)
-mkdocs serve
+mkdocs serve -f app/config/mkdocs.yml
 
 # API reference (Sphinx)
-cd docs/api-reference
+cd app/docs/api-reference
 make html
 ```
 
@@ -296,4 +263,3 @@ make html
 ## Support
 
 For questions and support, please refer to the documentation or create an issue in the repository.
->>>>>>> main

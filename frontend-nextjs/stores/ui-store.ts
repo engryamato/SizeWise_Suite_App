@@ -11,6 +11,9 @@ interface UIState {
   viewport: CanvasViewport
   grid: CanvasGrid
   selectionBox: SelectionBox
+
+  // Plan settings
+  planScale: number
   
   // Drawing state
   drawingState: DrawingState
@@ -56,6 +59,9 @@ interface UIState {
   showSelectionBox: (x: number, y: number) => void
   updateSelectionBox: (width: number, height: number) => void
   hideSelectionBox: () => void
+
+  // Plan actions
+  setPlanScale: (scale: number) => void
   
   // Notification actions
   addNotification: (notification: Omit<Notification, 'id' | 'timestamp'>) => void
@@ -90,6 +96,8 @@ export const useUIStore = create<UIState>()(
         visible: true,
         snapEnabled: true,
       },
+
+      planScale: 1,
       
       selectionBox: {
         x: 0,
@@ -319,6 +327,10 @@ export const useUIStore = create<UIState>()(
 
       setExporting: (exporting) => {
         set({ isExporting: exporting }, false, 'setExporting')
+      },
+
+      setPlanScale: (scale) => {
+        set({ planScale: scale }, false, 'setPlanScale')
       },
     }),
     { name: 'UIStore' }

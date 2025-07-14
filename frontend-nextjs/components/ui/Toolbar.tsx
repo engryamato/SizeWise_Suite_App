@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useRef, useEffect } from 'react'
+import React from 'react'
 import {
   MousePointer,
   Square,
@@ -11,7 +11,8 @@ import {
   ZoomIn,
   ZoomOut,
   RotateCcw,
-  Zap
+  Zap,
+  Upload
 } from 'lucide-react'
 import { useUIStore } from '@/stores/ui-store'
 // import { TierEnforcement, UsageCounter } from '@/components/tier/TierEnforcement'
@@ -19,9 +20,10 @@ import { DrawingTool } from '@/types/air-duct-sizer'
 
 interface ToolbarProps {
   className?: string
+  onImportPlan?: () => void
 }
 
-export const Toolbar: React.FC<ToolbarProps> = ({ className = '' }) => {
+export const Toolbar: React.FC<ToolbarProps> = ({ className = '', onImportPlan }) => {
   const {
     drawingState,
     grid,
@@ -78,6 +80,12 @@ export const Toolbar: React.FC<ToolbarProps> = ({ className = '' }) => {
       label: 'Pan',
       shortcut: 'H',
       description: 'Pan and navigate the canvas',
+    },
+    {
+      id: 'scale',
+      icon: <MousePointer size={20} />,
+      label: 'Scale',
+      shortcut: 'L',
     },
   ]
   
@@ -216,9 +224,21 @@ export const Toolbar: React.FC<ToolbarProps> = ({ className = '' }) => {
           <span>Snap to Grid</span>
         </button>
         
-        <div className="text-xs text-gray-500 px-2 py-1">
-          Grid: {grid.size}px
-        </div>
+      <div className="text-xs text-gray-500 px-2 py-1">
+        Grid: {grid.size}px
+      </div>
+      </div>
+
+      {/* Plan Controls */}
+      <div className="flex flex-col space-y-1 mt-3">
+        <div className="text-xs font-medium text-gray-500 px-2 py-1">Plan</div>
+        <button
+          onClick={onImportPlan}
+          className="flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-100 transition-colors"
+        >
+          <Upload size={16} />
+          <span>Import Plan</span>
+        </button>
       </div>
 
       {/* Usage Counters for Free tier - Temporarily disabled */}

@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, useRef } from 'react'
 import { ClientOnlyCanvas } from '@/components/canvas/ClientOnlyCanvas'
 import { Toolbar } from '@/components/ui/Toolbar'
 import { Sidebar } from '@/components/ui/Sidebar'
@@ -13,8 +13,25 @@ export default function AirDuctSizerPage() {
   const [canvasSize, setCanvasSize] = useState({ width: 800, height: 600 })
   
   // Store hooks
-  const { currentProject, createProject } = useProjectStore()
-  const { sidebarOpen, addNotification } = useUIStore()
+  const { currentProject, createProject, setPlanPDF, setPlanScale } = useProjectStore()
+  const { sidebarOpen, addNotification, setPlanScale: updateUIScale } = useUIStore()
+
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
+  const handleImportPlan = () => {
+    fileInputRef.current?.click()
+  }
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    const reader = new FileReader()
+    reader.onload = () => {
+      const data = reader.result as string
+      setPlanPDF(data)
+    }
+    reader.readAsDataURL(file)
+  }
   const { isAuthenticated, user } = useAuthStore()
   const { loadMaterials, loadStandards } = useCalculationStore()
   
@@ -45,6 +62,13 @@ export default function AirDuctSizerPage() {
     loadMaterials()
     loadStandards()
   }, [loadMaterials, loadStandards])
+
+  // Sync plan scale when project changes
+  useEffect(() => {
+    if (currentProject?.plan_scale) {
+      updateUIScale(currentProject.plan_scale)
+    }
+  }, [currentProject?.plan_scale])
   
   // Create default project if none exists
   useEffect(() => {
@@ -93,6 +117,10 @@ export default function AirDuctSizerPage() {
         case 'h':
           e.preventDefault()
           setDrawingTool('pan')
+          break
+        case 'l':
+          e.preventDefault()
+          setDrawingTool('scale')
           break
         case 'g':
           e.preventDefault()
@@ -176,7 +204,14 @@ export default function AirDuctSizerPage() {
       <div className="flex h-[calc(100vh-64px)]">
         {/* Toolbar */}
         <div className="w-48 p-4 bg-gray-50 border-r border-gray-200">
-          <Toolbar />
+          <Toolbar onImportPlan={handleImportPlan} />
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="application/pdf"
+            onChange={handleFileChange}
+            className="hidden"
+          />
         </div>
         
         {/* Canvas area */}

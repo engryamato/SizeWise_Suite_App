@@ -11,6 +11,8 @@ export interface Project {
   rooms: Room[]
   segments: Segment[]
   equipment: Equipment[]
+  plan_pdf?: string
+  plan_scale?: number
   created_at: string
   last_modified: string
 }
@@ -120,7 +122,7 @@ export interface SelectionBox {
 }
 
 // Drawing tool types
-export type DrawingTool = 'select' | 'room' | 'duct' | 'equipment' | 'pan'
+export type DrawingTool = 'select' | 'room' | 'duct' | 'equipment' | 'pan' | 'scale'
 
 export interface DrawingState {
   tool: DrawingTool

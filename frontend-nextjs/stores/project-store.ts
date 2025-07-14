@@ -32,6 +32,10 @@ interface ProjectState {
   
   // Computational properties
   updateComputationalProperties: (properties: Partial<ComputationalProperties>) => void
+
+  // Plan actions
+  setPlanPDF: (pdfData: string) => void
+  setPlanScale: (scale: number) => void
   
   // Utility functions
   canAddRoom: () => boolean
@@ -51,6 +55,8 @@ const createDefaultProject = (): Project => ({
   rooms: [],
   segments: [],
   equipment: [],
+  plan_pdf: undefined,
+  plan_scale: 1,
   created_at: new Date().toISOString(),
   last_modified: new Date().toISOString(),
 })
@@ -290,6 +296,28 @@ export const useProjectStore = create<ProjectState>()(
           }
 
           set({ currentProject: updatedProject }, false, 'updateComputationalProperties')
+        },
+
+        setPlanPDF: (pdfData) => {
+          const { currentProject } = get()
+          if (!currentProject) return
+          const updated: Project = {
+            ...currentProject,
+            plan_pdf: pdfData,
+            last_modified: new Date().toISOString(),
+          }
+          set({ currentProject: updated }, false, 'setPlanPDF')
+        },
+
+        setPlanScale: (scale) => {
+          const { currentProject } = get()
+          if (!currentProject) return
+          const updated: Project = {
+            ...currentProject,
+            plan_scale: scale,
+            last_modified: new Date().toISOString(),
+          }
+          set({ currentProject: updated }, false, 'setPlanScale')
         },
 
         canAddRoom: () => {

@@ -28,7 +28,8 @@
     "html2canvas": "^1.4.1",
     "use-debounce": "^10.0.0",
     "clsx": "^2.0.0",
-    "lucide-react": "^0.294.0"
+    "lucide-react": "^0.294.0",
+    "pdfjs-dist": "^3.11.174"
   },
   "devDependencies": {
     "@types/node": "^20.17.10",

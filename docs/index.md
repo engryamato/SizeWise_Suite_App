@@ -26,8 +26,8 @@ Size engine exhaust systems for parking garages and mechanical rooms.
 ### 🔥 Boiler Vent Sizer *(Coming Soon)*
 Calculate boiler vent requirements with code compliance checking.
 
-### 💰 Estimating App *(Coming Soon)*
-Generate accurate cost estimates for HVAC projects with material and labor calculations.
+### 💰 Estimating App
+Generate accurate cost estimates for HVAC projects with material and labor calculations. Source code lives in `app/tools/estimating-app/`.
 
 ## Key Features
 

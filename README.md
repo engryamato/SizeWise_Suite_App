@@ -66,69 +66,55 @@ Comprehensive estimating solution addressing labor/material takeoffs and automat
 
 ```
 ├── app/
-<<<<<<< HEAD
-│   ├── demo/
-│   │   └── page.tsx         # Components demo page
-│   ├── globals.css          # Global styles with keyframes
-│   ├── layout.tsx           # Root layout
-│   └── page.tsx             # Main page with demo
-├── components/
-│   └── glassmorphism/       # Glassmorphism components
-│       ├── GlassEffect.tsx  # Base glass effect wrapper
-│       ├── GlassDock.tsx    # Icon dock component
-│       ├── GlassButton.tsx  # Glass button component
-│       ├── GlassCard.tsx    # Glass card component
-│       ├── GlassFilter.tsx  # SVG filter effects
-│       └── index.ts         # Component exports
-├── next.config.js           # Next.js configuration
-├── tailwind.config.js       # Tailwind configuration with custom animations
-└── package.json
-```
-
-## Technologies Used
-
-- **Next.js 15**: React framework with App Router
-- **React 18**: UI library
-- **TypeScript**: Type safety
-- **Tailwind CSS**: Styling
-- **tailwindcss-animate**: Additional animation utilities
-
-## License
-
-MIT License - see [LICENSE](LICENSE) file for details.
-=======
-│   └── modules/           # Individual HVAC modules
-│       ├── air-duct-sizer/
-│       ├── grease-duct-sizer/
-│       ├── engine-exhaust-sizer/
-│       ├── boiler-vent-sizer/
-│       └── estimating-app/
-├── core/                  # Shared calculation logic and validation
-│   ├── calculations/
-│   ├── validation/
-│   ├── units/
-│   └── standards/
-├── services/              # API, storage, and export services
-│   ├── api/
-│   ├── storage/
-│   └── export/
-├── frontend/              # UI components and PWA assets
-│   ├── components/
-│   ├── styles/
 │   ├── assets/
-│   └── workers/
-├── backend/               # Flask API and calculation endpoints
-│   ├── api/
-│   ├── calculations/
-│   └── exports/
-├── docs/                  # Documentation
-│   ├── user-guides/
-│   ├── api-reference/
-│   └── examples/
-└── tests/                 # Testing infrastructure
-    ├── unit/
-    ├── integration/
-    └── e2e/
+│   ├── config/
+│   │   └── environment/
+│   ├── core/
+│   │   ├── calculations/
+│   │   ├── validators/
+│   │   ├── schemas/
+│   │   ├── registrars/
+│   │   └── i18n/
+│   ├── data/
+│   │   ├── seeds/
+│   │   ├── backups/
+│   │   └── examples/
+│   ├── docs/
+│   │   ├── architecture/
+│   │   ├── api/
+│   │   ├── guides/
+│   │   ├── i18n/
+│   │   └── tools/
+│   ├── hooks/
+│   ├── i18n/
+│   ├── plugins/
+│   ├── services/
+│   ├── simulations/
+│   ├── static/
+│   ├── templates/
+│   ├── tests/
+│   └── tools/
+│       ├── duct-sizer/
+│       ├── grease-sizer/
+│       ├── boiler-sizer/
+│       ├── engine-exhaust/
+│       └── estimating-app/
+│           ├── components/
+│           ├── calculations/
+│           ├── validators/
+│           ├── schemas/
+│           ├── ui/
+│           ├── data/
+│           ├── docs/
+│           ├── tests/
+│           └── exports/
+├── core/
+├── services/
+├── frontend/
+├── frontend-nextjs/
+├── backend/
+├── docs/
+└── tests/
 ```
 
 ## Getting Started

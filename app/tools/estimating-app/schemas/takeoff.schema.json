@@ -1,0 +1,10 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Takeoff",
+  "type": "object",
+  "properties": {
+    "project": { "type": "string" },
+    "items": { "type": "array" }
+  },
+  "required": ["project", "items"]
+}

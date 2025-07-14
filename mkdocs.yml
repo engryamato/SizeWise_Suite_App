@@ -78,6 +78,7 @@ nav:
   - User Guide:
     - Overview: user-guide/overview.md
     - Air Duct Sizer: user-guide/air-duct-sizer.md
+    - Estimating App: user-guide/estimating-app.md
     - Project Management: user-guide/project-management.md
     - Units and Standards: user-guide/units-standards.md
     - Offline Usage: user-guide/offline-usage.md

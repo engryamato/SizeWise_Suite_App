@@ -3,6 +3,7 @@
 import React from 'react'
 import { Group, Line } from 'react-konva'
 import { useUIStore } from '@/stores/ui-store'
+import tokens from '@/shared/designTokens'
 
 interface GridProps {
   size: number
@@ -28,7 +29,7 @@ export const Grid: React.FC<GridProps> = ({ size }) => {
       <Line
         key={`v-${x}`}
         points={[x, startY, x, endY]}
-        stroke="#e5e7eb"
+        stroke={tokens.color['grid-light']}
         strokeWidth={0.5}
         listening={false}
       />
@@ -42,7 +43,7 @@ export const Grid: React.FC<GridProps> = ({ size }) => {
       <Line
         key={`h-${y}`}
         points={[startX, y, endX, y]}
-        stroke="#e5e7eb"
+        stroke={tokens.color['grid-light']}
         strokeWidth={0.5}
         listening={false}
       />
@@ -56,7 +57,7 @@ export const Grid: React.FC<GridProps> = ({ size }) => {
       <Line
         key={`mv-${x}`}
         points={[x, startY, x, endY]}
-        stroke="#d1d5db"
+        stroke={tokens.color['grid-dark']}
         strokeWidth={1}
         listening={false}
       />
@@ -69,7 +70,7 @@ export const Grid: React.FC<GridProps> = ({ size }) => {
       <Line
         key={`mh-${y}`}
         points={[startX, y, endX, y]}
-        stroke="#d1d5db"
+        stroke={tokens.color['grid-dark']}
         strokeWidth={1}
         listening={false}
       />

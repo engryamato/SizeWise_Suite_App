@@ -1,0 +1,41 @@
+name: CI Tests
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          cache: 'npm'
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+      - name: Install Node dependencies
+        run: |
+          npm ci || npm install
+      - name: Install Python dependencies
+        run: |
+          pip install -r requirements.txt
+      - name: Run npm tests
+        run: npm test -- --coverage
+      - name: Run pytest
+        run: python -m pytest --cov=. --cov-report=xml
+      - name: Upload Node coverage
+        uses: actions/upload-artifact@v3
+        with:
+          name: node-coverage
+          path: coverage
+      - name: Upload Python coverage
+        uses: actions/upload-artifact@v3
+        with:
+          name: python-coverage
+          path: coverage.xml

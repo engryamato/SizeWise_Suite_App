@@ -142,6 +142,8 @@ export const Sidebar: React.FC = () => {
                 : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
               }
             `}
+            aria-label={`${tab.label} properties panel`}
+            title={`View ${tab.label.toLowerCase()} properties`}
           >
             {tab.icon}
             <span className="hidden sm:inline">{tab.label}</span>

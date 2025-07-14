@@ -14,7 +14,7 @@ import {
   Zap
 } from 'lucide-react'
 import { useUIStore } from '@/stores/ui-store'
-import { TierEnforcement, UsageCounter } from '@/components/tier/TierEnforcement'
+// import { TierEnforcement, UsageCounter } from '@/components/tier/TierEnforcement'
 import { DrawingTool } from '@/types/air-duct-sizer'
 
 interface ToolbarProps {
@@ -108,13 +108,18 @@ export const Toolbar: React.FC<ToolbarProps> = ({ className = '' }) => {
   }
   
   return (
-    <div className={`bg-white border border-gray-200 rounded-lg shadow-sm p-2 ${className}`}>
+    <div
+      className={`bg-white border border-gray-200 rounded-lg shadow-sm p-2 ${className}`}
+      role="toolbar"
+      aria-label="Drawing tools"
+    >
       {/* Drawing Tools */}
       <div className="flex flex-col space-y-1 mb-3" role="group" aria-label="Drawing tools">
         <div className="text-xs font-medium text-gray-500 px-2 py-1">Tools</div>
         {tools.map((tool) => (
-          <TierEnforcement key={tool.id} feature={tool.tierFeature}>
+          // <TierEnforcement key={tool.id} feature={tool.tierFeature}>
             <button
+              key={tool.id}
               type="button"
               onClick={() => handleToolSelect(tool.id)}
               className={`
@@ -137,7 +142,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({ className = '' }) => {
                 </span>
               )}
             </button>
-          </TierEnforcement>
+          // </TierEnforcement>
         ))}
       </div>
       
@@ -216,13 +221,13 @@ export const Toolbar: React.FC<ToolbarProps> = ({ className = '' }) => {
         </div>
       </div>
 
-      {/* Usage Counters for Free tier */}
-      <div className="border-t border-gray-200 pt-3 space-y-2">
+      {/* Usage Counters for Free tier - Temporarily disabled */}
+      {/* <div className="border-t border-gray-200 pt-3 space-y-2">
         <div className="text-xs font-medium text-gray-500 px-2 py-1">Usage</div>
         <UsageCounter type="rooms" />
         <UsageCounter type="segments" />
         <UsageCounter type="equipment" />
-      </div>
+      </div> */}
     </div>
   )
 }

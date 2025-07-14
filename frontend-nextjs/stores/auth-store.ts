@@ -58,7 +58,16 @@ export const useAuthStore = create<AuthStore>()(
   devtools(
     persist(
       (set, get) => ({
-        user: null,
+        // Initialize with default Free tier user for MVP
+        user: {
+          id: 'default-free-user',
+          email: 'demo@sizewise.com',
+          name: 'Demo User',
+          tier: 'free',
+          company: null,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        },
         token: null,
         isAuthenticated: false,
         isLoading: false,

@@ -182,6 +182,8 @@ export const ProjectPanel: React.FC = () => {
                 onChange={() => handleCodeToggle(code)}
                 disabled={!isEditing}
                 className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                aria-label={`Enable ${code} code standard`}
+                id={`code-${code.toLowerCase().replace(/\s+/g, '-')}`}
               />
               <span className="ml-2 text-sm text-gray-700">{code}</span>
             </label>

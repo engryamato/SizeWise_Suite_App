@@ -57,7 +57,12 @@ const GlassEffect: React.FC<GlassEffectProps> = ({
   );
 
   return href ? (
-    <a href={href} target={target} rel="noopener noreferrer" className="block">
+    <a
+      href={href}
+      target={href.startsWith('http') ? target : '_self'}
+      rel={href.startsWith('http') ? "noopener noreferrer" : undefined}
+      className="block"
+    >
       {content}
     </a>
   ) : (

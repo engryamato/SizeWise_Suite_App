@@ -3,9 +3,11 @@ module.exports = {
   setupFilesAfterEnv: ['<rootDir>/tests/setup.js'],
   testMatch: [
     '<rootDir>/tests/**/*.test.js',
-    '<rootDir>/tests/**/*.spec.js'
+    '<rootDir>/tests/**/*.spec.js',
+    '<rootDir>/app/tools/estimating-app/tests/**/*.test.js'
   ],
   collectCoverageFrom: [
+    'app/tools/estimating-app/**/*.js',
     'frontend/js/**/*.js',
     'core/**/*.py',
     '!frontend/js/main.js',

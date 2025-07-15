@@ -6,6 +6,7 @@ import Konva from 'konva'
 import { Room as RoomType } from '@/types/air-duct-sizer'
 import { useProjectStore } from '@/stores/project-store'
 import { useUIStore } from '@/stores/ui-store'
+import tokens from '@/shared/designTokens'
 
 interface RoomProps {
   room: RoomType
@@ -69,14 +70,14 @@ export const Room: React.FC<RoomProps> = ({ room, isSelected, onSelect }) => {
   
   // Room color based on selection and warnings
   const getRoomColor = () => {
-    if (isSelected) return '#3b82f6' // Blue when selected
+    if (isSelected) return tokens.color.highlight // Blue when selected
     // TODO: Add warning colors based on room.warnings
-    return '#f3f4f6' // Default gray
+    return tokens.color['grid-light'] // Default gray
   }
   
   const getStrokeColor = () => {
-    if (isSelected) return '#1d4ed8' // Darker blue when selected
-    return '#6b7280' // Default gray
+    if (isSelected) return tokens.color['primary-dark'] // Darker blue when selected
+    return tokens.color.label // Default gray
   }
   
   // Resize handles (only show when selected)
@@ -98,8 +99,8 @@ export const Room: React.FC<RoomProps> = ({ room, isSelected, onSelect }) => {
         x={handle.x}
         y={handle.y}
         radius={handleSize / 2}
-        fill="#ffffff"
-        stroke="#3b82f6"
+        fill={tokens.color.surface}
+        stroke={tokens.color.highlight}
         strokeWidth={2}
         draggable={false}
         listening={false}
@@ -135,7 +136,7 @@ export const Room: React.FC<RoomProps> = ({ room, isSelected, onSelect }) => {
         text={room.name}
         fontSize={fontSize}
         fontFamily="Arial"
-        fill="#374151"
+        fill={tokens.color.label}
         align="center"
         verticalAlign="middle"
         offsetX={textX}
@@ -149,7 +150,7 @@ export const Room: React.FC<RoomProps> = ({ room, isSelected, onSelect }) => {
         text={`${room.dimensions.length.toFixed(1)}' × ${room.dimensions.width.toFixed(1)}'`}
         fontSize={fontSize * 0.7}
         fontFamily="Arial"
-        fill="#6b7280"
+        fill={tokens.color['text-secondary']}
         align="center"
         verticalAlign="middle"
         offsetX={textX}
@@ -164,7 +165,7 @@ export const Room: React.FC<RoomProps> = ({ room, isSelected, onSelect }) => {
           text={`${room.airflow} CFM`}
           fontSize={fontSize * 0.6}
           fontFamily="Arial"
-          fill="#059669"
+          fill={tokens.color.positive}
           align="center"
           verticalAlign="middle"
           offsetX={textX}

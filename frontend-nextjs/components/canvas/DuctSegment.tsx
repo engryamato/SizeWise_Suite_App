@@ -6,6 +6,7 @@ import Konva from 'konva'
 import { Segment } from '@/types/air-duct-sizer'
 import { useProjectStore } from '@/stores/project-store'
 import { useUIStore } from '@/stores/ui-store'
+import tokens from '@/shared/designTokens'
 
 interface DuctSegmentProps {
   segment: Segment
@@ -60,25 +61,25 @@ export const DuctSegment: React.FC<DuctSegmentProps> = ({ segment, isSelected, o
   
   // Get segment color based on warnings and selection
   const getSegmentColor = () => {
-    if (isSelected) return '#3b82f6' // Blue when selected
+    if (isSelected) return tokens.color.highlight // Blue when selected
     
     // Check for warnings
     if (segment.warnings && segment.warnings.length > 0) {
       const hasError = segment.warnings.some(w => w.severity === 'critical')
       const hasWarning = segment.warnings.some(w => w.severity === 'warning')
       
-      if (hasError) return '#ef4444' // Red for errors
-      if (hasWarning) return '#f59e0b' // Orange for warnings
+      if (hasError) return tokens.color.error // Red for errors
+      if (hasWarning) return tokens.color.warning // Orange for warnings
     }
     
     // Color based on velocity (if calculated)
     if (segment.velocity) {
-      if (segment.velocity > 2000) return '#ef4444' // Red for high velocity
-      if (segment.velocity > 1500) return '#f59e0b' // Orange for medium-high velocity
-      if (segment.velocity < 600) return '#6b7280' // Gray for low velocity
+      if (segment.velocity > 2000) return tokens.color.error // Red for high velocity
+      if (segment.velocity > 1500) return tokens.color.warning // Orange for medium-high velocity
+      if (segment.velocity < 600) return tokens.color.label // Gray for low velocity
     }
     
-    return '#374151' // Default dark gray
+    return tokens.color.label // Default dark gray
   }
   
   // Get stroke width based on duct size
@@ -108,8 +109,8 @@ export const DuctSegment: React.FC<DuctSegmentProps> = ({ segment, isSelected, o
           x={x1}
           y={y1}
           radius={6}
-          fill="#ffffff"
-          stroke="#3b82f6"
+          fill={tokens.color.surface}
+          stroke={tokens.color.highlight}
           strokeWidth={2}
           draggable={true}
           onDragMove={(e) => handlePointDrag(0, e)}
@@ -120,8 +121,8 @@ export const DuctSegment: React.FC<DuctSegmentProps> = ({ segment, isSelected, o
           x={x2}
           y={y2}
           radius={6}
-          fill="#ffffff"
-          stroke="#3b82f6"
+          fill={tokens.color.surface}
+          stroke={tokens.color.highlight}
           strokeWidth={2}
           draggable={true}
           onDragMove={(e) => handlePointDrag(1, e)}
@@ -149,7 +150,7 @@ export const DuctSegment: React.FC<DuctSegmentProps> = ({ segment, isSelected, o
           text={getSegmentSizeText()}
           fontSize={fontSize}
           fontFamily="Arial"
-          fill="#374151"
+          fill={tokens.color.label}
           align="center"
           offsetX={getSegmentSizeText().length * 3} // Approximate centering
           listening={false}
@@ -163,7 +164,7 @@ export const DuctSegment: React.FC<DuctSegmentProps> = ({ segment, isSelected, o
             text={`${Math.round(segment.velocity)} FPM`}
             fontSize={fontSize * 0.8}
             fontFamily="Arial"
-            fill="#059669"
+            fill={tokens.color.positive}
             align="center"
             offsetX={`${Math.round(segment.velocity)} FPM`.length * 2.5}
             listening={false}
@@ -178,7 +179,7 @@ export const DuctSegment: React.FC<DuctSegmentProps> = ({ segment, isSelected, o
             text={`${Math.round(segment.airflow)} CFM`}
             fontSize={fontSize * 0.8}
             fontFamily="Arial"
-            fill="#6366f1"
+            fill={tokens.color['label-secondary']}
             align="center"
             offsetX={`${Math.round(segment.airflow)} CFM`.length * 2.5}
             listening={false}
@@ -212,8 +213,8 @@ export const DuctSegment: React.FC<DuctSegmentProps> = ({ segment, isSelected, o
         x={midX + 15}
         y={midY - 15}
         radius={8}
-        fill={hasError ? '#ef4444' : '#f59e0b'}
-        stroke="#ffffff"
+        fill={hasError ? tokens.color.error : tokens.color.warning}
+        stroke={tokens.color.surface}
         strokeWidth={2}
         listening={false}
       />
@@ -237,7 +238,7 @@ export const DuctSegment: React.FC<DuctSegmentProps> = ({ segment, isSelected, o
       {isSelected && (
         <Line
           points={points}
-          stroke="#3b82f6"
+          stroke={tokens.color.highlight}
           strokeWidth={getStrokeWidth() + 2}
           lineCap="round"
           lineJoin="round"

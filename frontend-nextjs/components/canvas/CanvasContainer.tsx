@@ -11,6 +11,7 @@ import { DuctSegment } from './DuctSegment'
 import { Equipment } from './Equipment'
 import { SelectionBox } from './SelectionBox'
 import { DrawingPreview } from './DrawingPreview'
+import { PlanBackground } from './PlanBackground'
 
 interface CanvasContainerProps {
   width: number
@@ -38,6 +39,8 @@ export const CanvasContainer: React.FC<CanvasContainerProps> = ({ width, height 
     showSelectionBox,
     updateSelectionBox,
     hideSelectionBox,
+    setPlanScale: updateUIScale,
+    planScale,
   } = useUIStore()
   
   const {
@@ -45,6 +48,7 @@ export const CanvasContainer: React.FC<CanvasContainerProps> = ({ width, height 
     addRoom,
     addSegment,
     addEquipment,
+    setPlanScale,
   } = useProjectStore()
 
   // Update stage size when container size changes
@@ -82,6 +86,9 @@ export const CanvasContainer: React.FC<CanvasContainerProps> = ({ width, height 
         break
       case 'pan':
         handlePanTool(e, pos)
+        break
+      case 'scale':
+        handleScaleTool(worldPos)
         break
     }
   }
@@ -194,11 +201,17 @@ export const CanvasContainer: React.FC<CanvasContainerProps> = ({ width, height 
     } else if (drawingState.startPoint) {
       const dx = screenPos.x - drawingState.startPoint.x
       const dy = screenPos.y - drawingState.startPoint.y
-      
+
       setViewport({
         x: viewport.x + dx,
         y: viewport.y + dy,
       })
+    }
+  }
+
+  const handleScaleTool = (worldPos: { x: number; y: number }) => {
+    if (!drawingState.isDrawing) {
+      startDrawing(worldPos)
     }
   }
 
@@ -245,6 +258,18 @@ export const CanvasContainer: React.FC<CanvasContainerProps> = ({ width, height 
             points: [start.x, start.y, end.x, end.y],
             warnings: [],
           })
+        }
+        break
+
+      case 'scale':
+        const pixelDistance = Math.sqrt(
+          Math.pow(end.x - start.x, 2) + Math.pow(end.y - start.y, 2)
+        )
+        const input = window.prompt('Enter real-world distance for selected span')
+        const realDistance = input ? parseFloat(input) : NaN
+        if (!isNaN(realDistance) && pixelDistance > 0) {
+          setPlanScale(realDistance / pixelDistance)
+          updateUIScale(realDistance / pixelDistance)
         }
         break
     }
@@ -344,6 +369,14 @@ export const CanvasContainer: React.FC<CanvasContainerProps> = ({ width, height 
         {/* Background layer */}
         <Layer>
           {grid.visible && <Grid size={grid.size} />}
+          {currentProject.plan_pdf && (
+            <PlanBackground
+              pdfData={currentProject.plan_pdf}
+              scale={planScale}
+              offsetX={0}
+              offsetY={0}
+            />
+          )}
         </Layer>
 
         {/* Main drawing layer */}

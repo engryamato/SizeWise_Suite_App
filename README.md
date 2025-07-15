@@ -66,23 +66,72 @@ Comprehensive estimating solution addressing labor/material takeoffs and automat
 
 ```
 ├── app/
-<<<<<<< HEAD
-│   ├── demo/
-│   │   └── page.tsx         # Components demo page
-│   ├── globals.css          # Global styles with keyframes
-│   ├── layout.tsx           # Root layout
-│   └── page.tsx             # Main page with demo
-├── components/
-│   └── glassmorphism/       # Glassmorphism components
-│       ├── GlassEffect.tsx  # Base glass effect wrapper
-│       ├── GlassDock.tsx    # Icon dock component
-│       ├── GlassButton.tsx  # Glass button component
-│       ├── GlassCard.tsx    # Glass card component
-│       ├── GlassFilter.tsx  # SVG filter effects
-│       └── index.ts         # Component exports
-├── next.config.js           # Next.js configuration
-├── tailwind.config.js       # Tailwind configuration with custom animations
-└── package.json
+│   ├── assets/
+│   ├── config/
+│   │   └── environment/
+│   ├── core/
+│   │   ├── calculations/
+│   │   ├── validators/
+│   │   ├── schemas/
+│   │   ├── registrars/
+│   │   └── i18n/
+│   ├── data/
+│   │   ├── seeds/
+│   │   ├── backups/
+│   │   └── examples/
+│   ├── docs/
+│   │   ├── architecture/
+│   │   ├── api/
+│   │   ├── guides/
+│   │   ├── i18n/
+│   │   └── tools/
+│   ├── hooks/
+│   ├── i18n/
+│   ├── plugins/
+│   ├── services/
+│   ├── simulations/
+│   ├── static/
+│   ├── templates/
+│   ├── tests/
+│   └── tools/
+│       ├── duct-sizer/
+│       ├── grease-sizer/
+│       ├── boiler-sizer/
+│       ├── engine-exhaust/
+│       └── estimating-app/
+│           ├── components/
+│           ├── calculations/
+│           ├── validators/
+│           ├── schemas/
+│           ├── ui/
+│           ├── data/
+│           ├── docs/
+│           ├── tests/
+│           └── exports/
+├── backend/
+├── core/
+├── frontend/
+├── frontend-nextjs/
+│   ├── app/
+│   │   ├── demo/
+│   │   │   └── page.tsx         # Components demo page
+│   │   ├── globals.css          # Global styles with keyframes
+│   │   ├── layout.tsx           # Root layout
+│   │   └── page.tsx             # Main page with demo
+│   ├── components/
+│   │   └── glassmorphism/
+│   │       ├── GlassEffect.tsx  # Base glass effect wrapper
+│   │       ├── GlassDock.tsx    # Icon dock component
+│   │       ├── GlassButton.tsx  # Glass button component
+│   │       ├── GlassCard.tsx    # Glass card component
+│   │       ├── GlassFilter.tsx  # SVG filter effects
+│   │       └── index.ts         # Component exports
+│   ├── next.config.js           # Next.js configuration
+│   ├── tailwind.config.js       # Tailwind configuration with custom animations
+│   └── package.json
+├── docs/
+├── scripts/
+└── tests/
 ```
 
 ## Technologies Used
@@ -93,43 +142,6 @@ Comprehensive estimating solution addressing labor/material takeoffs and automat
 - **Tailwind CSS**: Styling
 - **tailwindcss-animate**: Additional animation utilities
 
-## License
-
-MIT License - see [LICENSE](LICENSE) file for details.
-=======
-│   └── modules/           # Individual HVAC modules
-│       ├── air-duct-sizer/
-│       ├── grease-duct-sizer/
-│       ├── engine-exhaust-sizer/
-│       ├── boiler-vent-sizer/
-│       └── estimating-app/
-├── core/                  # Shared calculation logic and validation
-│   ├── calculations/
-│   ├── validation/
-│   ├── units/
-│   └── standards/
-├── services/              # API, storage, and export services
-│   ├── api/
-│   ├── storage/
-│   └── export/
-├── frontend/              # UI components and PWA assets
-│   ├── components/
-│   ├── styles/
-│   ├── assets/
-│   └── workers/
-├── backend/               # Flask API and calculation endpoints
-│   ├── api/
-│   ├── calculations/
-│   └── exports/
-├── docs/                  # Documentation
-│   ├── user-guides/
-│   ├── api-reference/
-│   └── examples/
-└── tests/                 # Testing infrastructure
-    ├── unit/
-    ├── integration/
-    └── e2e/
-```
 
 ## Getting Started
 
@@ -296,4 +308,3 @@ make html
 ## Support
 
 For questions and support, please refer to the documentation or create an issue in the repository.
->>>>>>> main

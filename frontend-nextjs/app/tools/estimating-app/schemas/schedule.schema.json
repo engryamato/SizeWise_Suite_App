@@ -1,0 +1,12 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Schedule",
+  "type": "object",
+  "properties": {
+    "activity": { "type": "string" },
+    "hours": { "type": "number", "minimum": 0 },
+    "crewSize": { "type": "number", "minimum": 1 }
+  },
+  "required": ["activity", "hours", "crewSize"],
+  "additionalProperties": false
+}

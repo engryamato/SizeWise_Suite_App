@@ -48,7 +48,7 @@ export default function ToolsPage() {
       description: "Cost estimation and quantity takeoffs for HVAC projects",
       icon: <DollarSign className="w-8 h-8" />,
       status: "coming-soon",
-      href: "#",
+      href: "/tools/estimating-app",
       color: "purple",
     },
   ];

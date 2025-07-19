@@ -12,6 +12,7 @@ import { Equipment } from './Equipment'
 import { SelectionBox } from './SelectionBox'
 import { DrawingPreview } from './DrawingPreview'
 import { PlanBackground } from './PlanBackground'
+import { ScaleCalibrationPanel } from './ScaleCalibrationPanel'
 
 interface CanvasContainerProps {
   width: number
@@ -21,6 +22,10 @@ interface CanvasContainerProps {
 export const CanvasContainer: React.FC<CanvasContainerProps> = ({ width, height }) => {
   const stageRef = useRef<Konva.Stage>(null)
   const [stageSize, setStageSize] = useState({ width, height })
+
+  // Scale calibration state
+  const [scaleCalibrationVisible, setScaleCalibrationVisible] = useState(false)
+  const [calibrationPixelDistance, setCalibrationPixelDistance] = useState(0)
   
   // Store hooks
   const {
@@ -265,11 +270,9 @@ export const CanvasContainer: React.FC<CanvasContainerProps> = ({ width, height 
         const pixelDistance = Math.sqrt(
           Math.pow(end.x - start.x, 2) + Math.pow(end.y - start.y, 2)
         )
-        const input = window.prompt('Enter real-world distance for selected span')
-        const realDistance = input ? parseFloat(input) : NaN
-        if (!isNaN(realDistance) && pixelDistance > 0) {
-          setPlanScale(realDistance / pixelDistance)
-          updateUIScale(realDistance / pixelDistance)
+        if (pixelDistance > 10) { // Minimum distance check
+          setCalibrationPixelDistance(pixelDistance)
+          setScaleCalibrationVisible(true)
         }
         break
     }
@@ -418,6 +421,13 @@ export const CanvasContainer: React.FC<CanvasContainerProps> = ({ width, height 
           {drawingState.isDrawing && <DrawingPreview />}
         </Layer>
       </Stage>
+
+      {/* Scale Calibration Panel */}
+      <ScaleCalibrationPanel
+        isVisible={scaleCalibrationVisible}
+        onClose={() => setScaleCalibrationVisible(false)}
+        pixelDistance={calibrationPixelDistance}
+      />
     </div>
   )
 }

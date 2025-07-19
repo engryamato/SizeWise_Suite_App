@@ -319,6 +319,61 @@ export const useProjectStore = create<ProjectState>()(
           set({ currentProject: updated }, false, 'setPlanScale')
         },
 
+        // Scale utility methods
+        isScaleCalibrated: () => {
+          const { currentProject } = get()
+          return currentProject?.plan_scale && currentProject.plan_scale !== 1
+        },
+
+        getScaleInfo: () => {
+          const { currentProject } = get()
+          if (!currentProject?.plan_scale) {
+            return { calibrated: false, scale: 1, description: 'Not calibrated' }
+          }
+
+          const scale = currentProject.plan_scale
+          return {
+            calibrated: scale !== 1,
+            scale,
+            description: scale === 1 ? 'Default scale' : `${scale.toFixed(6)} ft/px`
+          }
+        },
+
+        // Convert pixel measurements to real-world units
+        pixelsToRealWorld: (pixels: number, targetUnit: 'ft' | 'in' | 'm' | 'cm' | 'mm' = 'ft'): number => {
+          const { currentProject } = get()
+          const scale = currentProject?.plan_scale || 1
+          const realWorldFeet = pixels * scale
+
+          switch (targetUnit) {
+            case 'in': return realWorldFeet * 12
+            case 'ft': return realWorldFeet
+            case 'm': return realWorldFeet / 3.28084
+            case 'cm': return realWorldFeet / 3.28084 * 100
+            case 'mm': return realWorldFeet / 3.28084 * 1000
+            default: return realWorldFeet
+          }
+        },
+
+        // Convert real-world measurements to pixels
+        realWorldToPixels: (value: number, sourceUnit: 'ft' | 'in' | 'm' | 'cm' | 'mm' = 'ft'): number => {
+          const { currentProject } = get()
+          const scale = currentProject?.plan_scale || 1
+
+          // Convert to feet first
+          let valueInFeet: number
+          switch (sourceUnit) {
+            case 'in': valueInFeet = value / 12; break
+            case 'ft': valueInFeet = value; break
+            case 'm': valueInFeet = value * 3.28084; break
+            case 'cm': valueInFeet = value * 0.0328084; break
+            case 'mm': valueInFeet = value * 0.00328084; break
+            default: valueInFeet = value
+          }
+
+          return valueInFeet / scale
+        },
+
         canAddRoom: () => {
           const { currentProject } = get()
           if (!currentProject) return false

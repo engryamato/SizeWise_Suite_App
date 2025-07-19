@@ -33,6 +33,54 @@ export const SimpleCanvas: React.FC<SimpleCanvasProps> = ({ width, height }) => 
     addEquipment,
   } = useProjectStore()
 
+  // --- PDF Background State ---
+  const [pdfImage, setPdfImage] = useState<HTMLImageElement | null>(null)
+  const pdfUrlRef = useRef<string | null>(null)
+
+  // Load PDF as image whenever plan_pdf changes
+  useEffect(() => {
+    let revokeUrl: string | null = null
+    let isMounted = true
+    async function loadPdfImage() {
+      setPdfImage(null)
+      if (!currentProject?.plan_pdf || !currentProject.plan_pdf.startsWith('data:application/pdf')) return
+      try {
+        const [{ getDocument, GlobalWorkerOptions }, worker] = await Promise.all([
+          import('pdfjs-dist/build/pdf'),
+          import('pdfjs-dist/build/pdf.worker.entry')
+        ])
+        if (!GlobalWorkerOptions.workerSrc) {
+          GlobalWorkerOptions.workerSrc = worker
+        }
+        const pdf = await getDocument({ data: atob(currentProject.plan_pdf.split(',')[1]) }).promise
+        const page = await pdf.getPage(1)
+        const viewport = page.getViewport({ scale: 2 })
+        const canvas = document.createElement('canvas')
+        canvas.width = viewport.width
+        canvas.height = viewport.height
+        const ctx = canvas.getContext('2d')!
+        await page.render({ canvasContext: ctx, viewport }).promise
+        const url = canvas.toDataURL()
+        const img = new window.Image()
+        img.onload = () => {
+          if (isMounted) setPdfImage(img)
+        }
+        img.src = url
+        pdfUrlRef.current = url
+        revokeUrl = url
+      } catch (err) {
+        // Ignore PDF errors
+      }
+    }
+    loadPdfImage()
+    return () => {
+      isMounted = false
+      if (revokeUrl) {
+        // No need to revoke data URLs, but if using object URLs, do revoke here
+      }
+    }
+  }, [currentProject?.plan_pdf])
+
   // Draw the canvas content
   const draw = () => {
     const canvas = canvasRef.current
@@ -48,6 +96,12 @@ export const SimpleCanvas: React.FC<SimpleCanvasProps> = ({ width, height }) => 
     ctx.save()
     ctx.translate(viewport.x, viewport.y)
     ctx.scale(viewport.scale, viewport.scale)
+
+    // Draw PDF background first
+    if (pdfImage) {
+      ctx.globalAlpha = 1.0
+      ctx.drawImage(pdfImage, 0, 0)
+    }
 
     // Draw grid if visible
     if (grid.visible) {

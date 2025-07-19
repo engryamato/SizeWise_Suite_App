@@ -12,9 +12,11 @@ import {
   ZoomOut,
   RotateCcw,
   Zap,
-  Upload
+  Upload,
+  Ruler
 } from 'lucide-react'
 import { useUIStore } from '@/stores/ui-store'
+import { useProjectStore } from '@/stores/project-store'
 // import { TierEnforcement, UsageCounter } from '@/components/tier/TierEnforcement'
 import { DrawingTool } from '@/types/air-duct-sizer'
 
@@ -28,12 +30,15 @@ export const Toolbar: React.FC<ToolbarProps> = ({ className = '', onImportPlan }
     drawingState,
     grid,
     viewport,
+    planScale,
     setDrawingTool,
     setGridVisible,
     setSnapToGrid,
     setViewport,
     resetViewport,
   } = useUIStore()
+
+  const { currentProject } = useProjectStore()
   
   const tools: Array<{
     id: DrawingTool
@@ -83,9 +88,10 @@ export const Toolbar: React.FC<ToolbarProps> = ({ className = '', onImportPlan }
     },
     {
       id: 'scale',
-      icon: <MousePointer size={20} />,
+      icon: <Ruler size={20} />,
       label: 'Scale',
       shortcut: 'L',
+      description: 'Calibrate plan scale',
     },
   ]
   
@@ -239,6 +245,22 @@ export const Toolbar: React.FC<ToolbarProps> = ({ className = '', onImportPlan }
           <Upload size={16} />
           <span>Import Plan</span>
         </button>
+
+        {/* Scale Status */}
+        {currentProject?.plan_pdf && (
+          <div className="mt-2 px-2 py-1 bg-gray-50 rounded text-xs">
+            <div className="text-gray-500 mb-1">Scale Status:</div>
+            {currentProject.plan_scale && currentProject.plan_scale !== 1 ? (
+              <div className="text-green-600 font-medium">
+                ✓ Calibrated ({currentProject.plan_scale.toFixed(4)} ft/px)
+              </div>
+            ) : (
+              <div className="text-amber-600 font-medium">
+                ⚠ Not Calibrated
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Usage Counters for Free tier - Temporarily disabled */}

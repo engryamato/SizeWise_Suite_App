@@ -332,6 +332,20 @@ export const useUIStore = create<UIState>()(
       setPlanScale: (scale) => {
         set({ planScale: scale }, false, 'setPlanScale')
       },
+
+      // Scale utility methods
+      getScaleStatus: () => {
+        const { planScale } = get()
+        return {
+          isCalibrated: planScale !== 1,
+          scale: planScale,
+          displayText: planScale === 1 ? 'Not calibrated' : `${planScale.toFixed(6)} ft/px`
+        }
+      },
+
+      resetScale: () => {
+        set({ planScale: 1 }, false, 'resetScale')
+      },
     }),
     { name: 'UIStore' }
   )

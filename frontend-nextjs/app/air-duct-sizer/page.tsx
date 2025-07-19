@@ -1,17 +1,31 @@
 'use client'
 
-import React, { useEffect, useState, useRef } from 'react'
-import { ClientOnlyCanvas } from '@/components/canvas/ClientOnlyCanvas'
-import { Toolbar } from '@/components/ui/Toolbar'
-import { Sidebar } from '@/components/ui/Sidebar'
-import { useProjectStore } from '@/stores/project-store'
-import { useUIStore } from '@/stores/ui-store'
-import { useAuthStore } from '@/stores/auth-store'
-import { useCalculationStore } from '@/stores/calculation-store'
+import React, { useState, useCallback, useRef } from 'react'
+import { motion } from 'framer-motion'
+import { Vector3 } from 'three'
+import { Canvas3D } from '@/components/3d/Canvas3D'
+import { PDFImport } from '@/components/pdf/PDFImport'
+import { DrawingTools, DrawingMode, DrawingElement } from '@/components/drawing/DrawingTools'
+import { useCalculations, DuctSizingRequest, DuctSegment as APIDuctSegment } from '@/lib/api/calculations'
+import { useToast } from '@/lib/hooks/useToaster'
+import {
+  Play,
+  Pause,
+  Save,
+  FileText,
+  Calculator,
+  AlertTriangle,
+  CheckCircle,
+  Settings,
+  Layers,
+  Eye,
+  EyeOff
+} from 'lucide-react'
+import { cn } from '@/lib/utils'
 
 export default function AirDuctSizerPage() {
   const [canvasSize, setCanvasSize] = useState({ width: 800, height: 600 })
-  
+
   // Store hooks
   const { currentProject, createProject, setPlanPDF, setPlanScale } = useProjectStore()
   const { sidebarOpen, addNotification, setPlanScale: updateUIScale } = useUIStore()
@@ -36,29 +50,29 @@ export default function AirDuctSizerPage() {
   const { loadMaterials, loadStandards } = useCalculationStore()
 
 
-  
+
   // Calculate canvas size based on window and sidebar
   useEffect(() => {
     const updateCanvasSize = () => {
       const sidebarWidth = sidebarOpen ? 320 : 0
       const toolbarWidth = 200
       const headerHeight = 64 // Approximate header height
-      
+
       const width = window.innerWidth - sidebarWidth - toolbarWidth - 32 // 32px for margins
       const height = window.innerHeight - headerHeight - 32
-      
+
       setCanvasSize({
         width: Math.max(400, width),
         height: Math.max(300, height),
       })
     }
-    
+
     updateCanvasSize()
     window.addEventListener('resize', updateCanvasSize)
-    
+
     return () => window.removeEventListener('resize', updateCanvasSize)
   }, [sidebarOpen])
-  
+
   // Load reference data on mount (skip API calls in development)
   useEffect(() => {
     if (process.env.NODE_ENV !== 'development') {
@@ -73,7 +87,7 @@ export default function AirDuctSizerPage() {
       updateUIScale(currentProject.plan_scale)
     }
   }, [currentProject?.plan_scale])
-  
+
   // Create default project if none exists
   useEffect(() => {
     if (!currentProject) {
@@ -90,7 +104,7 @@ export default function AirDuctSizerPage() {
       })
     }
   }, [currentProject, user, createProject, addNotification])
-  
+
   // Handle keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -98,9 +112,9 @@ export default function AirDuctSizerPage() {
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
         return
       }
-      
+
       const { setDrawingTool, setGridVisible, setSnapToGrid, grid } = useUIStore.getState()
-      
+
       switch (e.key.toLowerCase()) {
         case 'v':
           e.preventDefault()
@@ -141,11 +155,11 @@ export default function AirDuctSizerPage() {
           break
       }
     }
-    
+
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [])
-  
+
   // Show authentication prompt if not logged in (bypassed for development testing)
   if (!isAuthenticated && process.env.NODE_ENV !== 'development') {
     return (
@@ -167,7 +181,7 @@ export default function AirDuctSizerPage() {
       </div>
     )
   }
-  
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
@@ -181,19 +195,19 @@ export default function AirDuctSizerPage() {
               </span>
             )}
           </div>
-          
+
           <div className="flex items-center space-x-4">
             {/* Tier indicator */}
             <span className={`
               px-2 py-1 rounded-full text-xs font-medium
-              ${user?.tier === 'pro' 
-                ? 'bg-purple-100 text-purple-800' 
+              ${user?.tier === 'pro'
+                ? 'bg-purple-100 text-purple-800'
                 : 'bg-gray-100 text-gray-800'
               }
             `}>
               {user?.tier === 'pro' ? 'Pro' : 'Free'}
             </span>
-            
+
             {/* Project stats */}
             {currentProject && (
               <div className="text-sm text-gray-500">
@@ -203,7 +217,7 @@ export default function AirDuctSizerPage() {
           </div>
         </div>
       </header>
-      
+
       {/* Main content */}
       <div className="flex h-[calc(100vh-64px)]">
         {/* Toolbar */}
@@ -217,12 +231,12 @@ export default function AirDuctSizerPage() {
             className="hidden"
           />
         </div>
-        
+
         {/* Canvas area */}
         <div className="flex-1 relative">
           <ClientOnlyCanvas width={canvasSize.width} height={canvasSize.height} />
         </div>
-        
+
         {/* Sidebar */}
         {sidebarOpen && (
           <div className="w-80 bg-white border-l border-gray-200">
@@ -230,7 +244,7 @@ export default function AirDuctSizerPage() {
           </div>
         )}
       </div>
-      
+
       {/* Status bar */}
       <div className="bg-white border-t border-gray-200 px-6 py-2">
         <div className="flex items-center justify-between text-sm text-gray-500">
@@ -240,7 +254,7 @@ export default function AirDuctSizerPage() {
               <>
                 <span>•</span>
                 <span>
-                  {user?.tier === 'free' 
+                  {user?.tier === 'free'
                     ? `${currentProject.rooms.length}/3 rooms, ${currentProject.segments.length}/25 segments`
                     : `${currentProject.rooms.length} rooms, ${currentProject.segments.length} segments`
                   }
@@ -248,7 +262,7 @@ export default function AirDuctSizerPage() {
               </>
             )}
           </div>
-          
+
           <div className="flex items-center space-x-4">
             <span>Grid: {useUIStore.getState().grid.size}px</span>
             <span>Zoom: {Math.round(useUIStore.getState().viewport.scale * 100)}%</span>

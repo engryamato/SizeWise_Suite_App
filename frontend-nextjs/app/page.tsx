@@ -56,7 +56,7 @@ export default function HomePage() {
               <Wrench className="w-6 h-6 text-green-600 dark:text-green-400" />
             </div>
             <h3 className="text-lg font-semibold text-neutral-900 dark:text-white">
-              Air Duct Sizer
+              Air Duct Sizer Tool
             </h3>
           </div>
           <p className="text-neutral-600 dark:text-neutral-300">

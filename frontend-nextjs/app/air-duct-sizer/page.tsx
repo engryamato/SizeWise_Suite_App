@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useCallback, useRef } from 'react'
+import React, { useState, useCallback, useRef, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { Vector3 } from 'three'
 import { Canvas3D } from '@/components/3d/Canvas3D'
@@ -8,6 +8,13 @@ import { PDFImport } from '@/components/pdf/PDFImport'
 import { DrawingTools, DrawingMode, DrawingElement } from '@/components/drawing/DrawingTools'
 import { useCalculations, DuctSizingRequest, DuctSegment as APIDuctSegment } from '@/lib/api/calculations'
 import { useToast } from '@/lib/hooks/useToaster'
+import { useProjectStore } from '@/stores/project-store'
+import { useUIStore } from '@/stores/ui-store'
+import { useAuthStore } from '@/stores/auth-store'
+import { useCalculationStore } from '@/stores/calculation-store'
+import { Toolbar } from '@/components/ui/Toolbar'
+import { Sidebar } from '@/components/ui/Sidebar'
+import { ClientOnlyCanvas } from '@/components/canvas/ClientOnlyCanvas'
 import {
   Play,
   Pause,

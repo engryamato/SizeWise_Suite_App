@@ -44,6 +44,9 @@ interface Canvas3DProps {
   className?: string;
   showGrid?: boolean;
   showGizmo?: boolean;
+  // Drawing functionality
+  activeTool?: 'select' | 'rectangle' | 'circle' | 'line' | 'text' | 'move' | 'rotate' | 'delete' | 'copy';
+  onElementSelect?: (elementId: string, position: { x: number; y: number }) => void;
 }
 
 // 3D Duct Component
@@ -52,7 +55,7 @@ const DuctMesh: React.FC<{
   isSelected?: boolean;
   onSelect?: () => void;
 }> = ({ segment, isSelected, onSelect }) => {
-  const meshRef = useRef<THREE.Mesh>(null);
+  const meshRef = useRef<any>(null);
   const [hovered, setHovered] = useState(false);
 
   // Calculate duct position and rotation
@@ -124,14 +127,100 @@ const StickLine: React.FC<{
   );
 };
 
+// Drawing Preview Component
+const DrawingPreview: React.FC<{
+  startPoint?: Vector3;
+  currentPoint?: Vector3;
+  activeTool?: string;
+}> = ({ startPoint, currentPoint, activeTool }) => {
+  if (!startPoint || !currentPoint || activeTool !== 'line') return null;
+
+  return (
+    <Line
+      points={[startPoint, currentPoint]}
+      color="#3b82f6"
+      lineWidth={3}
+      transparent
+      opacity={0.6}
+      dashed
+    />
+  );
+};
+
 // 3D Scene Component
 const Scene3D: React.FC<{
   segments: DuctSegment[];
   selectedSegmentId?: string;
   onSegmentSelect?: (id: string) => void;
   showGrid: boolean;
-}> = ({ segments, selectedSegmentId, onSegmentSelect, showGrid }) => {
-  const { camera } = useThree();
+  activeTool?: string;
+  onSegmentAdd?: (segment: DuctSegment) => void;
+  onElementSelect?: (elementId: string, position: { x: number; y: number }) => void;
+}> = ({ segments, selectedSegmentId, onSegmentSelect, showGrid, activeTool, onSegmentAdd, onElementSelect }) => {
+  const { camera, raycaster, scene } = useThree();
+  const [drawingState, setDrawingState] = useState<{
+    isDrawing: boolean;
+    startPoint?: Vector3;
+    currentPoint?: Vector3;
+  }>({ isDrawing: false });
+
+  // Handle canvas clicks for drawing
+  const handleCanvasClick = useCallback((event: any) => {
+    // For drawing tools, always project to ground plane (ignore existing segments)
+    if (activeTool && activeTool !== 'select') {
+      // Project click to y=0 plane for drawing new segments
+      const planeNormal = new Vector3(0, 1, 0);
+      const distance = 0; // y=0 plane
+      const ray = raycaster.ray;
+      const t = -(ray.origin.dot(planeNormal) + distance) / ray.direction.dot(planeNormal);
+      const clickPoint = ray.origin.clone().add(ray.direction.clone().multiplyScalar(t));
+
+      if (activeTool === 'line') {
+        if (!drawingState.isDrawing) {
+          // Start drawing
+          setDrawingState({
+            isDrawing: true,
+            startPoint: clickPoint,
+            currentPoint: clickPoint
+          });
+        } else {
+          // Finish drawing - create duct segment
+          if (drawingState.startPoint && onSegmentAdd) {
+            const newSegment: DuctSegment = {
+              id: `duct-${Date.now()}`,
+              start: drawingState.startPoint,
+              end: clickPoint,
+              width: 12, // Default 12 inches
+              height: 8,  // Default 8 inches
+              type: 'supply',
+              material: 'Galvanized Steel'
+            };
+            onSegmentAdd(newSegment);
+          }
+
+          // Reset drawing state
+          setDrawingState({ isDrawing: false });
+        }
+      }
+    }
+  }, [activeTool, drawingState, raycaster, onSegmentAdd]);
+
+  // Handle mouse move for drawing preview
+  const handleMouseMove = useCallback((event: any) => {
+    if (!drawingState.isDrawing || !drawingState.startPoint) return;
+
+    // Always project to ground plane for drawing preview
+    const planeNormal = new Vector3(0, 1, 0);
+    const distance = 0;
+    const ray = raycaster.ray;
+    const t = -(ray.origin.dot(planeNormal) + distance) / ray.direction.dot(planeNormal);
+    const currentPoint = ray.origin.clone().add(ray.direction.clone().multiplyScalar(t));
+
+    setDrawingState(prev => ({
+      ...prev,
+      currentPoint
+    }));
+  }, [drawingState.isDrawing, drawingState.startPoint, raycaster]);
 
   // Reset camera to home position
   const resetCamera = useCallback(() => {
@@ -140,7 +229,7 @@ const Scene3D: React.FC<{
   }, [camera]);
 
   return (
-    <>
+    <group onClick={handleCanvasClick} onPointerMove={handleMouseMove}>
       {/* Lighting */}
       <ambientLight intensity={0.6} />
       <directionalLight position={[10, 10, 5]} intensity={0.8} castShadow />
@@ -148,6 +237,13 @@ const Scene3D: React.FC<{
 
       {/* Environment */}
       <Environment preset="studio" />
+
+      {/* Drawing Preview */}
+      <DrawingPreview
+        startPoint={drawingState.startPoint}
+        currentPoint={drawingState.currentPoint}
+        activeTool={activeTool}
+      />
 
       {/* Grid */}
       {showGrid && (
@@ -193,15 +289,15 @@ const Scene3D: React.FC<{
 
       {/* Controls */}
       <OrbitControls
-        enablePan={true}
+        enablePan={activeTool === 'select'}
         enableZoom={true}
-        enableRotate={true}
+        enableRotate={activeTool === 'select'}
         dampingFactor={0.05}
         screenSpacePanning={false}
         minDistance={1}
         maxDistance={100}
       />
-    </>
+    </group>
   );
 };
 
@@ -283,6 +379,8 @@ export const Canvas3D: React.FC<Canvas3DProps> = ({
   className,
   showGrid: initialShowGrid = true,
   showGizmo: initialShowGizmo = true,
+  activeTool = 'select',
+  onElementSelect,
 }) => {
   const [selectedSegmentId, setSelectedSegmentId] = useState<string>();
   const [showGrid, setShowGrid] = useState(initialShowGrid);
@@ -307,6 +405,9 @@ export const Canvas3D: React.FC<Canvas3DProps> = ({
             selectedSegmentId={selectedSegmentId}
             onSegmentSelect={setSelectedSegmentId}
             showGrid={showGrid}
+            activeTool={activeTool}
+            onSegmentAdd={onSegmentAdd}
+            onElementSelect={onElementSelect}
           />
           
           {/* Gizmo Helper */}

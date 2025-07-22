@@ -158,7 +158,7 @@ export default function AirDuctSizerV1Page() {
   useEffect(() => {
     setDuctSegments(demoSegments);
     toast.info('Demo Data Loaded', 'Sample duct segments have been loaded for demonstration.');
-  }, [toast]);
+  }, []); // Remove toast dependency to prevent infinite loop
 
   // Monitor online status
   useEffect(() => {
@@ -230,7 +230,7 @@ export default function AirDuctSizerV1Page() {
 
   const handleElementUpdate = useCallback((id: string, properties: Partial<ElementProperties>) => {
     if (selectedElement && selectedElement.id === id) {
-      setSelectedElement(prev => prev ? { ...prev, ...properties } : null);
+      setSelectedElement((prev: ElementProperties | null) => prev ? { ...prev, ...properties } : null);
     }
     setSaveStatus('unsaved');
   }, [selectedElement]);
@@ -396,6 +396,8 @@ export default function AirDuctSizerV1Page() {
           onSegmentDelete={handleSegmentDelete}
           showGrid={gridEnabled}
           showGizmo={true}
+          activeTool={activeTool}
+          onElementSelect={handleElementSelect}
         />
       </div>
 
@@ -457,8 +459,8 @@ export default function AirDuctSizerV1Page() {
       {/* Model Summary Trigger Button (floating) */}
       <motion.button
         type="button"
-        onClick={() => setShowModelSummary(true)}
-        className="fixed top-4 right-4 z-40 flex items-center space-x-2 px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg shadow-lg transition-colors"
+        onClick={() => setShowModelSummary(!showModelSummary)}
+        className="fixed top-20 left-4 z-[60] flex items-center space-x-2 px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg shadow-lg transition-colors"
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.95 }}
       >
@@ -476,12 +478,12 @@ export default function AirDuctSizerV1Page() {
         )}
       </motion.button>
 
-      {/* Welcome Message */}
+      {/* Welcome Message - Positioned to not interfere with canvas */}
       <motion.div
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ delay: 1 }}
-        className="fixed bottom-20 left-1/2 -translate-x-1/2 bg-white/90 dark:bg-neutral-900/90 backdrop-blur-lg rounded-2xl border border-white/20 shadow-2xl p-6 z-30 max-w-md text-center"
+        className="fixed top-20 right-4 bg-white/90 dark:bg-neutral-900/90 backdrop-blur-lg rounded-2xl border border-white/20 shadow-2xl p-4 z-30 max-w-sm text-center pointer-events-none"
       >
         <div className="flex items-center space-x-2 mb-3">
           <span className="text-2xl">🏗️</span>

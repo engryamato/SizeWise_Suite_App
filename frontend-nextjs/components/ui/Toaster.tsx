@@ -70,10 +70,10 @@ const VARIANT_STYLES = {
 const POSITION_STYLES = {
   'top-right': 'top-4 right-4',
   'top-left': 'top-4 left-4',
-  'bottom-right': 'bottom-4 right-4',
-  'bottom-left': 'bottom-4 left-4',
+  'bottom-right': 'bottom-20 right-4', // Increased bottom margin to avoid status bar
+  'bottom-left': 'bottom-20 left-4',   // Increased bottom margin to avoid status bar
   'top-center': 'top-4 left-1/2 -translate-x-1/2',
-  'bottom-center': 'bottom-4 left-1/2 -translate-x-1/2',
+  'bottom-center': 'bottom-20 left-1/2 -translate-x-1/2', // Increased bottom margin to avoid status bar
 };
 
 const generateToastId = (): string => {

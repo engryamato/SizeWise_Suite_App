@@ -2,10 +2,10 @@
 
 import React, { Suspense, useRef, useState, useCallback } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
-import { 
-  OrbitControls, 
-  Grid, 
-  GizmoHelper, 
+import {
+  OrbitControls,
+  Grid,
+  GizmoHelper,
   GizmoViewport,
   Environment,
   Text,
@@ -13,6 +13,7 @@ import {
   Box
 } from '@react-three/drei';
 import { Vector3, BufferGeometry, Float32BufferAttribute } from 'three';
+import { useCameraController } from '@/lib/hooks/useCameraController';
 import { motion } from 'framer-motion';
 import { 
   Move3D, 
@@ -47,6 +48,8 @@ interface Canvas3DProps {
   // Drawing functionality
   activeTool?: 'select' | 'rectangle' | 'circle' | 'line' | 'text' | 'move' | 'rotate' | 'delete' | 'copy';
   onElementSelect?: (elementId: string, position: { x: number; y: number }) => void;
+  // Camera control integration
+  onCameraReady?: (cameraController: any) => void;
 }
 
 // 3D Duct Component
@@ -156,8 +159,19 @@ const Scene3D: React.FC<{
   activeTool?: string;
   onSegmentAdd?: (segment: DuctSegment) => void;
   onElementSelect?: (elementId: string, position: { x: number; y: number }) => void;
-}> = ({ segments, selectedSegmentId, onSegmentSelect, showGrid, activeTool, onSegmentAdd, onElementSelect }) => {
+  onCameraReady?: (cameraController: any) => void;
+}> = ({ segments, selectedSegmentId, onSegmentSelect, showGrid, activeTool, onSegmentAdd, onElementSelect, onCameraReady }) => {
   const { camera, raycaster, scene } = useThree();
+
+  // Initialize camera controller
+  const cameraController = useCameraController(camera);
+
+  // Expose camera controller to parent component
+  React.useEffect(() => {
+    if (onCameraReady && cameraController) {
+      onCameraReady(cameraController);
+    }
+  }, [onCameraReady, cameraController]);
   const [drawingState, setDrawingState] = useState<{
     isDrawing: boolean;
     startPoint?: Vector3;
@@ -381,6 +395,7 @@ export const Canvas3D: React.FC<Canvas3DProps> = ({
   showGizmo: initialShowGizmo = true,
   activeTool = 'select',
   onElementSelect,
+  onCameraReady,
 }) => {
   const [selectedSegmentId, setSelectedSegmentId] = useState<string>();
   const [showGrid, setShowGrid] = useState(initialShowGrid);
@@ -408,6 +423,7 @@ export const Canvas3D: React.FC<Canvas3DProps> = ({
             activeTool={activeTool}
             onSegmentAdd={onSegmentAdd}
             onElementSelect={onElementSelect}
+            onCameraReady={onCameraReady}
           />
           
           {/* Gizmo Helper */}

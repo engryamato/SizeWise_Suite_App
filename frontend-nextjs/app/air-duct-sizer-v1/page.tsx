@@ -13,6 +13,11 @@ import { ContextPropertyPanel, ElementProperties } from '@/components/ui/Context
 import { ModelSummaryPanel } from '@/components/ui/ModelSummaryPanel'
 import { StatusBar } from '@/components/ui/StatusBar'
 
+// Priority 5-7 Components
+import { WarningPanel, ValidationWarning } from '@/components/ui/WarningPanel'
+import { BottomRightCorner } from '@/components/ui/BottomRightCorner'
+import { ViewCube, ViewType } from '@/components/ui/ViewCube'
+
 // 3D Duct Segment interface for Canvas3D
 interface DuctSegment {
   id: string;
@@ -64,6 +69,11 @@ export default function AirDuctSizerV1Page() {
   const [showModelSummary, setShowModelSummary] = useState(false);
   const [showContextPanel, setShowContextPanel] = useState(false);
   const [contextPanelPosition, setContextPanelPosition] = useState({ x: 0, y: 0 });
+
+  // Priority 5-7 Component state
+  const [warningPanelOpen, setWarningPanelOpen] = useState(false);
+  const [currentView, setCurrentView] = useState<ViewType>('isometric');
+  const [cameraController, setCameraController] = useState<any>(null);
 
   // Drawing and selection state
   const [activeTool, setActiveTool] = useState<DrawingTool>('select');
@@ -281,18 +291,50 @@ export default function AirDuctSizerV1Page() {
       
       setCalculationResults(mockResults);
       
-      // Mock warnings
-      const mockWarnings = [
+      // Mock warnings - Updated to match ValidationWarning interface
+      const mockWarnings: ValidationWarning[] = [
         {
           id: 'w1',
           type: 'warning' as const,
+          category: 'SMACNA' as const,
           severity: 'medium' as const,
           title: 'Velocity Exceeds Recommended Range',
           message: 'Duct segment DS-001 has a velocity of 1,350 FPM, which exceeds the recommended maximum of 1,200 FPM for supply ducts.',
           elementId: 'duct-2',
-          elementName: 'Branch Duct A',
+          elementType: 'duct',
           suggestion: 'Consider increasing duct size to reduce velocity.',
-          standard: 'SMACNA'
+          standard: 'SMACNA',
+          timestamp: new Date(),
+          codeReference: 'SMACNA-2005 Table 5-1',
+          resolved: false
+        },
+        {
+          id: 'w2',
+          type: 'error' as const,
+          category: 'Safety' as const,
+          severity: 'critical' as const,
+          title: 'Critical Pressure Drop Exceeded',
+          message: 'System pressure drop of 2.5" WC exceeds maximum allowable limit of 2.0" WC.',
+          elementId: 'system-main',
+          elementType: 'system',
+          suggestion: 'Redesign duct layout or increase duct sizes to reduce pressure drop.',
+          standard: 'ASHRAE',
+          timestamp: new Date(),
+          codeReference: 'ASHRAE 90.1-2019 Section 6.5.3',
+          resolved: false
+        },
+        {
+          id: 'w3',
+          type: 'info' as const,
+          category: 'Performance' as const,
+          severity: 'low' as const,
+          title: 'Energy Efficiency Opportunity',
+          message: 'Current system design has potential for 15% energy savings with optimized duct sizing.',
+          suggestion: 'Consider implementing variable air volume (VAV) system.',
+          standard: 'ASHRAE',
+          timestamp: new Date(),
+          codeReference: 'ASHRAE 90.1-2019 Section 6.4',
+          resolved: false
         }
       ];
       
@@ -351,6 +393,61 @@ export default function AirDuctSizerV1Page() {
     toast.info('Duct Removed', 'Duct segment removed from the system.');
   }, [toast]);
 
+  // Priority 5-7 Component handlers
+  const handleWarningClick = useCallback((warning: ValidationWarning) => {
+    if (warning.elementId) {
+      handleJumpToElement(warning.elementId);
+    }
+    toast.info('Warning Selected', `Navigating to ${warning.title}`);
+  }, [handleJumpToElement, toast]);
+
+  const handleWarningResolve = useCallback((warningId: string) => {
+    setWarnings(prev => prev.map(w =>
+      w.id === warningId ? { ...w, resolved: true } : w
+    ));
+    toast.success('Warning Resolved', 'Warning has been marked as resolved');
+  }, [toast]);
+
+  const handleWarningDismiss = useCallback((warningId: string) => {
+    setWarnings(prev => prev.filter(w => w.id !== warningId));
+    toast.info('Warning Dismissed', 'Warning has been dismissed');
+  }, [toast]);
+
+  const handleViewChange = useCallback((view: ViewType) => {
+    setCurrentView(view);
+    if (cameraController) {
+      cameraController.setView(view, true);
+      toast.info('View Changed', `Switched to ${view} view`);
+    } else {
+      toast.warning('Camera Not Ready', 'Camera controller is not yet initialized');
+    }
+  }, [cameraController, toast]);
+
+  const handleResetView = useCallback(() => {
+    setCurrentView('isometric');
+    if (cameraController) {
+      cameraController.resetView();
+      toast.info('View Reset', 'Camera view reset to default isometric');
+    } else {
+      toast.warning('Camera Not Ready', 'Camera controller is not yet initialized');
+    }
+  }, [cameraController, toast]);
+
+  const handleFitToScreen = useCallback(() => {
+    if (cameraController) {
+      cameraController.fitToScreen();
+      toast.info('Fit to Screen', 'Camera adjusted to fit all elements');
+    } else {
+      toast.warning('Camera Not Ready', 'Camera controller is not yet initialized');
+    }
+  }, [cameraController, toast]);
+
+  // Camera controller ready handler
+  const handleCameraReady = useCallback((controller: any) => {
+    setCameraController(controller);
+    toast.success('Camera Ready', '3D navigation controls are now active');
+  }, [toast]);
+
   // System summary data
   const systemSummary = {
     totalRooms: 0,
@@ -398,6 +495,7 @@ export default function AirDuctSizerV1Page() {
           showGizmo={true}
           activeTool={activeTool}
           onElementSelect={handleElementSelect}
+          onCameraReady={handleCameraReady}
         />
       </div>
 
@@ -409,6 +507,9 @@ export default function AirDuctSizerV1Page() {
           // Handle property panel opening if needed
         }}
       />
+
+      {/* Priority 6: Bottom Right Corner - Chat & Help */}
+      <BottomRightCorner className="fixed bottom-6 right-24 z-50" />
 
       {/* Context Property Panel */}
       <ContextPropertyPanel
@@ -452,8 +553,17 @@ export default function AirDuctSizerV1Page() {
         currentBranch="main"
         hasUnsavedChanges={saveStatus === 'unsaved'}
         calculationStatus={isCalculating ? 'running' : calculationResults.length > 0 ? 'complete' : 'idle'}
-        warningCount={warnings.filter(w => w.type === 'warning').length}
-        errorCount={warnings.filter(w => w.type === 'error').length}
+        warningCount={warnings.filter(w => w.type === 'warning' && !w.resolved).length}
+        errorCount={warnings.filter(w => w.type === 'error' && !w.resolved).length}
+      />
+
+      {/* Priority 5: Warning Panel */}
+      <WarningPanel
+        warnings={warnings}
+        onWarningClick={handleWarningClick}
+        onWarningResolve={handleWarningResolve}
+        onWarningDismiss={handleWarningDismiss}
+        className="fixed right-6 top-1/2 -translate-y-1/2 z-40"
       />
 
       {/* Model Summary Trigger Button (floating) */}
@@ -471,19 +581,28 @@ export default function AirDuctSizerV1Page() {
           📊
         </motion.div>
         <span className="text-sm font-medium">Model Summary</span>
-        {warnings.length > 0 && (
+        {warnings.filter(w => !w.resolved).length > 0 && (
           <span className="px-2 py-1 bg-red-500 text-white text-xs rounded-full">
-            {warnings.length}
+            {warnings.filter(w => !w.resolved).length}
           </span>
         )}
       </motion.button>
+
+      {/* Priority 7: ViewCube 3D Navigation */}
+      <ViewCube
+        currentView={currentView}
+        onViewChange={handleViewChange}
+        onResetView={handleResetView}
+        onFitToScreen={handleFitToScreen}
+        className="fixed top-20 right-6 z-30"
+      />
 
       {/* Welcome Message - Positioned to not interfere with canvas */}
       <motion.div
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ delay: 1 }}
-        className="fixed top-20 right-4 bg-white/90 dark:bg-neutral-900/90 backdrop-blur-lg rounded-2xl border border-white/20 shadow-2xl p-4 z-30 max-w-sm text-center pointer-events-none"
+        className="fixed top-40 right-4 bg-white/90 dark:bg-neutral-900/90 backdrop-blur-lg rounded-2xl border border-white/20 shadow-2xl p-4 z-30 max-w-sm text-center pointer-events-none"
       >
         <div className="flex items-center space-x-2 mb-3">
           <span className="text-2xl">🏗️</span>

@@ -66,7 +66,7 @@ export const AppShell: React.FC<AppShellProps> = ({
       }, 1000);
       return () => clearTimeout(timer);
     }
-  }, [isMinimalLayout, toast]);
+  }, [isMinimalLayout]); // Removed toast dependency to prevent infinite loop
 
   // Global keyboard shortcuts
   useEffect(() => {

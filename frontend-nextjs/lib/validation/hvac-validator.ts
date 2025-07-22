@@ -341,4 +341,43 @@ export class HVACValidator {
 
     return suggestions;
   }
+
+  public generateTestWarnings(): ValidationWarning[] {
+    // Generate sample warnings for testing and demo purposes
+    return [
+      {
+        id: 'test-warning-1',
+        type: 'warning',
+        severity: 'medium',
+        title: 'Velocity Exceeds Recommended Range',
+        message: 'Duct segment DS-001 has a velocity of 1,350 FPM, which exceeds the recommended maximum of 1,200 FPM for supply ducts.',
+        location: 'Segment DS-001',
+        suggestion: 'Consider increasing duct size to reduce velocity.',
+        standard: 'SMACNA',
+        timestamp: new Date().toISOString(),
+      },
+      {
+        id: 'test-warning-2',
+        type: 'info',
+        severity: 'low',
+        title: 'Pressure Drop Calculation',
+        message: 'Total system pressure drop is 1.2" WC, which is within acceptable limits.',
+        location: 'System Overview',
+        suggestion: 'No action required.',
+        standard: 'ASHRAE',
+        timestamp: new Date().toISOString(),
+      },
+      {
+        id: 'test-warning-3',
+        type: 'error',
+        severity: 'high',
+        title: 'Missing Equipment Connection',
+        message: 'Room R-101 does not have any connected supply ducts.',
+        location: 'Room R-101',
+        suggestion: 'Add supply duct connection to ensure proper air distribution.',
+        standard: 'SMACNA',
+        timestamp: new Date().toISOString(),
+      },
+    ];
+  }
 }

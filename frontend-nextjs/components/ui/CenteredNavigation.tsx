@@ -97,7 +97,7 @@ const MAIN_NAV_ITEMS: NavigationItem[] = [
     label: 'Tools',
     icon: Wrench,
     dropdown: [
-      { id: 'air-duct-sizer', label: 'Air Duct Sizer', href: '/air-duct-sizer' },
+      { id: 'air-duct-sizer', label: 'Air Duct Sizer', href: '/air-duct-sizer-v1' },
       { id: 'combustion-vent', label: 'Combustion Vent Sizer', href: '/combustion-vent-sizer' },
       { id: 'grease-duct', label: 'Grease Duct Sizer', href: '/grease-duct-sizer' },
       { id: 'generator-exhaust', label: 'Generator Exhaust Sizer', href: '/generator-exhaust-sizer' },

@@ -1,0 +1,183 @@
+# Page snapshot
+
+```yaml
+- link "Skip to main content":
+  - /url: "#main-content"
+- navigation "Main navigation":
+  - text: SW SizeWise
+  - link "Home":
+    - /url: /
+    - img
+    - text: Home
+  - img
+  - text: File
+  - img
+  - img
+  - text: Projects
+  - img
+  - img
+  - text: Tools
+  - img
+  - img
+  - text: Profile
+  - img
+- navigation "Dock navigation":
+  - button "Chat & Notifications":
+    - img
+    - text: "3"
+  - button "Help & Docs":
+    - img
+- main "Main content":
+  - heading "Air Duct Sizer" [level=1]
+  - text: New Air Duct Project Free 0 rooms, 0 segments
+  - toolbar "Drawing tools":
+    - group "Drawing tools":
+      - text: Tools
+      - button "Select tool - Select and move objects" [pressed]:
+        - img
+        - text: Select V
+      - button "Room tool - Draw rooms and spaces":
+        - img
+        - text: Room R
+      - button "Duct tool - Draw duct segments":
+        - img
+        - text: Duct D
+      - button "Equipment tool - Place HVAC equipment":
+        - img
+        - text: Equipment E
+      - button "Pan tool - Pan and navigate the canvas":
+        - img
+        - text: Pan H
+      - button "Scale tool - Calibrate plan scale":
+        - img
+        - text: Scale L
+    - text: View
+    - button "Zoom In":
+      - img
+      - text: Zoom In
+    - button "Zoom Out":
+      - img
+      - text: Zoom Out
+    - button "Reset":
+      - img
+      - text: Reset
+    - text: "Zoom: 100% Grid"
+    - button "Show Grid":
+      - img
+      - text: Show Grid
+    - button "Snap to Grid":
+      - img
+      - text: Snap to Grid
+    - text: "Grid: 20px Plan"
+    - button "Import Plan":
+      - img
+      - text: Import Plan
+  - text: "Tool: SELECT Grid: ON | Snap: ON Zoom: 100% Rooms: 0 | Segments: 0 | Equipment: 0 Shortcuts: V: Select | R: Room | D: Duct | E: Equipment | H: Pan G: Toggle Grid | S: Toggle Snap | ESC: Clear Selection"
+  - button "Front"
+  - button "Back"
+  - button "Right"
+  - button "Left"
+  - button "Top"
+  - button "Bottom"
+  - button "ISO"
+  - button "ISO↑"
+  - button "ISO↓"
+  - button "Reset to Home View":
+    - img
+  - button "Fit to Screen":
+    - img
+  - img
+  - text: ISO View
+  - img
+  - heading "Project Properties" [level=2]
+  - button:
+    - img
+  - button "Project properties panel":
+    - img
+  - button "Room properties panel" [disabled]:
+    - img
+  - button "Segment properties panel" [disabled]:
+    - img
+  - button "Equipment properties panel" [disabled]:
+    - img
+  - heading "Project Information" [level=3]
+  - button "Edit"
+  - text: Project Name *
+  - paragraph: New Air Duct Project
+  - text: Location *
+  - paragraph: Enter location
+  - text: User Name
+  - paragraph: Demo User
+  - text: Contractor
+  - paragraph: Not specified
+  - heading "Codes & Standards" [level=3]
+  - checkbox "Enable SMACNA code standard" [disabled]
+  - text: SMACNA
+  - checkbox "Enable ASHRAE code standard" [disabled]
+  - text: ASHRAE
+  - checkbox "Enable UL code standard" [disabled]
+  - text: UL
+  - checkbox "Enable IMC code standard" [disabled]
+  - text: IMC
+  - checkbox "Enable NFPA code standard" [disabled]
+  - text: NFPA
+  - heading "Computational Properties" [level=3]
+  - img
+  - text: Pro Only Default Velocity (FPM)
+  - paragraph: "1200"
+  - img
+  - text: Pressure Class
+  - paragraph: Medium
+  - img
+  - text: Altitude (ft)
+  - paragraph: "0"
+  - img
+  - text: Friction Rate (in. w.g./100ft)
+  - paragraph: "0.08"
+  - img
+  - heading "Actions" [level=3]
+  - button "Save Project":
+    - img
+    - text: Save Project
+  - button "Export Project":
+    - img
+    - text: Export Project
+  - button "Import Project":
+    - img
+    - text: Import Project
+  - text: "Last modified: 7/22/2025, 10:00:21 AM Objects: 0 Ready • 0/3 rooms, 0/25 segments Grid: 20px Zoom: 100%"
+  - button "1 1 1":
+    - img
+    - text: 1 1 1
+  - button "Chat & Notifications 1":
+    - img
+    - text: Chat & Notifications 1
+  - button:
+    - img
+- img
+- paragraph: Welcome to SizeWise V1!
+- paragraph: New glassmorphism UI with centered navigation is now active.
+- button:
+  - img
+- img
+- paragraph: Welcome to SizeWise V1!
+- paragraph: New glassmorphism UI with centered navigation is now active.
+- button:
+  - img
+- img
+- paragraph: Welcome to SizeWise V1!
+- paragraph: New glassmorphism UI with centered navigation is now active.
+- button:
+  - img
+- img
+- paragraph: Welcome to SizeWise V1!
+- paragraph: New glassmorphism UI with centered navigation is now active.
+- button:
+  - img
+- img
+- paragraph: Welcome to SizeWise V1!
+- paragraph: New glassmorphism UI with centered navigation is now active.
+- button:
+  - img
+- alert
+```

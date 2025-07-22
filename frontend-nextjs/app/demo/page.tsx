@@ -46,12 +46,7 @@ export default function DemoPage() {
     };
 
     const msg = messages[type];
-    toast[type](msg.title, msg.message, {
-      actions: type === 'error' ? {
-        label: 'Retry',
-        onClick: () => console.log('Retry clicked'),
-      } : undefined,
-    });
+    toast[type](msg.title, msg.message);
   };
 
   const dockItems: DockItem[] = [

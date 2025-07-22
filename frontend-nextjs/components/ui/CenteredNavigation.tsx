@@ -30,7 +30,7 @@ import { cn } from '@/lib/utils';
 interface NavigationItem {
   id: string;
   label: string;
-  icon: React.ComponentType<{ size?: number; className?: string }>;
+  icon: any;
   href?: string;
   onClick?: () => void;
   dropdown?: DropdownItem[];
@@ -40,7 +40,7 @@ interface NavigationItem {
 interface DropdownItem {
   id: string;
   label: string;
-  icon?: React.ComponentType<{ size?: number; className?: string }>;
+  icon?: any;
   href?: string;
   onClick?: () => void;
   separator?: boolean;
@@ -334,7 +334,7 @@ export const CenteredNavigation: React.FC<CenteredNavigationProps> = ({
       </motion.nav>
 
       {/* Bottom-right corner dock */}
-      <div className="fixed bottom-4 right-4 z-40">
+      <div className="fixed bottom-4 right-20 z-40">
         <Dock
           items={cornerItems}
           orientation="vertical"

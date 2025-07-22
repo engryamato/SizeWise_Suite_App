@@ -22,7 +22,7 @@ import { cn } from '@/lib/utils';
 
 export type ElementType = 'room' | 'duct' | 'equipment' | 'annotation' | 'group';
 
-interface ElementProperties {
+export interface ElementProperties {
   id: string;
   type: ElementType;
   name: string;

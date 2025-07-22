@@ -61,8 +61,7 @@ export const AppShell: React.FC<AppShellProps> = ({
       const timer = setTimeout(() => {
         toast.success(
           "Welcome to SizeWise V1!",
-          "New glassmorphism UI with centered navigation is now active.",
-          { duration: 4000 }
+          "New glassmorphism UI with centered navigation is now active."
         );
       }, 1000);
       return () => clearTimeout(timer);
@@ -134,9 +133,33 @@ export const AppShell: React.FC<AppShellProps> = ({
       <ProjectPropertiesPanel
         isOpen={showProjectProperties}
         onClose={() => setShowProjectProperties(false)}
-        onProjectUpdate={(project) => {
-          toast.info("Project Updated", `${project.name} has been updated.`);
+        projectInfo={{
+          name: "Demo Project",
+          number: "001",
+          description: "",
+          location: "",
+          clientName: "",
+          estimatorName: "",
+          dateCreated: new Date().toISOString(),
+          lastModified: new Date().toISOString(),
+          version: "1.0"
         }}
+        codeStandards={{ smacna: true, ashrae: true, ul: false, imc: false, nfpa: false }}
+        globalDefaults={{
+          units: 'Imperial',
+          defaultDuctSize: { width: 12, height: 8 },
+          defaultMaterial: 'Galvanized Steel',
+          defaultInsulation: 'None',
+          defaultFitting: 'Standard',
+          calibrationMode: 'Auto',
+          defaultVelocity: 1000,
+          pressureClass: "2",
+          altitude: 0,
+          frictionRate: 0.1
+        }}
+        onProjectInfoChange={() => {}}
+        onCodeStandardsChange={() => {}}
+        onGlobalDefaultsChange={() => {}}
       />
     </div>
   );

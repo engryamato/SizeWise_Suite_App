@@ -133,7 +133,8 @@ export const useCameraController = (
       // Update camera
       camera.position.copy(currentPos);
       camera.lookAt(currentTarget);
-      camera.updateProjectionMatrix();
+      // @ts-ignore
+      camera.updateProjectionMatrix && camera.updateProjectionMatrix();
 
       if (progress < 1) {
         animationRef.current = requestAnimationFrame(animate);
@@ -167,7 +168,8 @@ export const useCameraController = (
       if (viewPosition.up) {
         camera.up.copy(viewPosition.up);
       }
-      camera.updateProjectionMatrix();
+      // @ts-ignore
+      camera.updateProjectionMatrix && camera.updateProjectionMatrix();
     }
   }, [camera, getViewPosition, animateCamera]);
 

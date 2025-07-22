@@ -64,7 +64,7 @@ export const useAuthStore = create<AuthStore>()(
           email: 'demo@sizewise.com',
           name: 'Demo User',
           tier: 'free',
-          company: null,
+          company: undefined,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
         },

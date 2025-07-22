@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useContext, useState, useCallback } from 'react';
+import React, { createContext, useContext, useState, useCallback, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, CheckCircle, AlertCircle, Info, AlertTriangle } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -45,7 +45,7 @@ export function ToasterProvider({
   const [toasts, setToasts] = useState<Toast[]>([]);
 
   const addToast = useCallback((toast: Omit<Toast, 'id'>) => {
-    const id = Math.random().toString(36).substr(2, 9);
+    const id = Math.random().toString(36).substring(2, 11);
     const newToast: Toast = {
       ...toast,
       id,
@@ -85,7 +85,7 @@ export function ToasterProvider({
     addToast({ type: 'info', title, message });
   }, [addToast]);
 
-  const value: ToasterContextType = {
+  const value: ToasterContextType = useMemo(() => ({
     toasts,
     addToast,
     removeToast,
@@ -93,7 +93,7 @@ export function ToasterProvider({
     error,
     warning,
     info,
-  };
+  }), [toasts, addToast, removeToast, success, error, warning, info]);
 
   const positionClasses = {
     'top-left': 'top-4 left-4',

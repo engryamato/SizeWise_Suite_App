@@ -151,20 +151,15 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
 
       {/* Navigation Items */}
       <div className="flex-1 p-2 space-y-1">
+        {/* @ts-ignore */}
         {filteredItems.map((item) => {
           const isHelpItem = item.id === "help";
-          const Component = isHelpItem ? "button" : Link;
-          const componentProps = isHelpItem
-            ? {
-                type: "button" as const,
-                onClick: onHelpClick
-              }
-            : { href: item.href };
 
-          return (
-            <Component
+          return isHelpItem ? (
+            <button
               key={item.id}
-              {...componentProps}
+              type="button"
+              onClick={onHelpClick}
 
               aria-current={isActive(item.href) ? "page" : undefined}
               className={`
@@ -201,7 +196,53 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
                   {item.badge > 9 ? "9+" : item.badge}
                 </span>
               )}
-            </Component>
+            </button>
+          ) : (
+            <Link
+              key={item.id}
+              href={item.href || '/'}
+              aria-current={isActive(item.href) ? "page" : undefined}
+              className={`
+                group flex items-center px-3 py-2 rounded-md text-sm font-medium transition-colors w-full text-left
+                focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-neutral-900
+                ${
+                  isActive(item.href)
+                    ? "bg-neutral-800 text-white"
+                    : "text-neutral-300 hover:bg-neutral-800 hover:text-white"
+                }
+              `}
+              onMouseEnter={() => setHoveredItem(item.id)}
+              onMouseLeave={() => setHoveredItem(null)}
+              title={isCollapsed ? item.label : undefined}
+            >
+              <div className="relative flex items-center">
+                {/* @ts-ignore */}
+                <item.icon
+                  size={20}
+                  className={`
+                    transition-colors
+                    ${isActive(item.href) ? "text-white" : "text-neutral-400 group-hover:text-white"}
+                  `}
+                />
+              </div>
+
+              {!isCollapsed && (
+                <>
+                  <span className="ml-3 flex-1">{item.label}</span>
+                  {item.badge && item.badge > 0 && (
+                    <span className="ml-2 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white bg-red-600 rounded-full">
+                      {item.badge > 99 ? "99+" : item.badge}
+                    </span>
+                  )}
+                </>
+              )}
+
+              {isCollapsed && item.badge && item.badge > 0 && (
+                <span className="absolute left-8 top-1 inline-flex items-center justify-center w-4 h-4 text-xs font-bold leading-none text-white bg-red-600 rounded-full">
+                  {item.badge > 9 ? "9+" : item.badge}
+                </span>
+              )}
+            </Link>
           );
         })}
       </div>

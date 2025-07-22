@@ -24,6 +24,11 @@ export interface ValidationWarning {
   title: string;
   message: string;
   elementId?: string;
+  elementType?: string;
+  code?: string;
+  location?: string;
+  suggestion?: string;
+  standard?: string;
   severity: 'critical' | 'high' | 'medium' | 'low';
   timestamp: Date;
   resolved?: boolean;

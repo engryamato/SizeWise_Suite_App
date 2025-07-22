@@ -45,7 +45,7 @@ export default function ProjectsPage() {
           { name: "Residential Complex", type: "Residential", status: "Complete", lastModified: "3 days ago" },
         ].map((project, index) => (
           <div
-            key={index}
+            key={`project-${index}-${project.name}`}
             className="bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-lg p-6 hover:shadow-md transition-shadow cursor-pointer"
           >
             <div className="flex items-start justify-between mb-4">

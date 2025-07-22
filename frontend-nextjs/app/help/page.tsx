@@ -116,7 +116,7 @@ export default function HelpPage() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {quickActions.map((action, index) => (
           <a
-            key={index}
+            key={`quick-action-${index}-${action.title}`}
             href={action.href}
             className="group p-6 bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-lg hover:shadow-md transition-all hover:scale-105"
           >
@@ -142,7 +142,7 @@ export default function HelpPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {helpSections.flatMap(section => section.items.filter(item => item.popular)).map((item, index) => (
             <a
-              key={index}
+              key={`popular-${index}-${item.title}`}
               href="#"
               className="flex items-center space-x-3 p-3 bg-white dark:bg-neutral-800 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-colors group"
             >
@@ -164,14 +164,14 @@ export default function HelpPage() {
       {/* Help Sections */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {helpSections.map((section, sectionIndex) => (
-          <div key={sectionIndex} className="bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-lg p-6">
+          <div key={`section-${sectionIndex}-${section.title}`} className="bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-lg p-6">
             <h2 className="text-xl font-semibold text-neutral-900 dark:text-white mb-4">
               {section.title}
             </h2>
             <div className="space-y-3">
               {section.items.map((item, itemIndex) => (
                 <a
-                  key={itemIndex}
+                  key={`item-${sectionIndex}-${itemIndex}-${item.title}`}
                   href="#"
                   className="flex items-center space-x-3 p-3 rounded-lg hover:bg-neutral-50 dark:hover:bg-neutral-700 transition-colors group"
                 >

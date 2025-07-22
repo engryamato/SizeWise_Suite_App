@@ -46,7 +46,9 @@ export const SimpleCanvas: React.FC<SimpleCanvasProps> = ({ width, height }) => 
       if (!currentProject?.plan_pdf || !currentProject.plan_pdf.startsWith('data:application/pdf')) return
       try {
         const [{ getDocument, GlobalWorkerOptions }, worker] = await Promise.all([
+          // @ts-ignore
           import('pdfjs-dist/build/pdf'),
+          // @ts-ignore
           import('pdfjs-dist/build/pdf.worker.entry')
         ])
         if (!GlobalWorkerOptions.workerSrc) {

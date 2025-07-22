@@ -131,7 +131,7 @@ const PDFViewer: React.FC<PDFViewerProps> = ({
     transform: `translate(${position.x}px, ${position.y}px)`,
   } : {};
 
-  const pdfStyle = {
+  const pdfStyle: React.CSSProperties = {
     transform: `scale(${scale}) rotate(${rotation}deg)`,
     transformOrigin: 'center center',
     transition: isDragging ? 'none' : 'transform 0.2s ease',

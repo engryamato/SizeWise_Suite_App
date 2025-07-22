@@ -145,7 +145,7 @@ export const DrawingToolFAB: React.FC<DrawingToolFABProps> = ({
             initial={{ opacity: 0, scale: 0.8, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.8, y: 20 }}
-            className="fixed bottom-24 right-6 z-40 bg-white/90 dark:bg-neutral-900/90 backdrop-blur-lg rounded-2xl border border-white/20 shadow-2xl p-4 w-64"
+            className="fixed bottom-24 right-6 z-[60] bg-white/90 dark:bg-neutral-900/90 backdrop-blur-lg rounded-2xl border border-white/20 shadow-2xl p-4 w-64"
           >
             <div className="flex items-center justify-between mb-3">
               <h3 className="font-semibold text-neutral-800 dark:text-white">
@@ -212,7 +212,7 @@ export const DrawingToolFAB: React.FC<DrawingToolFABProps> = ({
             initial={{ opacity: 0, scale: 0.8 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.8 }}
-            className="fixed bottom-24 right-6 z-40 bg-white/90 dark:bg-neutral-900/90 backdrop-blur-lg rounded-2xl border border-white/20 shadow-2xl p-2"
+            className="fixed bottom-24 right-6 z-[60] bg-white/90 dark:bg-neutral-900/90 backdrop-blur-lg rounded-2xl border border-white/20 shadow-2xl p-2"
           >
             <div className="grid grid-cols-2 gap-2 w-48">
               {toolOptions.map((tool) => (
@@ -254,7 +254,7 @@ export const DrawingToolFAB: React.FC<DrawingToolFABProps> = ({
         type="button"
         onClick={handleMainButtonClick}
         className={cn(
-          "fixed bottom-6 right-6 z-50 w-14 h-14 rounded-full",
+          "fixed bottom-6 right-6 z-[60] w-14 h-14 rounded-full",
           "bg-orange-500 hover:bg-orange-600 text-white shadow-2xl",
           "flex items-center justify-center transition-colors",
           "border-2 border-white/20",
@@ -283,7 +283,7 @@ export const DrawingToolFAB: React.FC<DrawingToolFABProps> = ({
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="fixed bottom-20 right-6 z-40 bg-black/80 text-white px-3 py-1 rounded-lg text-sm font-medium"
+          className="fixed bottom-20 right-6 z-[60] bg-black/80 text-white px-3 py-1 rounded-lg text-sm font-medium"
         >
           {activeToolOption?.label || 'Drawing Tool'}
           {activeToolOption?.shortcut && (

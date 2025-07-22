@@ -78,12 +78,11 @@ export default function ToolsPage() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {tools.map((tool) => {
           const isAvailable = tool.status === "available";
-          const Component = isAvailable ? Link : "div";
-          
-          return (
-            <Component
+
+          return isAvailable ? (
+            <Link
               key={tool.id}
-              href={isAvailable ? tool.href : undefined}
+              href={tool.href}
               className={`
                 group bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 
                 rounded-lg p-6 transition-all
@@ -121,7 +120,29 @@ export default function ToolsPage() {
                   </span>
                 </div>
               )}
-            </Component>
+            </Link>
+          ) : (
+            <div
+              key={tool.id}
+              className="group bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-lg p-6 transition-all opacity-60 cursor-not-allowed"
+            >
+              <div className="flex items-start justify-between mb-4">
+                <div className={`p-3 rounded-lg ${getColorClasses(tool.color, isAvailable)}`}>
+                  {tool.icon}
+                </div>
+                <span className="px-2 py-1 text-xs font-medium bg-neutral-100 text-neutral-600 dark:bg-neutral-700 dark:text-neutral-400 rounded-full">
+                  Coming Soon
+                </span>
+              </div>
+
+              <h3 className="text-lg font-semibold text-neutral-900 dark:text-white mb-2">
+                {tool.name}
+              </h3>
+
+              <p className="text-neutral-600 dark:text-neutral-300 text-sm leading-relaxed">
+                {tool.description}
+              </p>
+            </div>
           );
         })}
       </div>
@@ -134,7 +155,7 @@ export default function ToolsPage() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
           <div>
             <div className="font-medium text-neutral-900 dark:text-white">SMACNA</div>
-            <div className="text-neutral-600 dark:text-neutral-300">Sheet Metal and Air Conditioning Contractors' National Association</div>
+            <div className="text-neutral-600 dark:text-neutral-300">Sheet Metal and Air Conditioning Contractors&apos; National Association</div>
           </div>
           <div>
             <div className="font-medium text-neutral-900 dark:text-white">NFPA 96</div>

@@ -24,7 +24,7 @@ export default function RootLayout({
       </head>
       <body className={inter.className}>
         <ThemeProvider defaultTheme="system" storageKey="sizewise-theme">
-          <ToasterProvider position="bottom-right" maxToasts={5}>
+          <ToasterProvider position="bottom-left" maxToasts={5}>
             <AppShell>
               {children}
             </AppShell>

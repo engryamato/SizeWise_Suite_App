@@ -76,7 +76,7 @@ interface DrawingToolsProps {
 
 interface ToolButton {
   id: DrawingMode;
-  icon: React.ComponentType<{ size?: number; className?: string }>;
+  icon: any;
   label: string;
   shortcut?: string;
   group: 'selection' | 'drawing' | 'duct' | 'actions';

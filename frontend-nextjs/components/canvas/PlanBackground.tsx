@@ -22,7 +22,9 @@ export const PlanBackground: React.FC<PlanBackgroundProps> = ({ pdfData, scale, 
       }
 
       const [{ getDocument, GlobalWorkerOptions }, worker] = await Promise.all([
+        // @ts-ignore
         import('pdfjs-dist/build/pdf'),
+        // @ts-ignore
         import('pdfjs-dist/build/pdf.worker.entry')
       ])
       if (!workerLoaded.current) {

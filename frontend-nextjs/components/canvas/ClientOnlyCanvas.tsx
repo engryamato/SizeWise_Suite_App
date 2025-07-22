@@ -19,14 +19,16 @@ export const ClientOnlyCanvas: React.FC<ClientOnlyCanvasProps> = ({ width, heigh
         setCanvasComponent(() => SimpleCanvas)
       } catch (error) {
         console.error('Failed to load canvas component:', error)
-        setCanvasComponent(() => () => (
+        const ErrorComponent = () => (
           <div className="flex items-center justify-center w-full h-full bg-gray-100 border-2 border-dashed border-gray-300 rounded-lg">
             <div className="text-center">
               <p className="text-gray-500 mb-2">Canvas temporarily unavailable</p>
               <p className="text-sm text-gray-400">Please refresh the page</p>
             </div>
           </div>
-        ))
+        )
+        ErrorComponent.displayName = 'CanvasErrorComponent'
+        setCanvasComponent(() => ErrorComponent)
       } finally {
         setIsLoading(false)
       }

@@ -15,6 +15,10 @@ import { useCalculationStore } from '@/stores/calculation-store'
 import { Toolbar } from '@/components/ui/Toolbar'
 import { Sidebar } from '@/components/ui/Sidebar'
 import { ClientOnlyCanvas } from '@/components/canvas/ClientOnlyCanvas'
+import { WarningPanel, ValidationWarning } from '@/components/ui/WarningPanel'
+import { BottomRightCorner } from '@/components/ui/BottomRightCorner'
+import { ViewCube, ViewType } from '@/components/ui/ViewCube'
+import { HVACValidator } from '@/lib/validation/hvac-validator'
 import {
   Play,
   Pause,
@@ -39,6 +43,11 @@ export default function AirDuctSizerPage() {
 
   const fileInputRef = useRef<HTMLInputElement>(null)
 
+  // Priority 5-7 state
+  const [validationWarnings, setValidationWarnings] = useState<ValidationWarning[]>([])
+  const [currentView, setCurrentView] = useState<ViewType>('isometric')
+  const [validator] = useState(() => HVACValidator.getInstance())
+
   const handleImportPlan = () => {
     fileInputRef.current?.click()
   }
@@ -53,6 +62,42 @@ export default function AirDuctSizerPage() {
     }
     reader.readAsDataURL(file)
   }
+
+  // Priority 5-7 handlers
+  const handleWarningClick = (warning: ValidationWarning) => {
+    // Highlight the related element on canvas
+    console.log('Warning clicked:', warning)
+  }
+
+  const handleWarningResolve = (warningId: string) => {
+    setValidationWarnings(prev =>
+      prev.map(w => w.id === warningId ? { ...w, resolved: true } : w)
+    )
+  }
+
+  const handleWarningDismiss = (warningId: string) => {
+    setValidationWarnings(prev => prev.filter(w => w.id !== warningId))
+  }
+
+  const handleViewChange = (view: ViewType) => {
+    setCurrentView(view)
+    // TODO: Integrate with Three.js camera controls
+  }
+
+  const handleResetView = () => {
+    setCurrentView('isometric')
+    // TODO: Reset camera to default view
+  }
+
+  const handleFitToScreen = () => {
+    // TODO: Fit all objects to screen
+  }
+
+  // Generate test warnings on component mount
+  React.useEffect(() => {
+    const testWarnings = validator.generateTestWarnings()
+    setValidationWarnings(testWarnings)
+  }, [validator])
   const { isAuthenticated, user } = useAuthStore()
   const { loadMaterials, loadStandards } = useCalculationStore()
 
@@ -242,6 +287,14 @@ export default function AirDuctSizerPage() {
         {/* Canvas area */}
         <div className="flex-1 relative">
           <ClientOnlyCanvas width={canvasSize.width} height={canvasSize.height} />
+
+          {/* Priority 7: ViewCube */}
+          <ViewCube
+            currentView={currentView}
+            onViewChange={handleViewChange}
+            onResetView={handleResetView}
+            onFitToScreen={handleFitToScreen}
+          />
         </div>
 
         {/* Sidebar */}
@@ -276,6 +329,17 @@ export default function AirDuctSizerPage() {
           </div>
         </div>
       </div>
+
+      {/* Priority 5: Warning Panel */}
+      <WarningPanel
+        warnings={validationWarnings}
+        onWarningClick={handleWarningClick}
+        onWarningResolve={handleWarningResolve}
+        onWarningDismiss={handleWarningDismiss}
+      />
+
+      {/* Priority 6: Bottom Right Corner */}
+      <BottomRightCorner />
     </div>
   )
 }

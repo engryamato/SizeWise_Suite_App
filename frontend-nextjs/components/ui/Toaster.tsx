@@ -1,3 +1,5 @@
+// DEPRECATED: Use `lib/hooks/useToaster.tsx` for all toast notifications.
+// This file is retained for reference only and should not be used in new code.
 "use client";
 
 import React, { forwardRef, useImperativeHandle, useState, useCallback } from 'react';

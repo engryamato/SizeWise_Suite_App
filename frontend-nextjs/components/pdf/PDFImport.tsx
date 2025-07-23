@@ -348,12 +348,14 @@ export const PDFImport: React.FC<PDFImportProps> = ({
 
   const validateFile = (file: File): boolean => {
     if (file.type !== 'application/pdf') {
-      toast.error('Invalid File Type', 'Please select a PDF file.');
+      // Safe: Only fires on invalid file type, user-driven event
+toast.error('Invalid File Type', 'Please select a PDF file.');
       return false;
     }
 
     if (file.size > maxFileSize * 1024 * 1024) {
-      toast.error('File Too Large', `File size must be less than ${maxFileSize}MB.`);
+      // Safe: Only fires on file size validation, user-driven event
+toast.error('File Too Large', `File size must be less than ${maxFileSize}MB.`);
       return false;
     }
 
@@ -378,10 +380,12 @@ export const PDFImport: React.FC<PDFImportProps> = ({
 
       setPdfFile(pdfFile);
       onPDFLoad?.(pdfFile);
-      toast.success('PDF Loaded', `${file.name} loaded successfully with ${pdf.numPages} pages.`);
+      // Safe: Only fires on successful PDF load event, not in render/effect/loop
+toast.success('PDF Loaded', `${file.name} loaded successfully with ${pdf.numPages} pages.`);
     } catch (error) {
       console.error('Error loading PDF:', error);
-      toast.error('PDF Load Error', 'Failed to load the PDF file.');
+      // Safe: Only fires on PDF load error event, not in render/effect/loop
+toast.error('PDF Load Error', 'Failed to load the PDF file.');
     } finally {
       setIsLoading(false);
     }
@@ -392,7 +396,8 @@ export const PDFImport: React.FC<PDFImportProps> = ({
       URL.revokeObjectURL(pdfFile.url);
       setPdfFile(null);
       onPDFRemove?.();
-      toast.info('PDF Removed', 'PDF background has been removed.');
+      // Safe: Only fires on PDF remove event, not in render/effect/loop
+toast.info('PDF Removed', 'PDF background has been removed.');
     }
   };
 

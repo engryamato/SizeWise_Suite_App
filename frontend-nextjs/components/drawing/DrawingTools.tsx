@@ -278,6 +278,7 @@ export const DrawingTools: React.FC<DrawingToolsProps> = ({
   const handleCopyElements = () => {
     if (selectedElements.length > 0) {
       // In a real implementation, this would copy elements to clipboard
+            // Safe: Only fires on copy elements action, not in render/effect/loop
       toast.success('Elements Copied', `Copied ${selectedElements.length} element(s).`);
     }
   };
@@ -286,6 +287,7 @@ export const DrawingTools: React.FC<DrawingToolsProps> = ({
     if (selectedElements.length > 0) {
       selectedElements.forEach(id => onElementDelete?.(id));
       onSelectionChange?.([]);
+      // Safe: Only fires on delete elements action, not in render/effect/loop
       toast.info('Elements Deleted', `Deleted ${selectedElements.length} element(s).`);
     }
   };

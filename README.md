@@ -1,6 +1,6 @@
 # SizeWise Suite
 
-A modular, offline-capable HVAC engineering and estimating platform designed to unify duct sizing, vent design, and cost estimating in a single, standards-driven workspace with beautiful glassmorphism UI.
+A modern Next.js-based HVAC engineering and estimating platform designed to unify duct sizing, vent design, and cost estimating in a single, standards-driven workspace with beautiful glassmorphism UI and 3D workspace.
 
 ## Overview
 
@@ -18,22 +18,9 @@ SizeWise Suite is specifically crafted for:
 - **Structured Export System**: Automated PDF, Excel, CSV, and BIM-compatible exports
 - **Plugin-Ready Architecture**: Highly scalable with minimal integration overhead
 - **Glassmorphism UI**: Beautiful glass-effect components with backdrop blur and animations
-- **Dual Frontend Options**: Choose between HTML/JS frontend or advanced Next.js frontend
-
-## Frontend Options
-
-### 1. HTML/CSS/JS Frontend (Original)
-- Lightweight and fast
-- Offline-first design
-- Progressive Web App capabilities
-- Located in `frontend/` directory
-
-### 2. Next.js Glassmorphism Frontend (New)
-- Modern React-based interface
-- Beautiful glassmorphism UI components
-- TypeScript for type safety
-- Tailwind CSS with custom animations
-- Located in `frontend-nextjs/` directory
+- **3D Workspace**: Interactive Three.js-based 3D environment for duct system design
+- **PDF Integration**: Import and overlay PDF plans in the 3D workspace
+- **Modern Architecture**: Next.js with TypeScript for type safety and performance
 
 ## Core Modules (Phase 0.0)
 
@@ -54,13 +41,14 @@ Comprehensive estimating solution addressing labor/material takeoffs and automat
 
 ## Technology Stack
 
+- **Frontend**: Next.js 15 with React 19, TypeScript, and glassmorphism UI
+- **3D Graphics**: Three.js for interactive 3D workspace and visualization
+- **Styling**: Tailwind CSS with custom animations and glass effects
 - **Backend**: Python (Flask) for API, calculations, and export logic
-- **Frontend Options**:
-  - HTML/CSS/JS (offline-first, PWA)
-  - Next.js 15 with TypeScript and glassmorphism UI
 - **Documentation**: MkDocs (guides), Sphinx (API)
-- **Local Data**: IndexedDB/JSON for persistent offline storage
-- **Deployment**: Progressive Web App (PWA) with future Electron desktop support
+- **State Management**: Zustand for client-side state management
+- **Testing**: Jest for unit tests, Playwright for E2E testing
+- **Deployment**: Next.js production build with future Electron desktop support
 
 ## Project Structure
 
@@ -111,7 +99,6 @@ Comprehensive estimating solution addressing labor/material takeoffs and automat
 ├── backend/
 ├── core/
 ├── frontend/
-├── frontend-nextjs/
 │   ├── app/
 │   │   ├── demo/
 │   │   │   └── page.tsx         # Components demo page
@@ -168,39 +155,25 @@ Comprehensive estimating solution addressing labor/material takeoffs and automat
 
 3. Install frontend dependencies:
    ```bash
-   npm install
+   npm run install:frontend
    ```
 
-4. **For Next.js Glassmorphism Frontend** (optional):
+4. Start the development server:
    ```bash
-   cd frontend-nextjs
-   npm install
-   cd ..
-   ```
+   # Start both backend and frontend
+   npm run start:dev
 
-5. Start the development server:
-
-   **Option A: Original HTML Frontend**
-   ```bash
-   # Backend
-   python backend/app.py
+   # Or start individually:
+   # Backend (in one terminal)
+   npm run start:backend
 
    # Frontend (in another terminal)
    npm run dev
    ```
 
-   **Option B: Next.js Glassmorphism Frontend**
-   ```bash
-   # Backend
-   python backend/app.py
-
-   # Next.js Frontend (in another terminal)
-   npm run dev:nextjs
-   ```
-
-6. Open your browser:
-   - Original frontend: `http://localhost:3000`
-   - Next.js frontend: `http://localhost:3000` (Next.js)
+5. Open your browser:
+   - Application: `http://localhost:3000` (Next.js frontend)
+   - Backend API: `http://localhost:5000` (Flask API)
 
 ## Glassmorphism Components (Next.js Frontend)
 
@@ -252,7 +225,7 @@ const icons = [
 - **Schema-Driven**: AJV/Zod validation ensures data integrity
 - **Offline-First**: All functionality works without internet connection
 - **Standards Compliance**: Built-in validation against HVAC industry codes
-- **Dual Frontend**: Choose between lightweight HTML or modern React interface
+- **Modern Frontend**: Next.js with TypeScript, 3D workspace, and glassmorphism UI
 
 ### Adding New Modules
 

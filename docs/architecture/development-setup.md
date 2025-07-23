@@ -42,7 +42,7 @@ git checkout air-duct-sizer
 
 #### Frontend Dependencies
 ```bash
-cd frontend-nextjs
+cd frontend
 npm install
 ```
 
@@ -61,7 +61,7 @@ npm install
 ### 3. Environment Configuration
 
 #### Frontend Environment
-Create `frontend-nextjs/.env.local`:
+Create `frontend/.env.local`:
 ```env
 NEXT_PUBLIC_API_URL=http://localhost:5000/api/v1
 NEXT_PUBLIC_APP_ENV=development
@@ -101,9 +101,9 @@ python app.py
 
 #### Terminal 2: Frontend Server
 ```bash
-cd frontend-nextjs
+cd frontend
 npm run dev
-# Server runs on http://localhost:3000
+# Server runs on http://localhost:3001
 ```
 
 #### Terminal 3: Testing (optional)
@@ -178,7 +178,7 @@ npm run build:all
 
 ### Frontend Structure
 ```
-frontend-nextjs/
+frontend/
 ├── app/                    # Next.js app directory
 │   ├── (auth)/            # Authentication pages
 │   ├── dashboard/         # Main application
@@ -314,9 +314,9 @@ Launch configuration in `.vscode/launch.json`:
   "name": "Next.js: debug client-side",
   "type": "node",
   "request": "launch",
-  "program": "${workspaceFolder}/frontend-nextjs/node_modules/.bin/next",
+  "program": "${workspaceFolder}/frontend/node_modules/.bin/next",
   "args": ["dev"],
-  "cwd": "${workspaceFolder}/frontend-nextjs"
+  "cwd": "${workspaceFolder}/frontend"
 }
 ```
 

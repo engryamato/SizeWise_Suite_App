@@ -1,22 +1,20 @@
 module.exports = {
-  testEnvironment: 'jsdom',
-  setupFilesAfterEnv: ['<rootDir>/tests/setup.js'],
+  testEnvironment: 'node',
   testMatch: [
     '<rootDir>/tests/**/*.test.js',
     '<rootDir>/tests/**/*.spec.js'
   ],
   collectCoverageFrom: [
-    'frontend/js/**/*.js',
     'core/**/*.py',
-    '!frontend/js/main.js',
+    'backend/**/*.py',
     '!**/node_modules/**',
     '!**/venv/**'
   ],
   coverageDirectory: 'coverage',
   coverageReporters: ['text', 'lcov', 'html'],
   moduleNameMapper: {
-    '^@/(.*)$': '<rootDir>/frontend/js/$1',
-    '^@core/(.*)$': '<rootDir>/core/$1'
+    '^@core/(.*)$': '<rootDir>/core/$1',
+    '^@backend/(.*)$': '<rootDir>/backend/$1'
   },
   transform: {
     '^.+\\.js$': 'babel-jest'

@@ -6,7 +6,7 @@ The global design tokens are defined in `app/config/design-tokens.json`. These t
 
 ### CSS
 
-Both `frontend/styles/main.css` and `frontend-nextjs/app/globals.css` expose the tokens as CSS variables under the `:root` selector. Reference them with `var(--color-primary)`, `var(--spacing-md)`, etc.
+The `frontend/app/globals.css` file exposes the tokens as CSS variables under the `:root` selector. Reference them with `var(--color-primary)`, `var(--spacing-md)`, etc.
 
 ### Components
 

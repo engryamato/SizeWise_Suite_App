@@ -21,7 +21,7 @@ This document records all major technical decisions made during the implementati
 - Built-in routing and API routes for simplified architecture
 - Excellent TypeScript support and developer experience
 - Strong ecosystem and community support
-- Aligns with existing `frontend-nextjs` directory structure
+- Aligns with existing `frontend` directory structure
 
 **Alternatives Considered**:
 - **Vanilla React**: Rejected due to additional configuration overhead
@@ -72,7 +72,7 @@ This document records all major technical decisions made during the implementati
 - Consistent design system with predefined spacing, colors, typography
 - Excellent purging capabilities for production builds
 - Strong community and ecosystem
-- Aligns with existing `frontend-nextjs` Tailwind configuration
+- Aligns with existing `frontend` Tailwind configuration
 
 **Alternatives Considered**:
 - **Styled Components**: Rejected due to runtime overhead

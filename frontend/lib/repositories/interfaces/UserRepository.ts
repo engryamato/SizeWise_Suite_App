@@ -50,6 +50,102 @@ export interface LicenseInfo {
 }
 
 /**
+ * Super Admin User Information (Extended user data for super admin operations)
+ */
+export interface SuperAdminUserInfo extends User {
+  /** Account status */
+  accountStatus: 'active' | 'locked' | 'suspended' | 'deleted';
+  /** Last login timestamp */
+  lastLoginAt?: Date;
+  /** Failed login attempts count */
+  failedLoginAttempts: number;
+  /** Account locked until timestamp */
+  lockedUntil?: Date;
+  /** License validation history */
+  licenseHistory: LicenseHistoryEntry[];
+  /** Tier change history */
+  tierHistory: TierChangeEntry[];
+  /** Security events */
+  securityEvents: SecurityEvent[];
+}
+
+/**
+ * License history entry
+ */
+export interface LicenseHistoryEntry {
+  /** License key */
+  licenseKey: string;
+  /** Tier associated with license */
+  tier: UserTier;
+  /** When license was activated */
+  activatedAt: Date;
+  /** When license expired or was revoked */
+  deactivatedAt?: Date;
+  /** Reason for deactivation */
+  deactivationReason?: string;
+  /** Who performed the action */
+  actionBy: string;
+}
+
+/**
+ * Tier change history entry
+ */
+export interface TierChangeEntry {
+  /** Previous tier */
+  fromTier: UserTier;
+  /** New tier */
+  toTier: UserTier;
+  /** When change occurred */
+  changedAt: Date;
+  /** Reason for change */
+  reason: string;
+  /** Who performed the change */
+  changedBy: string;
+  /** Whether change was forced by super admin */
+  forcedChange: boolean;
+}
+
+/**
+ * Security event entry
+ */
+export interface SecurityEvent {
+  /** Event ID */
+  id: string;
+  /** Event type */
+  type: 'login_success' | 'login_failure' | 'license_validation' | 'tier_change' | 'account_locked' | 'account_unlocked';
+  /** Event timestamp */
+  timestamp: Date;
+  /** IP address */
+  ipAddress: string;
+  /** User agent */
+  userAgent: string;
+  /** Additional event details */
+  details: Record<string, any>;
+}
+
+/**
+ * Super Admin User Filters
+ */
+export interface SuperAdminUserFilters {
+  /** Filter by tier */
+  tier?: UserTier;
+  /** Filter by account status */
+  accountStatus?: 'active' | 'locked' | 'suspended' | 'deleted';
+  /** Filter by creation date range */
+  createdAfter?: Date;
+  createdBefore?: Date;
+  /** Filter by last login date range */
+  lastLoginAfter?: Date;
+  lastLoginBefore?: Date;
+  /** Filter by email pattern */
+  emailPattern?: string;
+  /** Filter by company */
+  company?: string;
+  /** Include deleted accounts */
+  includeDeleted?: boolean;
+}
+
+/**
  * Repository interface for user data operations with tier and license management
  */
 export interface UserRepository {
@@ -113,13 +209,96 @@ export interface UserRepository {
 
   /**
    * Get license information for a user
-   * 
+   *
    * @param userId - UUID of the user
    * @returns Promise resolving to LicenseInfo if found, null otherwise
    * @throws {UserNotFoundError} If user doesn't exist
    * @throws {DatabaseError} If query fails
    */
   getLicenseInfo(userId: string): Promise<LicenseInfo | null>;
+
+  // ========================================
+  // SUPER ADMINISTRATOR METHODS
+  // ========================================
+
+  /**
+   * Reset user license (Super Admin Only)
+   *
+   * CRITICAL: This method requires super admin authentication
+   * Resets user's license to default state and clears license key
+   *
+   * @param userId - UUID of the user to reset
+   * @param superAdminSessionId - Valid super admin session ID
+   * @param reason - Reason for license reset (for audit)
+   * @returns Promise resolving when reset completes
+   * @throws {SuperAdminAuthError} If session is invalid
+   * @throws {UserNotFoundError} If user doesn't exist
+   * @throws {DatabaseError} If reset operation fails
+   */
+  superAdminResetLicense(userId: string, superAdminSessionId: string, reason: string): Promise<void>;
+
+  /**
+   * Recover user account (Super Admin Only)
+   *
+   * CRITICAL: This method requires super admin authentication
+   * Unlocks user account and resets authentication state
+   *
+   * @param userId - UUID of the user to recover
+   * @param superAdminSessionId - Valid super admin session ID
+   * @param newTier - Optional new tier to assign during recovery
+   * @param reason - Reason for account recovery (for audit)
+   * @returns Promise resolving when recovery completes
+   * @throws {SuperAdminAuthError} If session is invalid
+   * @throws {UserNotFoundError} If user doesn't exist
+   * @throws {DatabaseError} If recovery operation fails
+   */
+  superAdminRecoverUser(userId: string, superAdminSessionId: string, newTier?: UserTier, reason?: string): Promise<void>;
+
+  /**
+   * Force tier change (Super Admin Only)
+   *
+   * CRITICAL: This method requires super admin authentication
+   * Bypasses normal tier validation and forces tier change
+   *
+   * @param userId - UUID of the user
+   * @param tier - New tier to assign
+   * @param superAdminSessionId - Valid super admin session ID
+   * @param reason - Reason for forced tier change (for audit)
+   * @returns Promise resolving when tier change completes
+   * @throws {SuperAdminAuthError} If session is invalid
+   * @throws {UserNotFoundError} If user doesn't exist
+   * @throws {ValidationError} If tier is invalid
+   * @throws {DatabaseError} If update fails
+   */
+  superAdminForceTierChange(userId: string, tier: UserTier, superAdminSessionId: string, reason: string): Promise<void>;
+
+  /**
+   * Get all users with detailed information (Super Admin Only)
+   *
+   * CRITICAL: This method requires super admin authentication
+   * Returns comprehensive user information including sensitive data
+   *
+   * @param superAdminSessionId - Valid super admin session ID
+   * @param filters - Optional filters for user search
+   * @returns Promise resolving to array of users with detailed information
+   * @throws {SuperAdminAuthError} If session is invalid
+   * @throws {DatabaseError} If query fails
+   */
+  superAdminGetAllUsers(superAdminSessionId: string, filters?: SuperAdminUserFilters): Promise<SuperAdminUserInfo[]>;
+
+  /**
+   * Emergency unlock all users (Super Admin Only)
+   *
+   * CRITICAL: This method requires super admin authentication with emergency access
+   * Unlocks all locked user accounts in the system
+   *
+   * @param superAdminSessionId - Valid super admin session ID with emergency access
+   * @param reason - Emergency reason (for audit)
+   * @returns Promise resolving to number of users unlocked
+   * @throws {SuperAdminAuthError} If session is invalid or lacks emergency access
+   * @throws {DatabaseError} If unlock operation fails
+   */
+  superAdminEmergencyUnlockAll(superAdminSessionId: string, reason: string): Promise<number>;
 }
 
 /**
@@ -153,5 +332,15 @@ export class UserNotFoundError extends Error {
   constructor(userId: string) {
     super(`User not found: ${userId}`);
     this.name = 'UserNotFoundError';
+  }
+}
+
+/**
+ * Super Admin Authentication Error
+ */
+export class SuperAdminAuthError extends Error {
+  constructor(message: string, public readonly sessionId?: string) {
+    super(message);
+    this.name = 'SuperAdminAuthError';
   }
 }

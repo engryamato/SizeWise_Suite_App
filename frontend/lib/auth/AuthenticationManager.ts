@@ -10,6 +10,7 @@
 
 import * as crypto from 'crypto';
 import { KeystoreManager } from '../../../electron/license/KeystoreManager';
+import { SuperAdminValidator, SuperAdminValidationResult, HardwareKeyCredential, EmergencyAccessRequest } from '../../../backend/security/SuperAdminValidator';
 
 /**
  * Authentication session structure
@@ -58,14 +59,50 @@ export interface AuthResult {
 }
 
 /**
+ * Super Admin Authentication Session (extends regular session)
+ */
+export interface SuperAdminSession extends AuthSession {
+  superAdminSessionId: string;
+  hardwareKeyId: string;
+  emergencyAccess: boolean;
+  superAdminPermissions: string[];
+  superAdminExpiresAt: number;
+}
+
+/**
+ * Hardware Key Authentication Request
+ */
+export interface HardwareKeyAuthRequest {
+  userId: string;
+  hardwareKeyId: string;
+  challenge: string;
+  signature: string;
+  clientData: string;
+}
+
+/**
+ * Super Admin Authentication Result
+ */
+export interface SuperAdminAuthResult {
+  success: boolean;
+  superAdminSession?: SuperAdminSession;
+  validationResult?: SuperAdminValidationResult;
+  error?: string;
+  requiresHardwareKey?: boolean;
+}
+
+/**
  * Production-grade authentication manager
  * CRITICAL: Secure session management and token validation
  */
 export class AuthenticationManager {
   private readonly keystore: KeystoreManager;
   private currentSession: AuthSession | null = null;
+  private currentSuperAdminSession: SuperAdminSession | null = null;
+  private superAdminValidator: SuperAdminValidator | null = null;
   private readonly sessionTimeout = 8 * 60 * 60 * 1000; // 8 hours
   private readonly activityTimeout = 30 * 60 * 1000; // 30 minutes
+  private readonly superAdminTimeout = 30 * 60 * 1000; // 30 minutes
   private readonly jwtSecret = 'SizeWise-Suite-JWT-Secret-2024'; // In production, use secure key management
 
   constructor() {
@@ -618,8 +655,325 @@ export class AuthenticationManager {
       data,
       source: 'AuthenticationManager'
     };
-    
+
     // In production, this would send to secure logging service
     console.log('[SECURITY]', JSON.stringify(logEntry));
+  }
+
+  // ========================================
+  // SUPER ADMINISTRATOR AUTHENTICATION
+  // ========================================
+
+  /**
+   * Initialize super admin validator
+   */
+  async initializeSuperAdminValidator(securityManager: any): Promise<void> {
+    if (!this.superAdminValidator) {
+      this.superAdminValidator = new SuperAdminValidator(securityManager);
+    }
+  }
+
+  /**
+   * Authenticate super admin with hardware key
+   */
+  async authenticateSuperAdmin(request: HardwareKeyAuthRequest): Promise<SuperAdminAuthResult> {
+    try {
+      if (!this.superAdminValidator) {
+        return {
+          success: false,
+          error: 'Super admin validator not initialized',
+          requiresHardwareKey: true
+        };
+      }
+
+      // Validate hardware key authentication
+      const validationResult = await this.superAdminValidator.authenticateSuperAdmin(
+        request.userId,
+        request.hardwareKeyId,
+        request.signature,
+        request.challenge,
+        request.clientData,
+        '127.0.0.1', // In production, get real IP
+        'SizeWise Suite Desktop'
+      );
+
+      if (!validationResult.valid) {
+        await this.logSecurityEvent('super_admin_auth_failed', {
+          userId: request.userId,
+          hardwareKeyId: request.hardwareKeyId,
+          reason: validationResult.reason
+        });
+
+        return {
+          success: false,
+          error: validationResult.reason,
+          requiresHardwareKey: true
+        };
+      }
+
+      // Create super admin session
+      const superAdminSession: SuperAdminSession = {
+        id: validationResult.sessionId!,
+        userId: request.userId,
+        createdAt: Date.now(),
+        expiresAt: validationResult.expiresAt!.getTime(),
+        lastActivity: Date.now(),
+        isValid: true,
+        superAdminSessionId: validationResult.sessionId!,
+        hardwareKeyId: request.hardwareKeyId,
+        emergencyAccess: validationResult.emergencyAccess,
+        superAdminPermissions: validationResult.permissions.map(p => p.action),
+        superAdminExpiresAt: validationResult.expiresAt!.getTime()
+      };
+
+      this.currentSuperAdminSession = superAdminSession;
+
+      await this.logSecurityEvent('super_admin_authenticated', {
+        userId: request.userId,
+        sessionId: validationResult.sessionId,
+        emergencyAccess: validationResult.emergencyAccess,
+        permissions: validationResult.permissions.length
+      });
+
+      return {
+        success: true,
+        superAdminSession,
+        validationResult
+      };
+
+    } catch (error) {
+      await this.logSecurityEvent('super_admin_auth_error', {
+        userId: request.userId,
+        error: error.message
+      });
+
+      return {
+        success: false,
+        error: `Super admin authentication failed: ${error.message}`,
+        requiresHardwareKey: true
+      };
+    }
+  }
+
+  /**
+   * Request emergency access
+   */
+  async requestEmergencyAccess(request: EmergencyAccessRequest): Promise<SuperAdminAuthResult> {
+    try {
+      if (!this.superAdminValidator) {
+        return {
+          success: false,
+          error: 'Super admin validator not initialized'
+        };
+      }
+
+      const validationResult = await this.superAdminValidator.requestEmergencyAccess(
+        request,
+        '127.0.0.1', // In production, get real IP
+        'SizeWise Suite Desktop'
+      );
+
+      if (!validationResult.valid) {
+        await this.logSecurityEvent('emergency_access_denied', {
+          reason: request.reason,
+          requestedPermissions: request.requestedPermissions,
+          error: validationResult.reason
+        });
+
+        return {
+          success: false,
+          error: validationResult.reason
+        };
+      }
+
+      // Create emergency super admin session
+      const emergencySession: SuperAdminSession = {
+        id: validationResult.sessionId!,
+        userId: 'emergency',
+        createdAt: Date.now(),
+        expiresAt: validationResult.expiresAt!.getTime(),
+        lastActivity: Date.now(),
+        isValid: true,
+        superAdminSessionId: validationResult.sessionId!,
+        hardwareKeyId: 'emergency',
+        emergencyAccess: true,
+        superAdminPermissions: validationResult.permissions.map(p => p.action),
+        superAdminExpiresAt: validationResult.expiresAt!.getTime()
+      };
+
+      this.currentSuperAdminSession = emergencySession;
+
+      await this.logSecurityEvent('emergency_access_granted', {
+        sessionId: validationResult.sessionId,
+        reason: request.reason,
+        permissions: validationResult.permissions.length
+      });
+
+      return {
+        success: true,
+        superAdminSession: emergencySession,
+        validationResult
+      };
+
+    } catch (error) {
+      await this.logSecurityEvent('emergency_access_error', {
+        reason: request.reason,
+        error: error.message
+      });
+
+      return {
+        success: false,
+        error: `Emergency access failed: ${error.message}`
+      };
+    }
+  }
+
+  /**
+   * Get current super admin session
+   */
+  getCurrentSuperAdminSession(): SuperAdminSession | null {
+    if (!this.currentSuperAdminSession) {
+      return null;
+    }
+
+    // Check if session is expired
+    if (this.currentSuperAdminSession.superAdminExpiresAt < Date.now()) {
+      this.currentSuperAdminSession = null;
+      return null;
+    }
+
+    return this.currentSuperAdminSession;
+  }
+
+  /**
+   * Validate super admin session
+   */
+  async validateSuperAdminSession(sessionId: string): Promise<boolean> {
+    try {
+      if (!this.superAdminValidator) {
+        return false;
+      }
+
+      const validationResult = await this.superAdminValidator.validateSession(sessionId);
+      return validationResult.valid;
+    } catch (error) {
+      await this.logSecurityEvent('super_admin_session_validation_error', {
+        sessionId,
+        error: error.message
+      });
+      return false;
+    }
+  }
+
+  /**
+   * Check if user has super admin permission
+   */
+  hasSuperAdminPermission(action: string): boolean {
+    const session = this.getCurrentSuperAdminSession();
+    if (!session) {
+      return false;
+    }
+
+    return session.superAdminPermissions.includes(action);
+  }
+
+  /**
+   * Revoke super admin session
+   */
+  async revokeSuperAdminSession(reason: string = 'Manual revocation'): Promise<boolean> {
+    try {
+      if (!this.currentSuperAdminSession || !this.superAdminValidator) {
+        return false;
+      }
+
+      const success = await this.superAdminValidator.revokeSession(
+        this.currentSuperAdminSession.superAdminSessionId,
+        reason
+      );
+
+      if (success) {
+        await this.logSecurityEvent('super_admin_session_revoked', {
+          sessionId: this.currentSuperAdminSession.superAdminSessionId,
+          userId: this.currentSuperAdminSession.userId,
+          reason
+        });
+
+        this.currentSuperAdminSession = null;
+      }
+
+      return success;
+    } catch (error) {
+      await this.logSecurityEvent('super_admin_session_revocation_error', {
+        error: error.message
+      });
+      return false;
+    }
+  }
+
+  /**
+   * Register hardware key for super admin
+   */
+  async registerHardwareKey(
+    adminUserId: string,
+    keyCredential: HardwareKeyCredential,
+    attestationData?: ArrayBuffer
+  ): Promise<{ success: boolean; keyId: string; reason?: string }> {
+    try {
+      if (!this.superAdminValidator) {
+        return {
+          success: false,
+          keyId: '',
+          reason: 'Super admin validator not initialized'
+        };
+      }
+
+      const result = await this.superAdminValidator.registerHardwareKey(
+        adminUserId,
+        keyCredential,
+        attestationData
+      );
+
+      await this.logSecurityEvent('hardware_key_registration', {
+        adminUserId,
+        success: result.success,
+        keyId: result.keyId,
+        algorithm: keyCredential.algorithm
+      });
+
+      return result;
+    } catch (error) {
+      await this.logSecurityEvent('hardware_key_registration_error', {
+        adminUserId,
+        error: error.message
+      });
+
+      return {
+        success: false,
+        keyId: '',
+        reason: `Hardware key registration failed: ${error.message}`
+      };
+    }
+  }
+
+  /**
+   * Get super admin security statistics
+   */
+  getSuperAdminSecurityStats(): any {
+    if (!this.superAdminValidator) {
+      return null;
+    }
+
+    return this.superAdminValidator.getSecurityStatistics();
+  }
+
+  /**
+   * Get super admin audit trail
+   */
+  getSuperAdminAuditTrail(limit: number = 100): any[] {
+    if (!this.superAdminValidator) {
+      return [];
+    }
+
+    return this.superAdminValidator.getAuditTrail(limit);
   }
 }

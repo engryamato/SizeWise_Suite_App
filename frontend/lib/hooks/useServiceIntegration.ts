@@ -9,7 +9,7 @@
  * @see docs/implementation/saas-readiness/service-layer-architecture.md
  */
 
-import React, { createContext, useContext, useCallback, useState, useEffect } from 'react';
+import { useCallback, useState, useEffect } from 'react';
 import {
   ProjectServiceHook,
   CalculationServiceHook,
@@ -434,7 +434,7 @@ export function useDebouncedOperation<T extends any[], R>(
     }, delay);
 
     setTimeoutId(newTimeoutId);
-  }, [asyncOp.execute, delay, timeoutId]);
+  }, [asyncOp, delay, timeoutId]);
 
   useEffect(() => {
     return () => {

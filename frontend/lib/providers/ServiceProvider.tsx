@@ -95,7 +95,7 @@ export function ServiceProvider({
     if (!services && !initialized) {
       initializeServices();
     }
-  }, [services, initialized]);
+  }, [services, initialized, initializeServices]);
 
   /**
    * Initialize service container based on mode

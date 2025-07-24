@@ -5,6 +5,7 @@ import { Download, FileText, Image, Database, AlertTriangle, Crown } from 'lucid
 import { useExportStore } from '@/stores/export-store'
 import { useProjectStore } from '@/stores/project-store'
 import { useAuthStore } from '@/stores/auth-store'
+import { FeatureGate } from '../ui/FeatureGate'
 
 interface ExportDialogProps {
   isOpen: boolean
@@ -48,6 +49,8 @@ export const ExportDialog: React.FC<ExportDialogProps> = ({
       name: 'PDF Report',
       description: 'Complete project report with BOM and schedules',
       icon: FileText,
+      featureName: 'air_duct_sizer',
+      requiredTier: 'free' as const,
       available: true
     },
     {
@@ -55,6 +58,8 @@ export const ExportDialog: React.FC<ExportDialogProps> = ({
       name: 'PNG Image',
       description: 'Drawing export as high-quality image',
       icon: Image,
+      featureName: 'high_res_pdf_export',
+      requiredTier: 'pro' as const,
       available: !!canvasElement
     },
     {
@@ -62,6 +67,8 @@ export const ExportDialog: React.FC<ExportDialogProps> = ({
       name: 'JSON Data',
       description: 'Project data for backup or sharing',
       icon: Database,
+      featureName: 'air_duct_sizer',
+      requiredTier: 'free' as const,
       available: true
     },
     {
@@ -69,8 +76,9 @@ export const ExportDialog: React.FC<ExportDialogProps> = ({
       name: 'Excel Spreadsheet',
       description: 'BOM and schedules in spreadsheet format',
       icon: Database,
-      available: isProUser,
-      proOnly: true
+      featureName: 'enhanced_csv_export',
+      requiredTier: 'pro' as const,
+      available: true
     }
   ]
 
@@ -160,38 +168,54 @@ export const ExportDialog: React.FC<ExportDialogProps> = ({
             <h3 className="font-medium text-gray-900 mb-3">Export Format</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               {exportFormats.map((format) => (
-                <button
+                <FeatureGate
                   key={format.id}
-                  onClick={() => setSelectedFormat(format.id)}
-                  disabled={!format.available || isExporting}
-                  className={`
-                    p-4 border rounded-lg text-left transition-colors relative
-                    ${selectedFormat === format.id
-                      ? 'border-blue-500 bg-blue-50'
-                      : 'border-gray-200 hover:border-gray-300'
-                    }
-                    ${!format.available ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
-                  `}
-                >
-                  <div className="flex items-start gap-3">
-                    <format.icon 
-                      size={20} 
-                      className={selectedFormat === format.id ? 'text-blue-600' : 'text-gray-600'} 
-                    />
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2">
-                        <h4 className="font-medium text-gray-900">{format.name}</h4>
-                        {format.proOnly && !isProUser && (
-                          <Crown size={14} className="text-yellow-600" />
-                        )}
+                  feature={format.featureName}
+                  requiredTier={format.requiredTier}
+                  showUpgradePrompt={false}
+                  fallback={
+                    <div className="p-4 border border-gray-200 rounded-lg text-left opacity-50 cursor-not-allowed">
+                      <div className="flex items-start gap-3">
+                        <format.icon size={20} className="text-gray-400" />
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2">
+                            <h4 className="font-medium text-gray-500">{format.name}</h4>
+                            <Crown size={14} className="text-yellow-500" />
+                          </div>
+                          <p className="text-sm text-gray-400 mt-1">{format.description}</p>
+                          <p className="text-xs text-yellow-600 mt-1">Requires {format.requiredTier} tier</p>
+                        </div>
                       </div>
-                      <p className="text-sm text-gray-600 mt-1">{format.description}</p>
-                      {format.proOnly && !isProUser && (
-                        <p className="text-xs text-yellow-600 mt-1">Pro feature</p>
-                      )}
                     </div>
-                  </div>
-                </button>
+                  }
+                >
+                  <button
+                    type="button"
+                    onClick={() => setSelectedFormat(format.id)}
+                    disabled={!format.available || isExporting}
+                    className={`
+                      p-4 border rounded-lg text-left transition-colors relative w-full
+                      ${selectedFormat === format.id
+                        ? 'border-blue-500 bg-blue-50'
+                        : 'border-gray-200 hover:border-gray-300'
+                      }
+                      ${!format.available ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
+                    `}
+                  >
+                    <div className="flex items-start gap-3">
+                      <format.icon
+                        size={20}
+                        className={selectedFormat === format.id ? 'text-blue-600' : 'text-gray-600'}
+                      />
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          <h4 className="font-medium text-gray-900">{format.name}</h4>
+                        </div>
+                        <p className="text-sm text-gray-600 mt-1">{format.description}</p>
+                      </div>
+                    </div>
+                  </button>
+                </FeatureGate>
               ))}
             </div>
           </div>

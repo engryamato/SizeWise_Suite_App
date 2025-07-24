@@ -13,11 +13,12 @@ import {
   RotateCcw,
   Zap,
   Upload,
-  Ruler
+  Ruler,
+  Crown
 } from 'lucide-react'
 import { useUIStore } from '@/stores/ui-store'
 import { useProjectStore } from '@/stores/project-store'
-// import { TierEnforcement, UsageCounter } from '@/components/tier/TierEnforcement'
+import { FeatureGate } from './FeatureGate'
 import { DrawingTool } from '@/types/air-duct-sizer'
 
 interface ToolbarProps {
@@ -46,7 +47,8 @@ export const Toolbar: React.FC<ToolbarProps> = ({ className = '', onImportPlan }
     label: string
     shortcut?: string
     description: string
-    tierFeature?: 'rooms' | 'segments' | 'equipment'
+    featureName?: string
+    requiredTier?: 'free' | 'pro' | 'enterprise'
   }> = [
     {
       id: 'select',
@@ -54,6 +56,8 @@ export const Toolbar: React.FC<ToolbarProps> = ({ className = '', onImportPlan }
       label: 'Select',
       shortcut: 'V',
       description: 'Select and move objects',
+      featureName: 'air_duct_sizer', // Free tier feature
+      requiredTier: 'free',
     },
     {
       id: 'room',
@@ -61,7 +65,8 @@ export const Toolbar: React.FC<ToolbarProps> = ({ className = '', onImportPlan }
       label: 'Room',
       shortcut: 'R',
       description: 'Draw rooms and spaces',
-      tierFeature: 'rooms',
+      featureName: 'unlimited_segments', // Pro tier feature
+      requiredTier: 'pro',
     },
     {
       id: 'duct',
@@ -69,7 +74,8 @@ export const Toolbar: React.FC<ToolbarProps> = ({ className = '', onImportPlan }
       label: 'Duct',
       shortcut: 'D',
       description: 'Draw duct segments',
-      tierFeature: 'segments',
+      featureName: 'air_duct_sizer', // Free tier feature
+      requiredTier: 'free',
     },
     {
       id: 'equipment',
@@ -77,7 +83,8 @@ export const Toolbar: React.FC<ToolbarProps> = ({ className = '', onImportPlan }
       label: 'Equipment',
       shortcut: 'E',
       description: 'Place HVAC equipment',
-      tierFeature: 'equipment',
+      featureName: 'equipment_selection', // Pro tier feature
+      requiredTier: 'pro',
     },
     {
       id: 'pan',
@@ -85,6 +92,8 @@ export const Toolbar: React.FC<ToolbarProps> = ({ className = '', onImportPlan }
       label: 'Pan',
       shortcut: 'H',
       description: 'Pan and navigate the canvas',
+      featureName: 'air_duct_sizer', // Free tier feature
+      requiredTier: 'free',
     },
     {
       id: 'scale',
@@ -92,6 +101,8 @@ export const Toolbar: React.FC<ToolbarProps> = ({ className = '', onImportPlan }
       label: 'Scale',
       shortcut: 'L',
       description: 'Calibrate plan scale',
+      featureName: 'air_duct_sizer', // Free tier feature
+      requiredTier: 'free',
     },
   ]
   
@@ -131,9 +142,23 @@ export const Toolbar: React.FC<ToolbarProps> = ({ className = '', onImportPlan }
       <div className="flex flex-col space-y-1 mb-3" role="group" aria-label="Drawing tools">
         <div className="text-xs font-medium text-gray-500 px-2 py-1">Tools</div>
         {tools.map((tool) => (
-          // <TierEnforcement key={tool.id} feature={tool.tierFeature}>
+          <FeatureGate
+            key={tool.id}
+            feature={tool.featureName || 'air_duct_sizer'}
+            requiredTier={tool.requiredTier}
+            showUpgradePrompt={false} // Don't show upgrade prompts in toolbar
+            fallback={
+              <div
+                className="flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium text-gray-400 cursor-not-allowed opacity-50"
+                title={`${tool.description} - Requires ${tool.requiredTier} tier`}
+              >
+                {tool.icon}
+                <span>{tool.label}</span>
+                <Crown size={12} className="text-yellow-500" />
+              </div>
+            }
+          >
             <button
-              key={tool.id}
               type="button"
               onClick={() => handleToolSelect(tool.id)}
               className={`
@@ -156,7 +181,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({ className = '', onImportPlan }
                 </span>
               )}
             </button>
-          // </TierEnforcement>
+          </FeatureGate>
         ))}
       </div>
       

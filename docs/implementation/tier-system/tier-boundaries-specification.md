@@ -11,11 +11,12 @@
 
 ## 1. Tier Overview
 
-SizeWise Suite implements a three-tier system designed for seamless offline-to-SaaS transition:
+SizeWise Suite implements a four-tier system designed for seamless offline-to-SaaS transition:
 
 - **Free Tier (Offline Desktop)**: Limited feature set to validate product-market fit
 - **Pro Tier (SaaS)**: Unlimited core features with cloud sync and collaboration
 - **Enterprise Tier (SaaS)**: Advanced features for large organizations with SSO and audit requirements
+- **Super Admin Tier (Internal)**: Emergency access and system recovery capabilities (support only)
 
 ---
 
@@ -23,13 +24,13 @@ SizeWise Suite implements a three-tier system designed for seamless offline-to-S
 
 ### 2.1 Core HVAC Functionality
 
-| Feature | Free (Offline) | Pro (SaaS) | Enterprise (SaaS) |
-|---------|----------------|------------|-------------------|
-| **Air Duct Sizer** | ✅ Full | ✅ Full | ✅ Full |
-| **Boiler Vent Sizer** | ❌ Phase 2 | ✅ Full | ✅ Full |
-| **Grease Duct Sizer** | ❌ Phase 2 | ✅ Full | ✅ Full |
-| **General Ventilation Calculations** | ❌ Phase 2 | ✅ Full | ✅ Full |
-| **Equipment Selection** | ❌ Phase 2 | ✅ Full | ✅ Full |
+| Feature | Free (Offline) | Pro (SaaS) | Enterprise (SaaS) | Super Admin (Internal) |
+|---------|----------------|------------|-------------------|------------------------|
+| **Air Duct Sizer** | ✅ Full | ✅ Full | ✅ Full | ✅ Full + Recovery |
+| **Boiler Vent Sizer** | ❌ Phase 2 | ✅ Full | ✅ Full | ✅ Full + Recovery |
+| **Grease Duct Sizer** | ❌ Phase 2 | ✅ Full | ✅ Full | ✅ Full + Recovery |
+| **General Ventilation Calculations** | ❌ Phase 2 | ✅ Full | ✅ Full | ✅ Full + Recovery |
+| **Equipment Selection** | ❌ Phase 2 | ✅ Full | ✅ Full | ✅ Full + Recovery |
 
 ### 2.2 Project Management
 
@@ -224,6 +225,62 @@ if (!featureManager.isEnabled('unlimited_projects', userId) && projectCount >= 3
 - [ ] Smooth transition between tiers
 - [ ] Feature discovery for higher tiers
 - [ ] No data loss during tier transitions
+
+## 7. Super Admin Tier (Internal Only)
+
+### 7.1 Purpose and Scope
+
+The Super Admin tier is an internal-only administrative tier designed for:
+- Emergency system recovery and maintenance
+- Customer support operations
+- Security incident response
+- Compliance and audit operations
+
+**CRITICAL**: This tier is never exposed to end users and requires hardware authentication.
+
+### 7.2 Super Admin Capabilities
+
+| Category | Capability | Description |
+|----------|------------|-------------|
+| **License Management** | License Reset | Reset corrupted license validation state |
+| | License Reissue | Generate new license for existing customer |
+| | License Revocation | Immediately invalidate compromised licenses |
+| | License Recovery | Restore license from backup or support database |
+| **Database Operations** | Database Repair | Fix corrupted SQLite database structures |
+| | Integrity Restoration | Repair failed integrity checks |
+| | Backup/Restore | Emergency backup and restore procedures |
+| | Schema Migration | Apply emergency schema fixes |
+| **User Management** | Tier Adjustment | Modify user tier with full audit trail |
+| | Account Recovery | Unlock stuck or corrupted user accounts |
+| | Token Reset | Reset authentication tokens and sessions |
+| | Password Recovery | Initiate secure password reset procedures |
+| **System Configuration** | Global Feature Flags | Deploy system-wide feature flag changes |
+| | Security Settings | Update global security configurations |
+| | Compliance Settings | Modify audit and compliance parameters |
+| | Emergency Maintenance | Enable maintenance mode |
+| **Audit & Compliance** | Audit Log Access | Read-only access to complete audit trails |
+| | Compliance Reports | Generate regulatory compliance reports |
+| | Security Investigation | Investigate and respond to security events |
+| | Forensic Analysis | Analyze system state for security investigations |
+
+### 7.3 Security Restrictions
+
+**What Super Admin CANNOT Do:**
+- Bypass cryptographic license validation
+- Access encrypted user data without proper keys
+- Modify or delete audit logs
+- Grant features without tier validation
+- Access system without hardware authentication
+- Perform actions without audit trail
+
+### 7.4 Authentication Requirements
+
+- **Hardware Security Key**: YubiKey or FIDO2 device required
+- **Multi-Factor Authentication**: Hardware key + PIN + biometric
+- **Support-Initiated Access**: Cannot be self-activated
+- **Time-Limited Sessions**: 30-minute maximum duration
+- **Two-Person Authorization**: Critical operations require dual approval
+- **Immutable Audit Trail**: All actions logged to tamper-proof system
 
 ---
 

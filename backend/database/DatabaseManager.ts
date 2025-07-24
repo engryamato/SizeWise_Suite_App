@@ -116,6 +116,7 @@ export class DatabaseManager {
 
   /**
    * Configure SQLite pragmas for optimal performance and safety
+   * Performance optimizations for <3s startup time
    */
   private async configurePragmas(): Promise<void> {
     if (!this.db) return;
@@ -125,24 +126,41 @@ export class DatabaseManager {
       this.db.pragma('foreign_keys = ON');
     }
 
-    // Enable WAL mode for better concurrency
+    // Enable WAL mode for better concurrency and performance
     if (this.config.enableWAL) {
       this.db.pragma('journal_mode = WAL');
+      // Optimize WAL checkpoint behavior
+      this.db.pragma('wal_autocheckpoint = 1000');
     }
 
-    // Set synchronous mode for balance between safety and performance
+    // Optimize synchronous mode for performance (NORMAL is good balance)
     this.db.pragma('synchronous = NORMAL');
 
-    // Set cache size (10MB)
-    this.db.pragma('cache_size = 10000');
+    // Increase cache size for better performance (20MB)
+    this.db.pragma('cache_size = 20000');
 
-    // Store temp tables in memory
+    // Store temp tables in memory for speed
     this.db.pragma('temp_store = MEMORY');
 
-    // Enable memory-mapped I/O (256MB)
-    this.db.pragma('mmap_size = 268435456');
+    // Enable memory-mapped I/O for faster reads (512MB)
+    this.db.pragma('mmap_size = 536870912');
 
-    console.log('Database pragmas configured');
+    // Optimize page size for modern systems
+    this.db.pragma('page_size = 4096');
+
+    // Enable query planner optimizations
+    this.db.pragma('optimize');
+
+    // Set busy timeout for concurrent access
+    this.db.pragma('busy_timeout = 30000');
+
+    // Optimize locking mode for single-process access
+    this.db.pragma('locking_mode = NORMAL');
+
+    // Enable automatic index creation for better query performance
+    this.db.pragma('automatic_index = ON');
+
+    console.log('Database pragmas configured for optimal performance');
   }
 
   /**

@@ -166,12 +166,15 @@ const Scene3D: React.FC<{
   // Initialize camera controller
   const cameraController = useCameraController(camera);
 
-  // Expose camera controller to parent component
+  // Expose camera controller to parent component (only once when ready)
+  const [cameraReadyNotified, setCameraReadyNotified] = React.useState(false);
+
   React.useEffect(() => {
-    if (onCameraReady && cameraController) {
+    if (onCameraReady && cameraController && !cameraReadyNotified) {
       onCameraReady(cameraController);
+      setCameraReadyNotified(true);
     }
-  }, [onCameraReady, cameraController]);
+  }, [onCameraReady, cameraController, cameraReadyNotified]);
   const [drawingState, setDrawingState] = useState<{
     isDrawing: boolean;
     startPoint?: Vector3;

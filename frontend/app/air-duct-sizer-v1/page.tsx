@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState, useCallback, useEffect } from 'react'
-import { motion } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
 import { Vector3 } from 'three'
 import { Canvas3D } from '@/components/3d/Canvas3D'
 import { useToast } from '@/lib/hooks/useToaster'
@@ -15,7 +15,6 @@ import { StatusBar } from '@/components/ui/StatusBar'
 
 // Priority 5-7 Components
 import { WarningPanel, ValidationWarning } from '@/components/ui/WarningPanel'
-import { BottomRightCorner } from '@/components/ui/BottomRightCorner'
 import { ViewCube, ViewType } from '@/components/ui/ViewCube'
 
 // 3D Duct Segment interface for Canvas3D
@@ -74,6 +73,7 @@ export default function AirDuctSizerV1Page() {
   const [warningPanelOpen, setWarningPanelOpen] = useState(false);
   const [currentView, setCurrentView] = useState<ViewType>('isometric');
   const [cameraController, setCameraController] = useState<any>(null);
+  const [showWelcomeMessage, setShowWelcomeMessage] = useState(true);
 
   // Drawing and selection state
   const [activeTool, setActiveTool] = useState<DrawingTool>('select');
@@ -199,6 +199,15 @@ export default function AirDuctSizerV1Page() {
 
     return () => clearInterval(autoSaveInterval);
   }, [saveStatus]);
+
+  // Hide welcome message after 2 seconds
+  useEffect(() => {
+    const welcomeTimer = setTimeout(() => {
+      setShowWelcomeMessage(false);
+    }, 2000);
+
+    return () => clearTimeout(welcomeTimer);
+  }, []);
 
   // Event handlers
   const handleProjectInfoChange = useCallback((info: Partial<ProjectInfo>) => {
@@ -508,8 +517,7 @@ export default function AirDuctSizerV1Page() {
         }}
       />
 
-      {/* Priority 6: Bottom Right Corner - Chat & Help */}
-      <BottomRightCorner className="fixed bottom-6 right-24 z-50" />
+      {/* Chat & Help elements removed from tool interface - only on main page */}
 
       {/* Context Property Panel */}
       <ContextPropertyPanel
@@ -598,27 +606,32 @@ export default function AirDuctSizerV1Page() {
       />
 
       {/* Welcome Message - Positioned to not interfere with canvas */}
-      <motion.div
-        initial={{ opacity: 0, scale: 0.9 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ delay: 1 }}
-        className="fixed top-40 right-4 bg-white/90 dark:bg-neutral-900/90 backdrop-blur-lg rounded-2xl border border-white/20 shadow-2xl p-4 z-30 max-w-sm text-center pointer-events-none"
-      >
-        <div className="flex items-center space-x-2 mb-3">
-          <span className="text-2xl">🏗️</span>
-          <h4 className="font-semibold text-neutral-900 dark:text-white">
-            Welcome to Air Duct Sizer V1!
-          </h4>
-        </div>
-        <p className="text-sm text-neutral-600 dark:text-neutral-300 mb-4">
-          Professional HVAC duct sizing with 3D visualization, real-time calculations, and SMACNA compliance checking.
-        </p>
-        <div className="flex items-center justify-center space-x-4 text-xs text-neutral-500 dark:text-neutral-400">
-          <span>📐 3D Design</span>
-          <span>⚡ Live Calc</span>
-          <span>✅ SMACNA</span>
-        </div>
-      </motion.div>
+      <AnimatePresence>
+        {showWelcomeMessage && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.9 }}
+            transition={{ delay: 1, duration: 0.3 }}
+            className="fixed top-40 right-4 bg-white/90 dark:bg-neutral-900/90 backdrop-blur-lg rounded-2xl border border-white/20 shadow-2xl p-4 z-30 max-w-sm text-center pointer-events-none"
+          >
+            <div className="flex items-center space-x-2 mb-3">
+              <span className="text-2xl">🏗️</span>
+              <h4 className="font-semibold text-neutral-900 dark:text-white">
+                Welcome to Air Duct Sizer V1!
+              </h4>
+            </div>
+            <p className="text-sm text-neutral-600 dark:text-neutral-300 mb-4">
+              Professional HVAC duct sizing with 3D visualization, real-time calculations, and SMACNA compliance checking.
+            </p>
+            <div className="flex items-center justify-center space-x-4 text-xs text-neutral-500 dark:text-neutral-400">
+              <span>📐 3D Design</span>
+              <span>⚡ Live Calc</span>
+              <span>✅ SMACNA</span>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

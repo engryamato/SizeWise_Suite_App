@@ -420,11 +420,11 @@ export type DataEvent =
 /**
  * Create data service instance
  */
-export function createDataService(mode: 'local' | 'remote' | 'hybrid'): DataService {
+export async function createDataService(mode: 'local' | 'remote' | 'hybrid'): Promise<DataService> {
   switch (mode) {
     case 'local': {
-      // Import and return local implementation
-      const { LocalDataService } = require('./local/LocalDataService');
+      // Dynamic import for browser compatibility
+      const { LocalDataService } = await import('./local/LocalDataService');
       return new LocalDataService();
     }
     case 'remote':

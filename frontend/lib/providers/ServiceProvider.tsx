@@ -13,7 +13,7 @@
 
 import React, { createContext, useContext, useEffect, useState, useMemo, ReactNode } from 'react';
 import { ServiceContainer, ServiceContextValue } from '../hooks/useServiceIntegration';
-import { createOfflineServiceContainer } from '../services/OfflineServiceContainer';
+import { createEnhancedOfflineServiceContainer } from '../services/EnhancedOfflineServiceContainer';
 
 // =============================================================================
 // Service Context
@@ -132,7 +132,7 @@ export function ServiceProvider({
     if (mode === 'offline') {
       // Initialize real offline services with SQLite database
       console.log('🔧 Creating offline service container...');
-      const offlineServices = await createOfflineServiceContainer();
+      const offlineServices = await createEnhancedOfflineServiceContainer();
 
       // Map to ServiceContainer interface
       return {

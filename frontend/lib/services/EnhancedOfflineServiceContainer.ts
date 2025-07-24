@@ -9,7 +9,7 @@
 
 import { createDataService, DataService } from '../data/DataService';
 import { createExportService, createImportService, createBackupService } from '../data/ImportExportService';
-import { FeatureManager } from '../features/FeatureManager';
+import { createBrowserFeatureManager, BrowserFeatureManager } from '../features/BrowserFeatureManager';
 import { AirDuctCalculator } from '../../../backend/services/calculations/AirDuctCalculator';
 import { SMACNAValidator } from '../../../backend/services/calculations/SMACNAValidator';
 import { 
@@ -36,7 +36,7 @@ export interface EnhancedOfflineServiceContainer {
   validationService: EnhancedValidationService;
   exportService: EnhancedExportService;
   tierService: EnhancedTierService;
-  featureManager: FeatureManager;
+  featureManager: BrowserFeatureManager;
   
   // New services from ChatGPT recommendations
   importService: any; // ImportService
@@ -562,7 +562,7 @@ export class EnhancedSyncService {
  */
 export async function createEnhancedOfflineServiceContainer(): Promise<EnhancedOfflineServiceContainer> {
   // Initialize DataService
-  const dataService = createDataService('local');
+  const dataService = await createDataService('local');
   await dataService.initialize();
 
   // Create services
@@ -578,13 +578,8 @@ export async function createEnhancedOfflineServiceContainer(): Promise<EnhancedO
   const importService = createImportService();
   const backupService = createBackupService();
 
-  // Create feature manager (placeholder)
-  const featureManager = {
-    isEnabled: async (feature: string, userId?: string) => {
-      const flag = await dataService.getFeatureFlag(feature, userId);
-      return { enabled: flag?.enabled || false };
-    }
-  } as FeatureManager;
+  // Create feature manager
+  const featureManager = createBrowserFeatureManager(dataService);
 
   return {
     dataService,

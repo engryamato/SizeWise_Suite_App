@@ -7,7 +7,7 @@
  * @see docs/refactoring/component-architecture-specification.md
  */
 
-import { DatabaseInitializer, RepositoryContainer } from '../database/DatabaseInitializer';
+import { createDataService, DataService } from '../data/DataService';
 import { FeatureManager } from '../features/FeatureManager';
 import { TierEnforcer } from '../../../backend/services/enforcement/TierEnforcer';
 import { AirDuctCalculator } from '../../../backend/services/calculations/AirDuctCalculator';

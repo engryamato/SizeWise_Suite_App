@@ -18,6 +18,7 @@ import { ProjectPropertiesPanel } from '../ui/ProjectPropertiesPanel';
 import { Sidebar } from '../ui/Sidebar';
 import { StatusBar } from '../ui/StatusBar';
 import { Toaster } from '../ui/Toaster';
+import { ToolRouteGuard } from '../guards/ToolRouteGuard';
 import { User, Notification } from '../../types/air-duct-sizer';
 import { UserTier } from '../../lib/repositories/interfaces/UserRepository';
 
@@ -29,7 +30,8 @@ export interface AppShellPresentationProps {
   // Layout configuration
   isMinimalLayout: boolean;
   shouldShowLaser: boolean;
-  
+  isToolPage?: boolean;
+
   // User and authentication
   user?: User;
   isAuthenticated: boolean;
@@ -73,25 +75,26 @@ export const AppShellPresentation: React.FC<AppShellPresentationProps> = ({
   // Layout configuration
   isMinimalLayout,
   shouldShowLaser,
-  
+  isToolPage = false,
+
   // User and authentication
   user,
   isAuthenticated,
   userTier,
-  
+
   // UI state
   sidebarOpen,
   activePanel,
   selectedObjects,
   showProjectProperties,
   mobileMenuOpen,
-  
+
   // Theme
   isDarkMode,
-  
+
   // Notifications
   notifications,
-  
+
   // Event handlers
   onThemeToggle,
   onSidebarToggle,
@@ -99,7 +102,7 @@ export const AppShellPresentation: React.FC<AppShellPresentationProps> = ({
   onProjectPropertiesToggle,
   onNotificationDismiss,
   onPanelChange,
-  
+
   // Content and styling
   children,
   className = ''
@@ -158,9 +161,9 @@ export const AppShellPresentation: React.FC<AppShellPresentationProps> = ({
 
       {/* Main Layout Container */}
       <div className="flex h-[calc(100vh-4rem)] relative z-20">
-        {/* Sidebar */}
+        {/* Sidebar - Hidden on tool pages */}
         <AnimatePresence>
-          {sidebarOpen && (
+          {sidebarOpen && !isToolPage && (
             <motion.aside
               initial={{ x: -320, opacity: 0 }}
               animate={{ x: 0, opacity: 1 }}
@@ -181,19 +184,21 @@ export const AppShellPresentation: React.FC<AppShellPresentationProps> = ({
         </AnimatePresence>
 
         {/* Main Content Area */}
-        <main 
-          id="main-content" 
+        <main
+          id="main-content"
           className={`flex-1 relative transition-all duration-300 ${
             sidebarOpen ? 'ml-0' : 'ml-0'
           }`}
         >
-          {/* Content */}
+          {/* Content with Tool Route Protection */}
           <div className="h-full overflow-hidden">
-            {children}
+            <ToolRouteGuard>
+              {children}
+            </ToolRouteGuard>
           </div>
 
-          {/* Sidebar Toggle Button (when sidebar is closed) */}
-          {!sidebarOpen && (
+          {/* Sidebar Toggle Button (when sidebar is closed and not on tool pages) */}
+          {!sidebarOpen && !isToolPage && (
             <motion.button
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}

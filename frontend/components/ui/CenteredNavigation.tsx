@@ -3,29 +3,24 @@
 import React, { useState } from 'react';
 import { usePathname } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  Home, 
-  FileText, 
-  FolderOpen, 
-  Wrench, 
+import {
+  Home,
+  FileText,
+  FolderOpen,
+  Wrench,
   User,
   ChevronDown,
   Settings,
   BarChart3,
   LogOut,
   Shield,
-  Globe,
-  Key,
   Download,
-  Users,
-  CreditCard,
-  Activity,
   MessageSquare,
-  Bell,
   HelpCircle
 } from 'lucide-react';
 import { Dock, DockItem } from './Dock';
 import { cn } from '@/lib/utils';
+import { useDeviceDetection } from '@/lib/hooks/useDeviceDetection';
 
 interface NavigationItem {
   id: string;
@@ -35,6 +30,7 @@ interface NavigationItem {
   onClick?: () => void;
   dropdown?: DropdownItem[];
   badge?: number;
+  requiresLargeScreen?: boolean; // For tool items that need tablet/desktop
 }
 
 interface DropdownItem {
@@ -45,6 +41,7 @@ interface DropdownItem {
   onClick?: () => void;
   separator?: boolean;
   adminOnly?: boolean;
+  requiresLargeScreen?: boolean; // For tool items that need tablet/desktop
 }
 
 interface CenteredNavigationProps {
@@ -96,12 +93,13 @@ const MAIN_NAV_ITEMS: NavigationItem[] = [
     id: 'tools',
     label: 'Tools',
     icon: Wrench,
+    requiresLargeScreen: true, // Tools require tablet/desktop
     dropdown: [
-      { id: 'air-duct-sizer', label: 'Air Duct Sizer', href: '/air-duct-sizer-v1' },
-      { id: 'combustion-vent', label: 'Combustion Vent Sizer', href: '/combustion-vent-sizer' },
-      { id: 'grease-duct', label: 'Grease Duct Sizer', href: '/grease-duct-sizer' },
-      { id: 'generator-exhaust', label: 'Generator Exhaust Sizer', href: '/generator-exhaust-sizer' },
-      { id: 'estimating', label: 'Estimating App', href: '/estimating' },
+      { id: 'air-duct-sizer', label: 'Air Duct Sizer', href: '/air-duct-sizer-v1', requiresLargeScreen: true },
+      { id: 'combustion-vent', label: 'Combustion Vent Sizer', href: '/combustion-vent-sizer', requiresLargeScreen: true },
+      { id: 'grease-duct', label: 'Grease Duct Sizer', href: '/grease-duct-sizer', requiresLargeScreen: true },
+      { id: 'generator-exhaust', label: 'Generator Exhaust Sizer', href: '/generator-exhaust-sizer', requiresLargeScreen: true },
+      { id: 'estimating', label: 'Estimating App', href: '/estimating', requiresLargeScreen: true },
     ],
   },
   {
@@ -127,7 +125,14 @@ const DropdownMenu: React.FC<{
   onClose: () => void;
   userRole?: 'admin' | 'user';
 }> = ({ items, isOpen, onClose, userRole }) => {
-  const filteredItems = items.filter(item => !item.adminOnly || userRole === 'admin');
+  const { capabilities } = useDeviceDetection();
+  const filteredItems = items.filter(item => {
+    // Filter out admin-only items for non-admin users
+    if (item.adminOnly && userRole !== 'admin') return false;
+    // Filter out tool items on mobile devices
+    if (item.requiresLargeScreen && !capabilities.canAccessTools) return false;
+    return true;
+  });
 
   return (
     <AnimatePresence>
@@ -201,7 +206,7 @@ const NavigationItem: React.FC<{
     <div className="relative">
       <motion.div
         className={cn(
-          "flex items-center space-x-2 px-4 py-2 rounded-lg transition-all duration-200 cursor-pointer",
+          "flex items-center space-x-1 sm:space-x-2 px-2 sm:px-4 py-2 rounded-lg transition-all duration-200 cursor-pointer",
           "hover:bg-white/40 dark:hover:bg-white/10",
           isActive && "bg-white/60 dark:bg-white/20"
         )}
@@ -210,15 +215,15 @@ const NavigationItem: React.FC<{
         onClick={handleClick}
         onMouseEnter={() => item.dropdown && setIsDropdownOpen(true)}
       >
-        <Icon 
-          size={20} 
+        <Icon
+          size={20}
           className={cn(
             "text-neutral-600 dark:text-neutral-300",
             isActive && "text-blue-600 dark:text-blue-400"
-          )} 
+          )}
         />
         <span className={cn(
-          "text-sm font-medium text-neutral-700 dark:text-neutral-200",
+          "text-sm font-medium text-neutral-700 dark:text-neutral-200 hidden sm:block",
           isActive && "text-blue-700 dark:text-blue-300"
         )}>
           {item.label}
@@ -268,6 +273,7 @@ export const CenteredNavigation: React.FC<CenteredNavigationProps> = ({
   className,
 }) => {
   const pathname = usePathname();
+  const { capabilities } = useDeviceDetection();
 
   const isActive = (item: NavigationItem) => {
     if (item.href === '/') {
@@ -275,6 +281,23 @@ export const CenteredNavigation: React.FC<CenteredNavigationProps> = ({
     }
     return item.href ? pathname.startsWith(item.href) : false;
   };
+
+  // Filter navigation items based on device capabilities
+  const filteredNavItems = MAIN_NAV_ITEMS.filter(item => {
+    // Hide tool items on mobile devices
+    if (item.requiresLargeScreen && !capabilities.canAccessTools) return false;
+    return true;
+  });
+
+  // Routes where notifications should NOT be shown
+  const hideNotificationsRoutes = [
+    '/air-duct-sizer-v1',
+    '/air-duct-sizer',
+  ];
+
+  const shouldShowNotifications = !hideNotificationsRoutes.some(route =>
+    pathname.startsWith(route)
+  );
 
   // Bottom-right corner items
   const cornerItems: DockItem[] = [
@@ -297,31 +320,32 @@ export const CenteredNavigation: React.FC<CenteredNavigationProps> = ({
     <>
       {/* Main Navigation Bar */}
       <motion.nav
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
+        initial={{ opacity: 0, y: -20, x: "-50%" }}
+        animate={{ opacity: 1, y: 0, x: "-50%" }}
         transition={{ type: "spring", stiffness: 300, damping: 30 }}
         className={cn(
-          "fixed top-0 left-1/2 -translate-x-1/2 z-40 mt-4",
+          "fixed top-0 left-1/2 z-40 mt-4",
           "bg-white/80 dark:bg-neutral-900/80 backdrop-blur-md",
           "border border-white/20 dark:border-neutral-700/50",
-          "rounded-xl shadow-lg px-6 py-3",
+          "rounded-xl shadow-lg px-3 sm:px-6 py-3",
+          "max-w-[calc(100vw-2rem)] w-auto", // Responsive width constraints
           className
         )}
         role="navigation"
         aria-label="Main navigation"
       >
-        <div className="flex items-center space-x-6">
+        <div className="flex items-center space-x-3 sm:space-x-6">
           {/* Logo */}
           <div className="flex items-center space-x-2">
             <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center">
               <span className="text-white font-bold text-sm">SW</span>
             </div>
-            <span className="font-semibold text-neutral-900 dark:text-white">SizeWise</span>
+            <span className="font-semibold text-neutral-900 dark:text-white hidden sm:block">SizeWise</span>
           </div>
 
           {/* Navigation Items */}
-          <div className="flex items-center space-x-1">
-            {MAIN_NAV_ITEMS.map((item) => (
+          <div className="flex items-center space-x-0.5 sm:space-x-1">
+            {filteredNavItems.map((item) => (
               <NavigationItem
                 key={item.id}
                 item={item}
@@ -333,15 +357,17 @@ export const CenteredNavigation: React.FC<CenteredNavigationProps> = ({
         </div>
       </motion.nav>
 
-      {/* Bottom-right corner dock */}
-      <div className="fixed bottom-4 right-20 z-40">
-        <Dock
-          items={cornerItems}
-          orientation="vertical"
-          size="md"
-          variant="glass"
-        />
-      </div>
+      {/* Bottom-right corner dock - Only show on dashboard/home pages */}
+      {shouldShowNotifications && (
+        <div className="fixed bottom-4 right-20 z-40">
+          <Dock
+            items={cornerItems}
+            orientation="vertical"
+            size="md"
+            variant="glass"
+          />
+        </div>
+      )}
     </>
   );
 };

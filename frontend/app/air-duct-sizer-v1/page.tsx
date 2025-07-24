@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { Vector3 } from 'three'
 import { Canvas3D } from '@/components/3d/Canvas3D'
 import { useToast } from '@/lib/hooks/useToaster'
+import { withAirDuctSizerAccess } from '@/components/hoc/withToolAccess'
 
 // V1 Components
 import { ProjectPropertiesPanel, ProjectPropertiesTrigger } from '@/components/ui/ProjectPropertiesPanel'
@@ -62,7 +63,7 @@ interface GlobalDefaults {
   frictionRate: number;
 }
 
-export default function AirDuctSizerV1Page() {
+function AirDuctSizerV1Page() {
   // Panel visibility state
   const [showProjectPanel, setShowProjectPanel] = useState(false);
   const [showModelSummary, setShowModelSummary] = useState(false);
@@ -474,7 +475,7 @@ export default function AirDuctSizerV1Page() {
   };
 
   return (
-    <div className="h-screen w-full bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 overflow-hidden">
+    <div className="h-screen w-full relative overflow-hidden">
       {/* Project Properties Trigger */}
       <ProjectPropertiesTrigger
         onClick={() => setShowProjectPanel(true)}
@@ -494,7 +495,7 @@ export default function AirDuctSizerV1Page() {
       />
 
       {/* Main 3D Canvas Workspace */}
-      <div className="absolute inset-0">
+      <div className="absolute inset-0 top-20">
         <Canvas3D
           segments={ductSegments}
           onSegmentAdd={handleSegmentAdd}
@@ -635,3 +636,6 @@ export default function AirDuctSizerV1Page() {
     </div>
   );
 }
+
+// Export with device access control
+export default withAirDuctSizerAccess(AirDuctSizerV1Page);

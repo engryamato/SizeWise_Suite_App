@@ -37,6 +37,13 @@ const NO_LASER_ROUTES = [
   '/auth',
   '/export',
   '/preview',
+  '/air-duct-sizer-v1', // Tool pages should have clean background
+];
+
+// Routes that are tool pages (should not show sidebar by default)
+const TOOL_ROUTES = [
+  '/air-duct-sizer-v1',
+  '/air-duct-sizer',
 ];
 
 /**
@@ -76,10 +83,13 @@ export const AppShellContainer: React.FC<AppShellProps> = ({
   const [userTier, setUserTier] = useState<'free' | 'pro' | 'enterprise'>('free');
 
   // Determine layout configuration
-  const isMinimalLayout = minimal || MINIMAL_LAYOUT_ROUTES.some(route => 
+  const isMinimalLayout = minimal || MINIMAL_LAYOUT_ROUTES.some(route =>
     pathname.startsWith(route)
   );
-  const shouldShowLaser = !NO_LASER_ROUTES.some(route => 
+  const shouldShowLaser = !NO_LASER_ROUTES.some(route =>
+    pathname.startsWith(route)
+  );
+  const isToolPage = TOOL_ROUTES.some(route =>
     pathname.startsWith(route)
   );
 
@@ -174,25 +184,26 @@ export const AppShellContainer: React.FC<AppShellProps> = ({
     // Layout configuration
     isMinimalLayout,
     shouldShowLaser,
-    
+    isToolPage,
+
     // User and authentication
     user: user || currentUser,
     isAuthenticated,
     userTier,
-    
+
     // UI state
-    sidebarOpen,
+    sidebarOpen: isToolPage ? false : sidebarOpen, // Hide sidebar on tool pages
     activePanel,
     selectedObjects,
     showProjectProperties,
     mobileMenuOpen,
-    
+
     // Theme
     isDarkMode: actualTheme === 'dark',
-    
+
     // Notifications
     notifications,
-    
+
     // Event handlers
     onThemeToggle: handleThemeToggle,
     onSidebarToggle: handleSidebarToggle,
@@ -200,10 +211,10 @@ export const AppShellContainer: React.FC<AppShellProps> = ({
     onProjectPropertiesToggle: handleProjectPropertiesToggle,
     onNotificationDismiss: handleNotificationDismiss,
     onPanelChange: handlePanelChange,
-    
+
     // Content
     children,
-    
+
     // Styling
     className,
     ...props

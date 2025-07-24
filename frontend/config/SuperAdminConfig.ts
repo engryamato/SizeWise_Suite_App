@@ -279,20 +279,20 @@ export function withSuperAdminAccess<T extends React.ComponentType<any>>(
 ): T {
   const WrappedComponent = (props: any) => {
     const { isEnabled } = useSuperAdminGuard();
-    
+
     if (!isEnabled) {
       if (fallbackComponent) {
         const FallbackComponent = fallbackComponent;
-        return <FallbackComponent {...props} />;
+        return React.createElement(FallbackComponent, props);
       }
       return null;
     }
-    
-    return <Component {...props} />;
+
+    return React.createElement(Component, props);
   };
-  
+
   WrappedComponent.displayName = `withSuperAdminAccess(${Component.displayName || Component.name})`;
-  
+
   return WrappedComponent as T;
 }
 

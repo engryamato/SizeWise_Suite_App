@@ -1,9 +1,10 @@
 import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
 import './globals.css'
-import { AppShell } from '@/components/ui/AppShell'
+import { AppShellContainer } from '@/components/layout/AppShellContainer'
 import { ToasterProvider } from '@/lib/hooks/useToaster'
 import { ThemeProvider } from '@/lib/hooks/useTheme'
+import { ServiceProvider } from '@/lib/providers/ServiceProvider'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -23,13 +24,15 @@ export default function RootLayout({
         <meta name="theme-color" content="#ffffff" />
       </head>
       <body className={inter.className}>
-        <ThemeProvider defaultTheme="system" storageKey="sizewise-theme">
-          <ToasterProvider position="bottom-left" maxToasts={5}>
-            <AppShell>
-              {children}
-            </AppShell>
-          </ToasterProvider>
-        </ThemeProvider>
+        <ServiceProvider mode="offline">
+          <ThemeProvider defaultTheme="system" storageKey="sizewise-theme">
+            <ToasterProvider position="bottom-left" maxToasts={5}>
+              <AppShellContainer>
+                {children}
+              </AppShellContainer>
+            </ToasterProvider>
+          </ThemeProvider>
+        </ServiceProvider>
       </body>
     </html>
   )

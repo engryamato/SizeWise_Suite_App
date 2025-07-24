@@ -1,16 +1,19 @@
 /**
  * Service Provider Context
- * 
+ *
  * React context provider that manages service layer dependency injection
  * for components. Integrates with existing service layer architecture
  * and supports both offline (Phase 1) and SaaS (Phase 2) modes.
- * 
+ *
  * @see docs/refactoring/component-architecture-specification.md
  * @see docs/implementation/saas-readiness/service-layer-architecture.md
  */
 
-import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+'use client';
+
+import React, { createContext, useContext, useEffect, useState, useMemo, ReactNode } from 'react';
 import { ServiceContainer, ServiceContextValue } from '../hooks/useServiceIntegration';
+import { createOfflineServiceContainer } from '../services/OfflineServiceContainer';
 
 // =============================================================================
 // Service Context
@@ -126,116 +129,35 @@ export function ServiceProvider({
     mode: 'offline' | 'cloud',
     config: ServiceProviderConfig
   ): Promise<ServiceContainer> {
-    // Placeholder implementation - would integrate with existing service layer
-    // This follows the pattern from service-layer-architecture.md
-    
     if (mode === 'offline') {
-      // Initialize offline services (SQLite repositories)
+      // Initialize real offline services with SQLite database
+      console.log('🔧 Creating offline service container...');
+      const offlineServices = await createOfflineServiceContainer();
+
+      // Map to ServiceContainer interface
       return {
-        projectService: createOfflineProjectService(),
-        calculationService: createCalculationService(),
-        validationService: createValidationService(),
-        exportService: createExportService(),
-        tierService: createOfflineTierService(),
-        featureManager: createFeatureManager()
+        projectService: offlineServices.projectService,
+        calculationService: offlineServices.calculationService,
+        validationService: offlineServices.validationService,
+        exportService: offlineServices.exportService,
+        tierService: offlineServices.tierService,
+        featureManager: offlineServices.featureManager
       };
     } else {
-      // Initialize cloud services (API repositories)
-      return {
-        projectService: createCloudProjectService(),
-        calculationService: createCalculationService(),
-        validationService: createValidationService(),
-        exportService: createCloudExportService(),
-        tierService: createCloudTierService(),
-        featureManager: createFeatureManager()
-      };
+      // Cloud mode not implemented for Phase 1
+      throw new Error('Cloud mode not available in Phase 1 offline desktop version');
     }
   }
 
-  // Placeholder service factory functions
-  // These would be replaced with actual service instantiation
-  function createOfflineProjectService() {
-    return {
-      getProject: async (id: string) => null,
-      saveProject: async (project: any) => {},
-      createProject: async (data: any) => ({}),
-      deleteProject: async (id: string) => {},
-      listProjects: async (userId: string) => []
-    };
-  }
+  // Note: Placeholder functions removed - now using real offline service implementations
 
-  function createCloudProjectService() {
-    return {
-      getProject: async (id: string) => null,
-      saveProject: async (project: any) => {},
-      createProject: async (data: any) => ({}),
-      deleteProject: async (id: string) => {},
-      listProjects: async (userId: string) => []
-    };
-  }
-
-  function createCalculationService() {
-    return {
-      calculateDuctSizing: async (inputs: any) => ({}),
-      validateResults: async (results: any) => ({}),
-      getCalculationHistory: async (projectId: string) => []
-    };
-  }
-
-  function createValidationService() {
-    return {
-      validateProject: async (project: any) => ({}),
-      validateSegment: async (segment: any) => ({}),
-      getValidationRules: async () => []
-    };
-  }
-
-  function createExportService() {
-    return {
-      exportProject: async (projectId: string, options: any) => ({}),
-      getExportStatus: async (exportId: string) => ({}),
-      downloadExport: async (exportId: string) => new Blob()
-    };
-  }
-
-  function createCloudExportService() {
-    return createExportService(); // Same interface, different implementation
-  }
-
-  function createOfflineTierService() {
-    return {
-      getCurrentTier: async () => 'free',
-      hasFeatureAccess: async (feature: string) => false,
-      getTierLimits: async () => ({}),
-      upgradeTier: async (newTier: any) => {}
-    };
-  }
-
-  function createCloudTierService() {
-    return {
-      getCurrentTier: async () => 'free',
-      hasFeatureAccess: async (feature: string) => false,
-      getTierLimits: async () => ({}),
-      upgradeTier: async (newTier: any) => {}
-    };
-  }
-
-  function createFeatureManager() {
-    return {
-      isFeatureEnabled: (feature: string) => false,
-      getFeatureConfig: (feature: string) => ({}),
-      enableFeature: (feature: string) => {},
-      disableFeature: (feature: string) => {}
-    };
-  }
-
-  // Context value
-  const contextValue: ServiceContextValue = {
+  // Context value (memoized to prevent unnecessary re-renders)
+  const contextValue: ServiceContextValue = useMemo(() => ({
     services: serviceContainer!,
     loading,
     error,
     initialized
-  };
+  }), [serviceContainer, loading, error, initialized]);
 
   // Show loading state
   if (loading) {
@@ -262,6 +184,7 @@ export function ServiceProvider({
           <h3 className="text-lg font-semibold text-gray-900 mb-2">Service Initialization Failed</h3>
           <p className="text-gray-600 mb-4">{error}</p>
           <button
+            type="button"
             onClick={initializeServices}
             className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
           >
@@ -333,7 +256,6 @@ export function useServiceHealth() {
  * Hook for service metrics and monitoring
  */
 export function useServiceMetrics() {
-  const { services } = useServiceContext();
   const [metrics, setMetrics] = useState({
     requestCount: 0,
     errorCount: 0,

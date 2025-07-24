@@ -28,12 +28,13 @@ export class LocalDataService implements DataService {
     try {
       console.log('🔧 Initializing Local DataService...');
       this.dbManager = await initializeBrowserDatabase();
+      this.ready = true; // Set ready before initializing default data
       await this.initializeDefaultData();
-      this.ready = true;
       console.log('✅ Local DataService initialized successfully');
       this.emit('connection:online', { timestamp: new Date() });
     } catch (error) {
       console.error('❌ Failed to initialize Local DataService:', error);
+      this.ready = false; // Reset ready state on error
       throw error;
     }
   }

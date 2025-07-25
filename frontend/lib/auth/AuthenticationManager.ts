@@ -535,7 +535,29 @@ export class AuthenticationManager {
   }
 
   /**
+   * Convert base64 to base64url encoding
+   * BRIDGE: Provides compatibility for Node.js versions without native base64url support
+   */
+  private base64ToBase64Url(base64: string): string {
+    return base64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+  }
+
+  /**
+   * Convert base64url to base64 encoding
+   * BRIDGE: Provides compatibility for Node.js versions without native base64url support
+   */
+  private base64UrlToBase64(base64url: string): string {
+    let base64 = base64url.replace(/-/g, '+').replace(/_/g, '/');
+    // Add padding if needed
+    while (base64.length % 4) {
+      base64 += '=';
+    }
+    return base64;
+  }
+
+  /**
    * Generate JWT token
+   * BRIDGE: Fixed base64url encoding compatibility issue
    */
   private async generateJWTToken(session: AuthSession): Promise<string> {
     try {
@@ -554,15 +576,21 @@ export class AuthenticationManager {
         iss: 'sizewise-auth'
       };
 
-      // Encode header and payload
-      const encodedHeader = Buffer.from(JSON.stringify(header)).toString('base64url');
-      const encodedPayload = Buffer.from(JSON.stringify(payload)).toString('base64url');
+      // Encode header and payload using compatible base64url encoding
+      const encodedHeader = this.base64ToBase64Url(
+        Buffer.from(JSON.stringify(header)).toString('base64')
+      );
+      const encodedPayload = this.base64ToBase64Url(
+        Buffer.from(JSON.stringify(payload)).toString('base64')
+      );
 
       // Create signature
       const signatureInput = `${encodedHeader}.${encodedPayload}`;
-      const signature = crypto.createHmac('sha256', this.jwtSecret)
-        .update(signatureInput)
-        .digest('base64url');
+      const signature = this.base64ToBase64Url(
+        crypto.createHmac('sha256', this.jwtSecret)
+          .update(signatureInput)
+          .digest('base64')
+      );
 
       return `${encodedHeader}.${encodedPayload}.${signature}`;
 
@@ -581,8 +609,8 @@ export class AuthenticationManager {
         return null;
       }
 
-      const header = JSON.parse(Buffer.from(parts[0], 'base64url').toString());
-      const payload = JSON.parse(Buffer.from(parts[1], 'base64url').toString());
+      const header = JSON.parse(Buffer.from(this.base64UrlToBase64(parts[0]), 'base64').toString());
+      const payload = JSON.parse(Buffer.from(this.base64UrlToBase64(parts[1]), 'base64').toString());
       const signature = parts[2];
 
       return { header, payload, signature };
@@ -597,17 +625,23 @@ export class AuthenticationManager {
    */
   private verifyJWTSignature(token: JWTToken): boolean {
     try {
-      const encodedHeader = Buffer.from(JSON.stringify(token.header)).toString('base64url');
-      const encodedPayload = Buffer.from(JSON.stringify(token.payload)).toString('base64url');
-      
+      const encodedHeader = this.base64ToBase64Url(
+        Buffer.from(JSON.stringify(token.header)).toString('base64')
+      );
+      const encodedPayload = this.base64ToBase64Url(
+        Buffer.from(JSON.stringify(token.payload)).toString('base64')
+      );
+
       const signatureInput = `${encodedHeader}.${encodedPayload}`;
-      const expectedSignature = crypto.createHmac('sha256', this.jwtSecret)
-        .update(signatureInput)
-        .digest('base64url');
+      const expectedSignature = this.base64ToBase64Url(
+        crypto.createHmac('sha256', this.jwtSecret)
+          .update(signatureInput)
+          .digest('base64')
+      );
 
       return crypto.timingSafeEqual(
-        Buffer.from(token.signature, 'base64url'),
-        Buffer.from(expectedSignature, 'base64url')
+        Buffer.from(this.base64UrlToBase64(token.signature), 'base64'),
+        Buffer.from(this.base64UrlToBase64(expectedSignature), 'base64')
       );
 
     } catch (error) {

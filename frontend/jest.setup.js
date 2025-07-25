@@ -96,6 +96,26 @@ process.env.NEXT_PUBLIC_SUPER_ADMIN_EMAIL = 'admin@sizewise.com'
 process.env.NEXT_PUBLIC_SUPER_ADMIN_PASSWORD = 'SizeWise2024!6EAF4610705941'
 process.env.NEXT_PUBLIC_AUTH_SERVER_URL = 'http://localhost:5000'
 
+// Mock crypto for Node.js environment
+Object.defineProperty(global, 'crypto', {
+  value: {
+    randomUUID: () => 'test-uuid-' + Math.random().toString(36).substr(2, 9),
+    getRandomValues: (arr) => {
+      for (let i = 0; i < arr.length; i++) {
+        arr[i] = Math.floor(Math.random() * 256)
+      }
+      return arr
+    },
+    subtle: {
+      generateKey: jest.fn(),
+      exportKey: jest.fn(),
+      importKey: jest.fn(),
+      sign: jest.fn(),
+      verify: jest.fn(),
+    }
+  }
+})
+
 // Suppress console warnings in tests
 const originalConsoleWarn = console.warn
 const originalConsoleError = console.error

@@ -57,11 +57,11 @@ const getTierLimits = (tier: 'free' | 'pro'): TierLimits => {
     }
   }
   
-  // Free tier limits
+  // Free tier limits - aligned with business requirements
   return {
     maxRooms: 3,
     maxSegments: 25,
-    maxProjects: 10,
+    maxProjects: 3, // Fixed: Free tier allows 3 projects, not 10
     canEditComputationalProperties: false,
     canExportWithoutWatermark: false,
     canUseSimulation: false,

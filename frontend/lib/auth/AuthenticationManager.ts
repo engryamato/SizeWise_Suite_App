@@ -9,12 +9,7 @@
  */
 
 import * as crypto from 'crypto';
-
-// Local interface for keystore manager
-interface KeystoreManager {
-  validateLicense(licenseKey: string): Promise<boolean>;
-  getLicenseInfo(licenseKey: string): Promise<any>;
-}
+import { KeystoreManager } from './KeystoreManager';
 
 // Local interfaces for super admin functionality
 export interface SuperAdminValidationResult {

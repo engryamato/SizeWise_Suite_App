@@ -5,11 +5,28 @@
  */
 
 import { renderHook, act } from '@testing-library/react'
-import { useAuthStore } from '@/stores/auth-store'
-import { HybridAuthManager } from '@/lib/auth/HybridAuthManager'
 
-// Mock HybridAuthManager
-jest.mock('@/lib/auth/HybridAuthManager')
+// Mock HybridAuthManager BEFORE importing auth store
+const mockHybridAuthManager = {
+  login: jest.fn(),
+  register: jest.fn(),
+  getTierStatus: jest.fn(),
+  canPerformAction: jest.fn(),
+  syncTierStatus: jest.fn(),
+}
+
+jest.mock('@/lib/auth/HybridAuthManager', () => ({
+  HybridAuthManager: jest.fn().mockImplementation(() => ({
+    login: jest.fn(),
+    register: jest.fn(),
+    getTierStatus: jest.fn(),
+    canPerformAction: jest.fn(),
+    syncTierStatus: jest.fn(),
+  }))
+}))
+
+// Now import auth store after mocking
+import { useAuthStore } from '@/stores/auth-store'
 
 // Mock fetch
 global.fetch = jest.fn()
@@ -21,26 +38,19 @@ Object.defineProperty(document, 'cookie', {
 })
 
 describe('Auth Store', () => {
-  let mockHybridAuthManager: jest.Mocked<HybridAuthManager>
-
   beforeEach(() => {
     // Clear store state
     useAuthStore.getState().logout()
-    
+
     // Reset mocks
     jest.clearAllMocks()
-    
-    // Mock HybridAuthManager
-    mockHybridAuthManager = {
-      login: jest.fn(),
-      register: jest.fn(),
-      getTierStatus: jest.fn(),
-      canPerformAction: jest.fn(),
-      syncTierStatus: jest.fn(),
-    } as any
 
-    // Mock the constructor
-    ;(HybridAuthManager as jest.Mock).mockImplementation(() => mockHybridAuthManager)
+    // Reset mock implementations
+    mockHybridAuthManager.login.mockReset()
+    mockHybridAuthManager.register.mockReset()
+    mockHybridAuthManager.getTierStatus.mockReset()
+    mockHybridAuthManager.canPerformAction.mockReset()
+    mockHybridAuthManager.syncTierStatus.mockReset()
   })
 
   describe('Login Flow', () => {

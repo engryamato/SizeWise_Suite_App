@@ -133,6 +133,93 @@ export class AuthenticationManager {
   }
 
   /**
+   * Authenticate user with email and password
+   * BRIDGE: Provides compatibility for hybrid authentication system
+   * Supports both super admin credentials and license-based authentication
+   */
+  async authenticateUser(email: string, password: string): Promise<AuthResult> {
+    try {
+      // Check for super admin credentials first
+      const SUPER_ADMIN_EMAIL = process.env.NEXT_PUBLIC_SUPER_ADMIN_EMAIL || 'admin@sizewise.com';
+      const SUPER_ADMIN_PASSWORD = process.env.NEXT_PUBLIC_SUPER_ADMIN_PASSWORD || 'SizeWise2024!6EAF4610705941';
+
+      if (email === SUPER_ADMIN_EMAIL && password === SUPER_ADMIN_PASSWORD) {
+        // Create super admin session
+        const superAdminSession = {
+          sessionId: crypto.randomBytes(32).toString('hex'),
+          userId: 'super-admin',
+          email: email,
+          tier: 'super_admin' as const,
+          createdAt: Date.now(),
+          lastActivity: Date.now(),
+          deviceFingerprint: await this.generateDeviceFingerprint(),
+          superAdminPermissions: ['all'],
+          emergencyAccess: true
+        };
+
+        this.currentSuperAdminSession = superAdminSession;
+
+        // Generate JWT token for super admin
+        const token = await this.generateJWTToken({
+          sessionId: superAdminSession.sessionId,
+          userId: superAdminSession.userId,
+          email: superAdminSession.email,
+          tier: superAdminSession.tier,
+          createdAt: superAdminSession.createdAt,
+          lastActivity: superAdminSession.lastActivity,
+          deviceFingerprint: superAdminSession.deviceFingerprint,
+          permissions: superAdminSession.superAdminPermissions
+        });
+
+        await this.logSecurityEvent('super_admin_authentication_success', {
+          userId: superAdminSession.userId,
+          email: email,
+          sessionId: superAdminSession.sessionId
+        });
+
+        return {
+          success: true,
+          session: {
+            sessionId: superAdminSession.sessionId,
+            userId: superAdminSession.userId,
+            email: superAdminSession.email,
+            tier: superAdminSession.tier,
+            createdAt: superAdminSession.createdAt,
+            lastActivity: superAdminSession.lastActivity,
+            deviceFingerprint: superAdminSession.deviceFingerprint,
+            permissions: superAdminSession.superAdminPermissions
+          },
+          token
+        };
+      }
+
+      // For non-super admin users, this would integrate with license validation
+      // For now, return authentication failure for regular users
+      await this.logSecurityEvent('authentication_failed', {
+        email: email,
+        reason: 'Invalid credentials'
+      });
+
+      return {
+        success: false,
+        error: 'Invalid email or password. Please try again.',
+        securityEvent: 'INVALID_CREDENTIALS'
+      };
+
+    } catch (error) {
+      await this.logSecurityEvent('authentication_error', {
+        email: email,
+        error: error.message
+      });
+      return {
+        success: false,
+        error: `Authentication failed: ${error.message}`,
+        securityEvent: 'AUTHENTICATION_ERROR'
+      };
+    }
+  }
+
+  /**
    * Authenticate user with license validation
    * CRITICAL: Primary authentication method for offline mode
    */

@@ -8,7 +8,7 @@ import { useToast } from '@/lib/hooks/useToaster'
 import { withAirDuctSizerAccess } from '@/components/hoc/withToolAccess'
 
 // V1 Components
-import { ProjectPropertiesPanel, ProjectPropertiesTrigger } from '@/components/ui/ProjectPropertiesPanel'
+import { ProjectPropertiesManager } from '@/components/managers/ProjectPropertiesManager'
 import { DrawingToolFAB, DrawingTool } from '@/components/ui/DrawingToolFAB'
 import { ContextPropertyPanel, ElementProperties } from '@/components/ui/ContextPropertyPanel'
 import { ModelSummaryPanel } from '@/components/ui/ModelSummaryPanel'
@@ -30,42 +30,10 @@ interface DuctSegment {
 }
 
 // Project data interfaces
-interface ProjectInfo {
-  name: string;
-  number: string;
-  description: string;
-  location: string;
-  clientName: string;
-  estimatorName: string;
-  dateCreated: string;
-  lastModified: string;
-  version: string;
-}
 
-interface CodeStandards {
-  smacna: boolean;
-  ashrae: boolean;
-  ul: boolean;
-  imc: boolean;
-  nfpa: boolean;
-}
-
-interface GlobalDefaults {
-  units: 'Imperial' | 'Metric';
-  defaultDuctSize: { width: number; height: number };
-  defaultMaterial: string;
-  defaultInsulation: string;
-  defaultFitting: string;
-  calibrationMode: 'Auto' | 'Manual';
-  defaultVelocity: number;
-  pressureClass: string;
-  altitude: number;
-  frictionRate: number;
-}
 
 function AirDuctSizerV1Page() {
   // Panel visibility state
-  const [showProjectPanel, setShowProjectPanel] = useState(false);
   const [showModelSummary, setShowModelSummary] = useState(false);
   const [showContextPanel, setShowContextPanel] = useState(false);
   const [contextPanelPosition, setContextPanelPosition] = useState({ x: 0, y: 0 });
@@ -86,39 +54,7 @@ function AirDuctSizerV1Page() {
   const [snapEnabled, setSnapEnabled] = useState(true);
   const [zoomLevel, setZoomLevel] = useState(1);
 
-  // Project data state
-  const [projectInfo, setProjectInfo] = useState<ProjectInfo>({
-    name: 'New Air Duct Project',
-    number: 'ADS-001',
-    description: 'HVAC duct sizing project',
-    location: 'Not specified',
-    clientName: 'Demo Client',
-    estimatorName: 'Demo User',
-    dateCreated: new Date().toLocaleDateString(),
-    lastModified: new Date().toLocaleDateString(),
-    version: '1.0.0'
-  });
 
-  const [codeStandards, setCodeStandards] = useState<CodeStandards>({
-    smacna: true,
-    ashrae: true,
-    ul: false,
-    imc: false,
-    nfpa: false
-  });
-
-  const [globalDefaults, setGlobalDefaults] = useState<GlobalDefaults>({
-    units: 'Imperial',
-    defaultDuctSize: { width: 8, height: 8 },
-    defaultMaterial: 'galvanized_steel',
-    defaultInsulation: 'none',
-    defaultFitting: 'standard',
-    calibrationMode: 'Auto',
-    defaultVelocity: 1200,
-    pressureClass: 'Low',
-    altitude: 0,
-    frictionRate: 0.08
-  });
 
   // Calculation and validation state
   const [isCalculating, setIsCalculating] = useState(false);
@@ -211,20 +147,6 @@ function AirDuctSizerV1Page() {
   }, []);
 
   // Event handlers
-  const handleProjectInfoChange = useCallback((info: Partial<ProjectInfo>) => {
-    setProjectInfo(prev => ({ ...prev, ...info }));
-    setSaveStatus('unsaved');
-  }, []);
-
-  const handleCodeStandardsChange = useCallback((standards: Partial<CodeStandards>) => {
-    setCodeStandards(prev => ({ ...prev, ...standards }));
-    setSaveStatus('unsaved');
-  }, []);
-
-  const handleGlobalDefaultsChange = useCallback((defaults: Partial<GlobalDefaults>) => {
-    setGlobalDefaults(prev => ({ ...prev, ...defaults }));
-    setSaveStatus('unsaved');
-  }, []);
 
   const handleToolChange = useCallback((tool: DrawingTool) => {
     setActiveTool(tool);
@@ -476,23 +398,8 @@ function AirDuctSizerV1Page() {
 
   return (
     <div className="h-screen w-full relative overflow-hidden">
-      {/* Project Properties Trigger */}
-      <ProjectPropertiesTrigger
-        onClick={() => setShowProjectPanel(true)}
-        isActive={showProjectPanel}
-      />
-
-      {/* Project Properties Panel */}
-      <ProjectPropertiesPanel
-        isOpen={showProjectPanel}
-        onClose={() => setShowProjectPanel(false)}
-        projectInfo={projectInfo}
-        codeStandards={codeStandards}
-        globalDefaults={globalDefaults}
-        onProjectInfoChange={handleProjectInfoChange}
-        onCodeStandardsChange={handleCodeStandardsChange}
-        onGlobalDefaultsChange={handleGlobalDefaultsChange}
-      />
+      {/* Unified Project Properties Manager */}
+      <ProjectPropertiesManager />
 
       {/* Main 3D Canvas Workspace */}
       <div className="absolute inset-0 top-20">
@@ -557,8 +464,8 @@ function AirDuctSizerV1Page() {
         onZoomIn={handleZoomIn}
         onZoomOut={handleZoomOut}
         onZoomReset={handleZoomReset}
-        userName={projectInfo.estimatorName}
-        projectName={projectInfo.name}
+        userName="Demo User"
+        projectName="Air Duct Sizer V1"
         currentBranch="main"
         hasUnsavedChanges={saveStatus === 'unsaved'}
         calculationStatus={isCalculating ? 'running' : calculationResults.length > 0 ? 'complete' : 'idle'}

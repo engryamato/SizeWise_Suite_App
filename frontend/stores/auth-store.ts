@@ -58,13 +58,14 @@ export const useAuthStore = create<AuthStore>()(
   devtools(
     persist(
       (set, get) => ({
-        // Initialize with default Free tier user for MVP
+        // Initialize with Premium Pro tier user for testing
         user: {
-          id: 'default-free-user',
+          id: 'premium-pro-user',
           email: 'demo@sizewise.com',
           name: 'Demo User',
-          tier: 'free',
-          company: undefined,
+          tier: 'pro',
+          company: 'SizeWise Engineering',
+          subscription_expires: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(), // 1 year from now
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
         },

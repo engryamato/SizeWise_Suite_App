@@ -402,10 +402,7 @@ export const ProjectPropertiesPanel: React.FC<ProjectPropertiesPanelProps> = ({
                 title="Computational Properties"
                 icon={<Settings className="w-5 h-5 text-neutral-600 dark:text-neutral-400" />}
               >
-                <div className="mb-3 flex items-center space-x-2 text-sm">
-                  <Shield className="w-4 h-4 text-orange-500" />
-                  <span className="text-orange-600 dark:text-orange-400 font-medium">Pro Only</span>
-                </div>
+                {/* Pro Only badge removed for clean UX - users don't need subscription reminders */}
 
                 <div className="space-y-4">
                   <div className="grid grid-cols-2 gap-4">

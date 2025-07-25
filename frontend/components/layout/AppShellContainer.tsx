@@ -78,7 +78,6 @@ export const AppShellContainer: React.FC<AppShellProps> = ({
   const { user: currentUser, isAuthenticated } = useAuthStore();
 
   // Local component state
-  const [showProjectProperties, setShowProjectProperties] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [userTier, setUserTier] = useState<'free' | 'pro' | 'enterprise'>('free');
 
@@ -126,10 +125,6 @@ export const AppShellContainer: React.FC<AppShellProps> = ({
     setMobileMenuOpen(!mobileMenuOpen);
   }, [mobileMenuOpen]);
 
-  const handleProjectPropertiesToggle = useCallback(() => {
-    setShowProjectProperties(!showProjectProperties);
-  }, [showProjectProperties]);
-
   const handleNotificationDismiss = useCallback((notificationId: string) => {
     removeNotification(notificationId);
   }, [removeNotification]);
@@ -146,18 +141,10 @@ export const AppShellContainer: React.FC<AppShellProps> = ({
         event.preventDefault();
         handleSidebarToggle();
       }
-      
-      // Ctrl/Cmd + P to toggle project properties
-      if ((event.ctrlKey || event.metaKey) && event.key === 'p') {
-        event.preventDefault();
-        handleProjectPropertiesToggle();
-      }
-      
+
       // Escape to close panels
       if (event.key === 'Escape') {
-        if (showProjectProperties) {
-          setShowProjectProperties(false);
-        } else if (mobileMenuOpen) {
+        if (mobileMenuOpen) {
           setMobileMenuOpen(false);
         }
       }
@@ -165,7 +152,7 @@ export const AppShellContainer: React.FC<AppShellProps> = ({
 
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [handleSidebarToggle, handleProjectPropertiesToggle, showProjectProperties, mobileMenuOpen]);
+  }, [handleSidebarToggle, mobileMenuOpen]);
 
   // Show loading state while services initialize
   if (servicesLoading) {
@@ -195,7 +182,6 @@ export const AppShellContainer: React.FC<AppShellProps> = ({
     sidebarOpen: isToolPage ? false : sidebarOpen, // Hide sidebar on tool pages
     activePanel,
     selectedObjects,
-    showProjectProperties,
     mobileMenuOpen,
 
     // Theme
@@ -208,7 +194,6 @@ export const AppShellContainer: React.FC<AppShellProps> = ({
     onThemeToggle: handleThemeToggle,
     onSidebarToggle: handleSidebarToggle,
     onMobileMenuToggle: handleMobileMenuToggle,
-    onProjectPropertiesToggle: handleProjectPropertiesToggle,
     onNotificationDismiss: handleNotificationDismiss,
     onPanelChange: handlePanelChange,
 

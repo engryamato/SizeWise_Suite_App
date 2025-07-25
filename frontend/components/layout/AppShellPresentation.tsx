@@ -14,7 +14,6 @@ import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CenteredNavigation } from '../ui/CenteredNavigation';
 import LaserBackground from '../ui/LaserBackground';
-import { ProjectPropertiesPanel } from '../ui/ProjectPropertiesPanel';
 import { Sidebar } from '../ui/Sidebar';
 import { StatusBar } from '../ui/StatusBar';
 import { Toaster } from '../ui/Toaster';
@@ -41,7 +40,6 @@ export interface AppShellPresentationProps {
   sidebarOpen: boolean;
   activePanel: 'project' | 'room' | 'segment' | 'equipment' | null;
   selectedObjects: string[];
-  showProjectProperties: boolean;
   mobileMenuOpen: boolean;
   
   // Theme
@@ -54,7 +52,6 @@ export interface AppShellPresentationProps {
   onThemeToggle: () => void;
   onSidebarToggle: () => void;
   onMobileMenuToggle: () => void;
-  onProjectPropertiesToggle: () => void;
   onNotificationDismiss: (id: string) => void;
   onPanelChange: (panel: 'project' | 'room' | 'segment' | 'equipment' | null) => void;
   
@@ -86,7 +83,6 @@ export const AppShellPresentation: React.FC<AppShellPresentationProps> = ({
   sidebarOpen,
   activePanel,
   selectedObjects,
-  showProjectProperties,
   mobileMenuOpen,
 
   // Theme
@@ -99,7 +95,6 @@ export const AppShellPresentation: React.FC<AppShellPresentationProps> = ({
   onThemeToggle,
   onSidebarToggle,
   onMobileMenuToggle,
-  onProjectPropertiesToggle,
   onNotificationDismiss,
   onPanelChange,
 
@@ -153,9 +148,6 @@ export const AppShellPresentation: React.FC<AppShellPresentationProps> = ({
           user={user}
           onThemeToggle={onThemeToggle}
           isDarkMode={isDarkMode}
-          onMobileMenuToggle={onMobileMenuToggle}
-          isMobileMenuOpen={mobileMenuOpen}
-          onProjectPropertiesToggle={onProjectPropertiesToggle}
         />
       </header>
 
@@ -236,38 +228,7 @@ export const AppShellPresentation: React.FC<AppShellPresentationProps> = ({
         />
       </footer>
 
-      {/* Project Properties Panel */}
-      <ProjectPropertiesPanel
-        isOpen={showProjectProperties}
-        onClose={() => onProjectPropertiesToggle()}
-        projectInfo={{
-          name: "Demo Project",
-          number: "001",
-          description: "",
-          location: "",
-          clientName: "",
-          estimatorName: "",
-          dateCreated: new Date().toISOString(),
-          lastModified: new Date().toISOString(),
-          version: "1.0"
-        }}
-        codeStandards={{ smacna: true, ashrae: true, ul: false, imc: false, nfpa: false }}
-        globalDefaults={{
-          units: 'Imperial',
-          defaultDuctSize: { width: 12, height: 8 },
-          defaultMaterial: 'Galvanized Steel',
-          defaultInsulation: 'None',
-          defaultFitting: 'Standard',
-          calibrationMode: 'Auto',
-          defaultVelocity: 1000,
-          pressureClass: "2",
-          altitude: 0,
-          frictionRate: 0.1
-        }}
-        onProjectInfoChange={() => {}} // These would be connected to actual handlers
-        onCodeStandardsChange={() => {}}
-        onGlobalDefaultsChange={() => {}}
-      />
+
 
       {/* Toast Notifications */}
       <Toaster 
@@ -275,14 +236,7 @@ export const AppShellPresentation: React.FC<AppShellPresentationProps> = ({
         onDismiss={onNotificationDismiss}
       />
 
-      {/* Tier Badge (for development/debugging) */}
-      {process.env.NODE_ENV === 'development' && (
-        <div className="fixed bottom-4 right-4 z-50">
-          <div className="px-3 py-1 bg-blue-600 text-white text-xs rounded-full shadow-lg">
-            {userTier.toUpperCase()} TIER
-          </div>
-        </div>
-      )}
+      {/* Tier Badge removed for clean UX - users don't need constant subscription reminders */}
     </div>
   );
 };

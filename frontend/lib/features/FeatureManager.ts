@@ -11,7 +11,7 @@
 import { SecureFeatureValidator, ValidationContext } from '../security/SecureFeatureValidator';
 import { LocalUserRepository } from '../repositories/local/LocalUserRepository';
 import { LocalFeatureFlagRepository } from '../repositories/local/LocalFeatureFlagRepository';
-import { DatabaseManager } from '../../../backend/database/DatabaseManager';
+// import { DatabaseManager } from '../../../backend/database/DatabaseManager';
 
 /**
  * Feature check result with performance metrics

@@ -9,8 +9,36 @@
  */
 
 import * as crypto from 'crypto';
-import { KeystoreManager } from '../../../electron/license/KeystoreManager';
-import { SuperAdminValidator, SuperAdminValidationResult, HardwareKeyCredential, EmergencyAccessRequest } from '../../../backend/security/SuperAdminValidator';
+
+// Local interface for keystore manager
+interface KeystoreManager {
+  validateLicense(licenseKey: string): Promise<boolean>;
+  getLicenseInfo(licenseKey: string): Promise<any>;
+}
+
+// Local interfaces for super admin functionality
+export interface SuperAdminValidationResult {
+  isValid: boolean;
+  sessionId?: string;
+  permissions?: string[];
+  emergencyAccess?: boolean;
+  error?: string;
+}
+
+export interface HardwareKeyCredential {
+  userId: string;
+  hardwareKeyId: string;
+  challenge: string;
+  signature: string;
+}
+
+export interface EmergencyAccessRequest {
+  reason: string;
+  contactInfo: string;
+  timestamp?: string;
+  requestedPermissions?: string[];
+  hardwareKeyProof?: string;
+}
 
 /**
  * Authentication session structure

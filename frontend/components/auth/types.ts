@@ -35,10 +35,14 @@ export interface AuthFormState {
 // =============================================================================
 
 export interface LoginPageProps {
-  onSuccess?: (user: any) => void;
-  onError?: (error: string) => void;
+  onLoginSuccess?: (user: any) => void;
+  onLoginError?: (error: string) => void;
   redirectTo?: string;
   className?: string;
+  showSuperAdminHint?: boolean;
+  returnUrl?: string;
+  videoUrl?: string;
+  fallbackImage?: string;
 }
 
 export interface VideoBackgroundProps {

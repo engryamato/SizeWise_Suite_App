@@ -8,7 +8,6 @@
  * @see docs/api/repository-interfaces.md section 2
  */
 
-import { DatabaseManager } from '../../../../backend/database/DatabaseManager';
 import {
   UserRepository,
   User,
@@ -19,11 +18,13 @@ import {
   UserNotFoundError,
   SuperAdminUserInfo,
   SuperAdminUserFilters,
-  SuperAdminAuthError,
-  LicenseHistoryEntry,
-  TierChangeEntry,
-  SecurityEvent
+  SuperAdminAuthError
 } from '../interfaces/UserRepository';
+
+// Local interface for database manager
+interface DatabaseManager {
+  getConnection(): any;
+}
 import { v4 as uuidv4 } from 'uuid';
 
 /**

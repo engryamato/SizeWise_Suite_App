@@ -15,7 +15,8 @@ import {
   CalculationServiceHook,
   ExportServiceHook,
   TierServiceHook,
-  ServiceHookResult
+  ServiceHookResult,
+  ValidationResult
 } from '../../types/component-interfaces';
 import {
   Project,
@@ -26,7 +27,6 @@ import {
   TierLimits
 } from '../../types/air-duct-sizer';
 import { UserTier } from '../repositories/interfaces/UserRepository';
-import { ValidationResult } from '../../../backend/services/calculations/SMACNAValidator';
 
 // =============================================================================
 // Service Context Interfaces

@@ -33,10 +33,7 @@ export const SocialButton: React.FC<SocialButtonProps> = ({
 
     setIsLoading(true);
     try {
-      const result = onClick();
-      if (result instanceof Promise) {
-        await result;
-      }
+      await Promise.resolve(onClick());
     } catch (error) {
       console.error(`${provider} authentication error:`, error);
     } finally {

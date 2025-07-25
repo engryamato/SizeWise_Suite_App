@@ -24,7 +24,10 @@ import { VALIDATION_RULES, ERROR_MESSAGES } from './config';
 
 export const useFormValidation = () => {
   const validateField = useCallback((field: keyof AuthFormData, value: any): string | null => {
-    const rules = VALIDATION_RULES[field];
+    // Skip validation for fields that don't have rules (like rememberMe)
+    if (field === 'rememberMe') return null;
+
+    const rules = VALIDATION_RULES[field as keyof typeof VALIDATION_RULES];
     if (!rules) return null;
 
     // Check required
@@ -89,8 +92,8 @@ export const useAuthForm = (onSubmit?: FormSubmitHandler) => {
       
       // Clear field error when user starts typing
       const newErrors = { ...prev.errors };
-      if (newErrors[field]) {
-        delete newErrors[field];
+      if (field !== 'rememberMe' && newErrors[field as keyof AuthFormErrors]) {
+        delete newErrors[field as keyof AuthFormErrors];
       }
 
       // Validate form
@@ -201,7 +204,7 @@ export const useAuthentication = () => {
         return {
           success: true,
           user: authStore.user,
-          token: authStore.token,
+          token: authStore.token || undefined,
         };
       } else {
         return {
@@ -228,16 +231,10 @@ export const useAuthentication = () => {
       // For now, just show a message
       console.log(`Social login with ${provider} - Phase 2 feature`);
       
-      return {
-        success: false,
-        error: `${provider} authentication will be available in Phase 2`,
-      };
+      console.log(`${provider} authentication will be available in Phase 2`);
     } catch (error) {
       console.error(`Social login error for ${provider}:`, error);
-      return {
-        success: false,
-        error: ERROR_MESSAGES.socialAuthError,
-      };
+      console.error('Social login failed:', ERROR_MESSAGES.socialAuthError);
     } finally {
       setSocialLoading(null);
     }

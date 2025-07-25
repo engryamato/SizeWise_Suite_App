@@ -16,6 +16,7 @@ import FormInput, { EmailInput, PasswordInput } from '../FormInput';
 import SocialButton, { SocialButtonGroup } from '../SocialButton';
 import ToggleSwitch, { RememberMeToggle } from '../ToggleSwitch';
 import VideoBackground from '../VideoBackground';
+import Particles from '../Particles';
 
 // Hooks and utilities
 import { useAuthForm, useFormValidation } from '../hooks';
@@ -58,6 +59,37 @@ jest.mock('react-icons/fa', () => ({
   FaGoogle: () => <div data-testid="google-icon">Google</div>,
   FaMicrosoft: () => <div data-testid="microsoft-icon">Microsoft</div>,
   FaYahoo: () => <div data-testid="yahoo-icon">Yahoo</div>,
+}));
+
+// Mock OGL library
+jest.mock('ogl', () => ({
+  Renderer: jest.fn().mockImplementation(() => ({
+    gl: {
+      canvas: document.createElement('canvas'),
+      clearColor: jest.fn(),
+      POINTS: 0,
+    },
+    setSize: jest.fn(),
+    render: jest.fn(),
+  })),
+  Camera: jest.fn().mockImplementation(() => ({
+    position: { set: jest.fn() },
+    perspective: jest.fn(),
+  })),
+  Geometry: jest.fn(),
+  Program: jest.fn().mockImplementation(() => ({
+    uniforms: {
+      uTime: { value: 0 },
+      uSpread: { value: 0 },
+      uBaseSize: { value: 0 },
+      uSizeRandomness: { value: 0 },
+      uAlphaParticles: { value: 0 },
+    },
+  })),
+  Mesh: jest.fn().mockImplementation(() => ({
+    position: { x: 0, y: 0 },
+    rotation: { x: 0, y: 0, z: 0 },
+  })),
 }));
 
 describe('Authentication Components', () => {
@@ -356,6 +388,157 @@ describe('Authentication Components', () => {
         const touchedErrors = validator.getTouchedErrors();
         expect(touchedErrors.email).toBe('Please enter a valid email address');
       });
+    });
+  });
+
+  // =============================================================================
+  // Particles Component Tests
+  // =============================================================================
+
+  describe('Particles', () => {
+    // Mock WebGL context
+    beforeEach(() => {
+      const mockCanvas = {
+        getContext: jest.fn(() => ({
+          clearColor: jest.fn(),
+          clear: jest.fn(),
+          useProgram: jest.fn(),
+          createShader: jest.fn(),
+          shaderSource: jest.fn(),
+          compileShader: jest.fn(),
+          createProgram: jest.fn(),
+          attachShader: jest.fn(),
+          linkProgram: jest.fn(),
+          getProgramParameter: jest.fn(() => true),
+          getShaderParameter: jest.fn(() => true),
+          createBuffer: jest.fn(),
+          bindBuffer: jest.fn(),
+          bufferData: jest.fn(),
+          enableVertexAttribArray: jest.fn(),
+          vertexAttribPointer: jest.fn(),
+          drawArrays: jest.fn(),
+          getUniformLocation: jest.fn(),
+          uniform1f: jest.fn(),
+          uniformMatrix4fv: jest.fn(),
+        })),
+        width: 800,
+        height: 600,
+      };
+
+      Object.defineProperty(HTMLCanvasElement.prototype, 'getContext', {
+        value: () => mockCanvas.getContext(),
+        writable: true,
+      });
+
+      // Mock requestAnimationFrame
+      global.requestAnimationFrame = jest.fn((cb) => setTimeout(cb, 16));
+      global.cancelAnimationFrame = jest.fn();
+    });
+
+    it('renders particles container', () => {
+      render(<Particles />);
+
+      const container = document.querySelector('.particles-container');
+      expect(container).toBeInTheDocument();
+    });
+
+    it('accepts custom particle configuration', () => {
+      render(
+        <Particles
+          particleCount={100}
+          particleColors={['#ff0000', '#00ff00']}
+          speed={0.5}
+          particleBaseSize={50}
+        />
+      );
+
+      const container = document.querySelector('.particles-container');
+      expect(container).toBeInTheDocument();
+    });
+
+    it('handles mouse interaction when enabled', () => {
+      render(
+        <Particles
+          moveParticlesOnHover={true}
+          particleHoverFactor={2}
+        />
+      );
+
+      const container = document.querySelector('.particles-container');
+      expect(container).toBeInTheDocument();
+
+      // Simulate mouse move
+      const mouseEvent = new MouseEvent('mousemove', {
+        clientX: 100,
+        clientY: 100,
+      });
+
+      container?.dispatchEvent(mouseEvent);
+      // Test passes if no errors are thrown
+    });
+  });
+
+  // =============================================================================
+  // Integration Tests
+  // =============================================================================
+
+  describe('Authentication Integration', () => {
+    it('handles complete login flow', async () => {
+      const mockLogin = jest.fn().mockResolvedValue(true);
+
+      // Mock the auth store with login function
+      jest.doMock('@/stores/auth-store', () => ({
+        useAuthStore: () => ({
+          user: null,
+          isAuthenticated: false,
+          isLoading: false,
+          token: null,
+          login: mockLogin,
+          logout: jest.fn(),
+          register: jest.fn(),
+        }),
+      }));
+
+      render(<LoginPage />);
+
+      // Fill in email
+      const emailInput = screen.getByLabelText(/email/i);
+      await userEvent.type(emailInput, 'admin@sizewise.com');
+
+      // Fill in password
+      const passwordInput = screen.getByLabelText(/password/i);
+      await userEvent.type(passwordInput, 'SizeWise2024!6EAF4610705941');
+
+      // Submit form
+      const submitButton = screen.getByRole('button', { name: /sign in/i });
+      await userEvent.click(submitButton);
+
+      expect(mockLogin).toHaveBeenCalledWith({
+        email: 'admin@sizewise.com',
+        password: 'SizeWise2024!6EAF4610705941',
+        rememberMe: false,
+      });
+    });
+
+    it('displays validation errors for invalid input', async () => {
+      render(<LoginPage />);
+
+      // Try to submit with empty fields
+      const submitButton = screen.getByRole('button', { name: /sign in/i });
+      await userEvent.click(submitButton);
+
+      // Should show validation errors
+      expect(screen.getByText(/email address is required/i)).toBeInTheDocument();
+      expect(screen.getByText(/password is required/i)).toBeInTheDocument();
+    });
+
+    it('handles remember me functionality', async () => {
+      render(<LoginPage />);
+
+      const rememberMeToggle = screen.getByRole('switch');
+      await userEvent.click(rememberMeToggle);
+
+      expect(rememberMeToggle).toBeChecked();
     });
   });
 });

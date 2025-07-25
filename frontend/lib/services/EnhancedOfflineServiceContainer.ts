@@ -10,18 +10,16 @@
 import { createDataService, DataService } from '../data/DataService';
 import { createExportService, createImportService, createBackupService } from '../data/ImportExportService';
 import { createBrowserFeatureManager, BrowserFeatureManager } from '../features/BrowserFeatureManager';
-import { AirDuctCalculator } from '../../../backend/services/calculations/AirDuctCalculator';
-import { SMACNAValidator } from '../../../backend/services/calculations/SMACNAValidator';
-import { 
-  Project, 
-  User, 
-  CalculationInput, 
-  CalculationResult, 
-  ExportOptions, 
+import {
+  Project,
+  User,
+  CalculationInput,
+  CalculationResult,
+  ExportOptions,
   ExportResult,
-  TierLimits 
+  TierLimits
 } from '../../types/air-duct-sizer';
-import { SyncableUser, SyncableProject, SyncableFeatureFlag } from '../../types/sync-models';
+import { SyncableUser, SyncableProject } from '../../types/sync-models';
 import { UserTier } from '../repositories/interfaces/UserRepository';
 
 /**
@@ -292,12 +290,13 @@ export class EnhancedUserService {
 
 /**
  * Enhanced calculation service
+ * TODO: Implement calculation service without backend dependencies
  */
 export class EnhancedCalculationService {
-  private calculator: AirDuctCalculator;
+  // private calculator: AirDuctCalculator;
 
   constructor() {
-    this.calculator = new AirDuctCalculator();
+    // this.calculator = new AirDuctCalculator();
   }
 
   async calculateDuctSizing(inputs: CalculationInput): Promise<CalculationResult> {
@@ -335,12 +334,13 @@ export class EnhancedCalculationService {
 
 /**
  * Enhanced validation service
+ * TODO: Implement validation service without backend dependencies
  */
 export class EnhancedValidationService {
-  private smacnaValidator: SMACNAValidator;
+  // private smacnaValidator: SMACNAValidator;
 
   constructor() {
-    this.smacnaValidator = new SMACNAValidator();
+    // this.smacnaValidator = new SMACNAValidator();
   }
 
   async validateProject(project: Project): Promise<any> {

@@ -8,7 +8,6 @@
  * @see docs/api/repository-interfaces.md section 3
  */
 
-import { DatabaseManager } from '../../../../backend/database/DatabaseManager';
 import {
   FeatureFlagRepository,
   FeatureFlag,
@@ -17,6 +16,11 @@ import {
   ValidationError,
   UserNotFoundError
 } from '../interfaces/FeatureFlagRepository';
+
+// Local interface for database manager
+interface DatabaseManager {
+  getConnection(): any;
+}
 
 /**
  * Local SQLite implementation of FeatureFlagRepository

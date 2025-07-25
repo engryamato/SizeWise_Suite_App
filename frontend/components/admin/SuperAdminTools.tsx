@@ -68,7 +68,7 @@ export const UserRecoveryTool: React.FC<SuperAdminToolsProps> = ({
       setUsers(allUsers);
       setState(prev => ({ ...prev, loading: false }));
     } catch (error) {
-      setState(prev => ({ ...prev, loading: false, error: error.message }));
+      setState(prev => ({ ...prev, loading: false, error: error instanceof Error ? error.message : 'Unknown error' }));
     }
   };
 
@@ -101,7 +101,7 @@ export const UserRecoveryTool: React.FC<SuperAdminToolsProps> = ({
       setUserId('');
       setReason('');
     } catch (error) {
-      setState(prev => ({ ...prev, loading: false, error: error.message }));
+      setState(prev => ({ ...prev, loading: false, error: error instanceof Error ? error.message : 'Unknown error' }));
     }
   };
 
@@ -237,7 +237,7 @@ export const LicenseResetTool: React.FC<SuperAdminToolsProps> = ({
       setReason('');
       setConfirmReset(false);
     } catch (error) {
-      setState(prev => ({ ...prev, loading: false, error: error.message }));
+      setState(prev => ({ ...prev, loading: false, error: error instanceof Error ? error.message : 'Unknown error' }));
     }
   };
 
@@ -249,7 +249,7 @@ export const LicenseResetTool: React.FC<SuperAdminToolsProps> = ({
       </div>
 
       <div className="security-warning">
-        ⚠️ WARNING: This action will reset the user's license to free tier and clear their license key.
+        ⚠️ WARNING: This action will reset the user&apos;s license to free tier and clear their license key.
         This action cannot be undone and will be logged for audit purposes.
       </div>
 
@@ -284,7 +284,7 @@ export const LicenseResetTool: React.FC<SuperAdminToolsProps> = ({
               checked={confirmReset}
               onChange={(e) => setConfirmReset(e.target.checked)}
             />
-            I confirm that I want to reset this user's license and understand this action cannot be undone
+            I confirm that I want to reset this user&apos;s license and understand this action cannot be undone
           </label>
         </div>
         
@@ -346,7 +346,7 @@ export const EmergencyUnlockTool: React.FC<SuperAdminToolsProps> = ({
       setReason('');
       setConfirmUnlock(false);
     } catch (error) {
-      setState(prev => ({ ...prev, loading: false, error: error.message }));
+      setState(prev => ({ ...prev, loading: false, error: error instanceof Error ? error.message : 'Unknown error' }));
     }
   };
 
@@ -420,7 +420,7 @@ export const AuditTrailTool: React.FC<SuperAdminToolsProps> = ({
       const auditTrail = authManager.getSuperAdminAuditTrail(limit);
       setState(prev => ({ ...prev, loading: false, data: auditTrail }));
     } catch (error) {
-      setState(prev => ({ ...prev, loading: false, error: error.message }));
+      setState(prev => ({ ...prev, loading: false, error: error instanceof Error ? error.message : 'Unknown error' }));
     }
   };
 

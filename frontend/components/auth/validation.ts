@@ -159,13 +159,18 @@ export class FormValidator {
       case 'password':
         error = validatePassword(value, this.options.strengthCheck);
         break;
+      case 'rememberMe':
+        // rememberMe doesn't need validation
+        return null;
     }
 
-    // Update errors
-    if (error) {
-      this.errors[field] = error;
-    } else {
-      delete this.errors[field];
+    // Update errors only for fields that can have errors
+    if (field === 'email' || field === 'password') {
+      if (error) {
+        this.errors[field] = error;
+      } else {
+        delete this.errors[field];
+      }
     }
 
     return error;
@@ -186,13 +191,14 @@ export class FormValidator {
   // Get errors for touched fields only
   getTouchedErrors(): AuthFormErrors {
     const touchedErrors: AuthFormErrors = {};
-    
+
     for (const field of this.touched) {
-      if (this.errors[field]) {
+      // Only check fields that can have errors
+      if ((field === 'email' || field === 'password') && this.errors[field]) {
         touchedErrors[field] = this.errors[field];
       }
     }
-    
+
     return touchedErrors;
   }
 
@@ -203,7 +209,10 @@ export class FormValidator {
 
   // Clear specific field error
   clearFieldError(field: keyof AuthFormData): void {
-    delete this.errors[field];
+    // Only clear errors for fields that can have errors
+    if (field === 'email' || field === 'password') {
+      delete this.errors[field];
+    }
   }
 
   // Reset validator
@@ -336,8 +345,4 @@ export const debounce = <T extends (...args: any[]) => any>(
 
 export {
   validateAuthForm as default,
-  FormValidator,
-  checkPasswordStrength,
-  createAccessibilityAnnouncement,
-  debounce,
 };

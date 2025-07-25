@@ -15,7 +15,7 @@ import { useAuthForm, useAuthentication, useRememberMe } from './hooks';
 import { EmailInput, PasswordInput, InputGroup } from './FormInput';
 import { SocialButtonGroup, SocialDivider } from './SocialButton';
 import { RememberMeToggle } from './ToggleSwitch';
-import VideoBackground from './VideoBackground';
+import Particles from './Particles';
 import { 
   BRAND_CONFIG, 
   SOCIAL_PROVIDERS, 
@@ -31,11 +31,11 @@ import { cn } from '@/lib/utils';
 // =============================================================================
 
 export const LoginPage: React.FC<LoginPageProps> = ({
-  videoUrl,
-  fallbackImage,
   className = '',
   onLoginSuccess,
   onLoginError,
+  showSuperAdminHint = false,
+  returnUrl = '/',
 }) => {
   const router = useRouter();
   const { rememberMe, setRememberMe } = useRememberMe();
@@ -52,7 +52,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({
     } else {
       const error = result.error || ERROR_MESSAGES.unknownError;
       setErrors({ general: error });
-      onLoginError?.(new Error(error));
+      onLoginError?.(error);
     }
   });
 
@@ -65,15 +65,12 @@ export const LoginPage: React.FC<LoginPageProps> = ({
 
   // Handle social login
   const handleSocialLogin = async (provider: string) => {
-    const result = await socialLogin(provider);
-    
-    if (result.success) {
-      onLoginSuccess?.(result);
-      router.push(AUTH_REDIRECTS.afterLogin);
-    } else {
-      setErrors({ general: result.error || ERROR_MESSAGES.socialAuthError });
-      onLoginError?.(new Error(result.error || ERROR_MESSAGES.socialAuthError));
-    }
+    await socialLogin(provider);
+
+    // For Phase 1, social login is not implemented
+    // Just show a message that it will be available in Phase 2
+    setErrors({ general: `${provider} authentication will be available in Phase 2` });
+    onLoginError?.(`${provider} authentication will be available in Phase 2`);
   };
 
   // Handle forgot password
@@ -93,11 +90,18 @@ export const LoginPage: React.FC<LoginPageProps> = ({
   return (
     <div className={cn('min-h-screen relative flex items-center justify-center p-4', className)}>
       {/* Background */}
-      <VideoBackground
-        videoUrl={videoUrl}
-        fallbackImage={fallbackImage}
-        className="z-0"
-      />
+      <div className="absolute inset-0 z-0">
+        <Particles
+          particleColors={['#ffffff', '#ffffff']}
+          particleCount={200}
+          particleSpread={10}
+          speed={0.1}
+          particleBaseSize={100}
+          moveParticlesOnHover={true}
+          alphaParticles={false}
+          disableRotation={false}
+        />
+      </div>
 
       {/* Main Content */}
       <div className="relative z-10 w-full max-w-md">
@@ -126,8 +130,11 @@ export const LoginPage: React.FC<LoginPageProps> = ({
             <div className="mb-6">
               <SocialButtonGroup
                 providers={SOCIAL_PROVIDERS.map(provider => ({
-                  ...provider,
+                  provider: provider.id,
+                  icon: provider.icon,
+                  label: provider.name,
                   onClick: () => handleSocialLogin(provider.id),
+                  enabled: provider.enabled,
                 }))}
                 orientation="horizontal"
                 spacing="md"
@@ -221,11 +228,24 @@ export const LoginPage: React.FC<LoginPageProps> = ({
             </button>
           </form>
 
+          {/* Super Admin Hint */}
+          {showSuperAdminHint && (
+            <div className="mt-6 p-4 bg-amber-500/10 border border-amber-500/20 rounded-lg">
+              <div className="flex items-center space-x-2 text-amber-400 text-sm">
+                <Lock className="w-4 h-4" />
+                <span className="font-medium">Super Administrator Access</span>
+              </div>
+              <p className="text-amber-300/80 text-xs mt-1">
+                Use super admin credentials for full system access
+              </p>
+            </div>
+          )}
+
           {/* Create Account Link */}
           {AUTH_FEATURES.createAccount && (
             <div className="mt-6 text-center">
               <p className="text-white/60 text-sm">
-                Don't have an account?{' '}
+                Don&apos;t have an account?{' '}
                 <button
                   type="button"
                   onClick={handleCreateAccount}

@@ -7,7 +7,7 @@
 
 import React from 'react';
 import { FaGoogle, FaMicrosoft, FaYahoo } from 'react-icons/fa';
-import { AuthConfig, ValidationRules } from './types';
+import { AuthConfig, ValidationRules, SocialProvider } from './types';
 
 // =============================================================================
 // Brand Configuration
@@ -176,11 +176,11 @@ export const AUTH_STYLES = {
 
 export const AUTH_CONFIG: AuthConfig = {
   branding: BRAND_CONFIG,
-  socialProviders: SOCIAL_PROVIDERS,
+  socialProviders: SOCIAL_PROVIDERS as unknown as SocialProvider[],
   features: AUTH_FEATURES,
   validation: VALIDATION_RULES,
   redirects: AUTH_REDIRECTS,
-} as const;
+};
 
 // =============================================================================
 // Video Background Configuration

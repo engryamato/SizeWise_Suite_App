@@ -60,6 +60,9 @@ export {
   ERROR_MESSAGES,
 } from './config';
 
+// Import types for utility functions
+import type { AuthFormData, AuthFormErrors, AuthFormState } from './types';
+
 // =============================================================================
 // Types
 // =============================================================================
@@ -85,14 +88,10 @@ export type {
 
   // Configuration Types
   AuthConfig,
-  BrandConfig,
+  BrandingConfig,
   SocialProvider,
-  AuthFeatures,
-  AuthRedirects,
 
   // Utility Types
-  LoadingState,
-  ErrorState,
   AccessibilityProps,
 } from './types';
 
@@ -117,11 +116,13 @@ export const isFormValid = (errors: AuthFormErrors): boolean => {
 };
 
 export const hasFieldError = (errors: AuthFormErrors, field: keyof AuthFormData): boolean => {
-  return !!errors[field];
+  if (field === 'rememberMe') return false; // rememberMe doesn't have errors
+  return !!errors[field as keyof AuthFormErrors];
 };
 
 export const getFieldError = (errors: AuthFormErrors, field: keyof AuthFormData): string | undefined => {
-  return errors[field];
+  if (field === 'rememberMe') return undefined; // rememberMe doesn't have errors
+  return errors[field as keyof AuthFormErrors];
 };
 
 // =============================================================================

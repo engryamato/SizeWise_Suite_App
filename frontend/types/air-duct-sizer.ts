@@ -166,10 +166,13 @@ export interface User {
   id: string
   email: string
   name: string
-  tier: 'free' | 'pro'
+  tier: 'free' | 'pro' | 'enterprise' | 'super_admin'
   company?: string
   subscription_expires?: string
   created_at: string
+  updated_at?: string
+  permissions?: string[]
+  is_super_admin?: boolean
 }
 
 export interface AuthState {

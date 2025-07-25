@@ -58,12 +58,12 @@ export const FormInput = forwardRef<HTMLInputElement, FormInputProps>(
 
     // Determine input styles based on state
     const getInputStyles = () => {
-      let styles = AUTH_STYLES.input.base;
-      
+      let styles: string = AUTH_STYLES.input.base;
+
       if (error) {
         styles = cn(styles, AUTH_STYLES.input.error);
       }
-      
+
       if (disabled) {
         styles = cn(styles, 'opacity-50 cursor-not-allowed');
       }

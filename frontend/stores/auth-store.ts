@@ -29,8 +29,8 @@ interface AuthStore extends AuthState {
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api/v1'
 
-const getTierLimits = (tier: 'free' | 'pro'): TierLimits => {
-  if (tier === 'pro') {
+const getTierLimits = (tier: 'free' | 'pro' | 'enterprise' | 'super_admin'): TierLimits => {
+  if (tier === 'super_admin') {
     return {
       maxRooms: Infinity,
       maxSegments: Infinity,
@@ -41,7 +41,19 @@ const getTierLimits = (tier: 'free' | 'pro'): TierLimits => {
       canUseCatalog: true,
     }
   }
-  
+
+  if (tier === 'enterprise' || tier === 'pro') {
+    return {
+      maxRooms: Infinity,
+      maxSegments: Infinity,
+      maxProjects: Infinity,
+      canEditComputationalProperties: true,
+      canExportWithoutWatermark: true,
+      canUseSimulation: true,
+      canUseCatalog: true,
+    }
+  }
+
   // Free tier limits
   return {
     maxRooms: 3,
@@ -58,25 +70,53 @@ export const useAuthStore = create<AuthStore>()(
   devtools(
     persist(
       (set, get) => ({
-        // Initialize with Premium Pro tier user for testing
-        user: {
-          id: 'premium-pro-user',
-          email: 'demo@sizewise.com',
-          name: 'Demo User',
-          tier: 'pro',
-          company: 'SizeWise Engineering',
-          subscription_expires: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(), // 1 year from now
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        },
+        // Initialize with no user - require authentication
+        user: null,
         token: null,
         isAuthenticated: false,
         isLoading: false,
 
         login: async (email, password) => {
           set({ isLoading: true }, false, 'login:start')
-          
+
           try {
+            // Check if this is super admin login
+            const superAdminEmail = process.env.SUPER_ADMIN_EMAIL || 'admin@sizewise.com';
+            const superAdminPassword = process.env.SUPER_ADMIN_PASSWORD || 'SizeWise2024!A7B8C9D0123456';
+
+            if (email === superAdminEmail && password === superAdminPassword) {
+              // Super admin login
+              const superAdminUser = {
+                id: 'super-admin-' + Date.now(),
+                email: superAdminEmail,
+                name: 'SizeWise Administrator',
+                tier: 'super_admin' as const,
+                company: 'SizeWise Suite',
+                subscription_expires: new Date(Date.now() + 10 * 365 * 24 * 60 * 60 * 1000).toISOString(),
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString(),
+                permissions: [
+                  'admin:full_access',
+                  'admin:user_management',
+                  'admin:system_configuration',
+                  'user:all_features',
+                ],
+                is_super_admin: true,
+              };
+
+              const token = 'super-admin-token-' + Date.now() + '-' + Math.random().toString(36).substring(2, 11);
+
+              set({
+                user: superAdminUser,
+                token,
+                isAuthenticated: true,
+                isLoading: false,
+              }, false, 'login:super_admin_success')
+
+              return true;
+            }
+
+            // Regular user login (Phase 2 functionality)
             const response = await fetch(`${API_BASE_URL}/auth/login`, {
               method: 'POST',
               headers: {
@@ -90,7 +130,7 @@ export const useAuthStore = create<AuthStore>()(
             }
 
             const data = await response.json()
-            
+
             if (data.success) {
               set({
                 user: data.user,
@@ -98,7 +138,7 @@ export const useAuthStore = create<AuthStore>()(
                 isAuthenticated: true,
                 isLoading: false,
               }, false, 'login:success')
-              
+
               return true
             } else {
               throw new Error(data.error?.message || 'Login failed')

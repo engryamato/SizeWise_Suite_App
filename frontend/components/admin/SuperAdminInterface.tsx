@@ -16,7 +16,15 @@
 
 import React, { useState, useEffect } from 'react';
 import { AuthenticationManager, SuperAdminSession, HardwareKeyAuthRequest } from '../../lib/auth/AuthenticationManager';
-import { EmergencyAccessRequest } from '../../../backend/security/SuperAdminValidator';
+
+// Local interface for emergency access
+interface EmergencyAccessRequest {
+  reason: string;
+  contactInfo: string;
+  timestamp?: string;
+  requestedPermissions?: string[];
+  hardwareKeyProof?: string;
+}
 
 // Build flag check - only show in development or with explicit flag
 const SUPER_ADMIN_ENABLED = process.env.NODE_ENV === 'development' || 
@@ -68,12 +76,12 @@ export const SuperAdminInterface: React.FC<SuperAdminInterfaceProps> = ({
     contactInfo: ''
   });
 
-  // Don't render if super admin is not enabled
-  if (!SUPER_ADMIN_ENABLED) {
-    return null;
-  }
-
   useEffect(() => {
+    // Don't run effect if super admin is not enabled
+    if (!SUPER_ADMIN_ENABLED) {
+      return;
+    }
+
     // Check for existing super admin session
     const existingSession = authManager.getCurrentSuperAdminSession();
     if (existingSession) {
@@ -84,6 +92,15 @@ export const SuperAdminInterface: React.FC<SuperAdminInterfaceProps> = ({
       }));
     }
   }, [authManager]);
+
+  // Don't render if super admin is not enabled
+  if (!SUPER_ADMIN_ENABLED) {
+    return null;
+  }
+
+  // =============================================================================
+  // Authentication Handlers
+  // =============================================================================
 
   const handleHardwareKeyAuth = async () => {
     setState(prev => ({ ...prev, isAuthenticating: true, authError: null }));
@@ -103,7 +120,7 @@ export const SuperAdminInterface: React.FC<SuperAdminInterfaceProps> = ({
         setState(prev => ({
           ...prev,
           isAuthenticated: true,
-          session: result.superAdminSession,
+          session: result.superAdminSession || null,
           isAuthenticating: false,
           authError: null
         }));
@@ -118,7 +135,7 @@ export const SuperAdminInterface: React.FC<SuperAdminInterfaceProps> = ({
       setState(prev => ({
         ...prev,
         isAuthenticating: false,
-        authError: `Authentication error: ${error.message}`
+        authError: `Authentication error: ${error instanceof Error ? error.message : 'Unknown error'}`
       }));
     }
   };
@@ -140,7 +157,7 @@ export const SuperAdminInterface: React.FC<SuperAdminInterfaceProps> = ({
         setState(prev => ({
           ...prev,
           isAuthenticated: true,
-          session: result.superAdminSession,
+          session: result.superAdminSession || null,
           isAuthenticating: false,
           authError: null
         }));
@@ -155,7 +172,7 @@ export const SuperAdminInterface: React.FC<SuperAdminInterfaceProps> = ({
       setState(prev => ({
         ...prev,
         isAuthenticating: false,
-        authError: `Emergency access error: ${error.message}`
+        authError: `Emergency access error: ${error instanceof Error ? error.message : 'Unknown error'}`
       }));
     }
   };

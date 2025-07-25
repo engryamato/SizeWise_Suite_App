@@ -10,7 +10,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { FeatureManager, FeatureCheckResult, BatchFeatureResult } from '../features/FeatureManager';
-import { DatabaseManager } from '../../../backend/database/DatabaseManager';
+// import { DatabaseManager } from '../../../backend/database/DatabaseManager';
 
 /**
  * User tier type alias

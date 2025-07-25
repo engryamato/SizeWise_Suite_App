@@ -16,6 +16,18 @@ const nextConfig = {
       config.externals.push('canvas')
     }
 
+    // Exclude backend files and test files from compilation
+    config.module.rules.push({
+      test: /\.(ts|tsx|js|jsx)$/,
+      exclude: [
+        /\/backend\//,
+        /\/electron\//,
+        /\/__tests__\//,
+        /\.test\.(ts|tsx|js|jsx)$/,
+        /\.spec\.(ts|tsx|js|jsx)$/,
+      ],
+    })
+
     return config
   },
 

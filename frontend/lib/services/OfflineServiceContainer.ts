@@ -9,9 +9,9 @@
 
 import { createDataService, DataService } from '../data/DataService';
 import { FeatureManager } from '../features/FeatureManager';
-import { TierEnforcer } from '../../../backend/services/enforcement/TierEnforcer';
-import { AirDuctCalculator } from '../../../backend/services/calculations/AirDuctCalculator';
-import { SMACNAValidator } from '../../../backend/services/calculations/SMACNAValidator';
+// import { TierEnforcer } from '../../../backend/services/enforcement/TierEnforcer';
+// import { AirDuctCalculator } from '../../../backend/services/calculations/AirDuctCalculator';
+// import { SMACNAValidator } from '../../../backend/services/calculations/SMACNAValidator';
 import { 
   Project, 
   User, 

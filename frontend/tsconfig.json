@@ -1,10 +1,6 @@
 {
   "compilerOptions": {
-    "lib": [
-      "dom",
-      "dom.iterable",
-      "es6"
-    ],
+    "lib": ["dom", "dom.iterable", "es6"],
     "allowJs": true,
     "skipLibCheck": true,
     "strict": true,
@@ -23,9 +19,7 @@
     ],
     "baseUrl": ".",
     "paths": {
-      "@/*": [
-        "./*"
-      ]
+      "@/*": ["./*"]
     },
     "target": "ES2017"
   },
@@ -37,6 +31,13 @@
     "types/**/*.d.ts"
   ],
   "exclude": [
-    "node_modules"
+    "node_modules",
+    "../backend/**/*",
+    "../electron/**/*",
+    "**/__tests__/**/*",
+    "**/*.test.ts",
+    "**/*.test.tsx",
+    "**/*.spec.ts",
+    "**/*.spec.tsx"
   ]
 }

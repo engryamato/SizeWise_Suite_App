@@ -8,7 +8,6 @@
  * @see docs/api/repository-interfaces.md section 1
  */
 
-import { DatabaseManager } from '../../../../backend/database/DatabaseManager';
 import {
   ProjectRepository,
   Project,
@@ -19,6 +18,11 @@ import {
   ProjectNotFoundError,
   TierLimitExceededError
 } from '../interfaces/ProjectRepository';
+
+// Local interface for database manager
+interface DatabaseManager {
+  getConnection(): any;
+}
 /**
  * Local SQLite implementation of ProjectRepository
  */

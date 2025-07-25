@@ -29,7 +29,16 @@ import {
   TierLimits
 } from './air-duct-sizer';
 import { UserTier } from '../lib/repositories/interfaces/UserRepository';
-import { ValidationResult } from '../../backend/services/calculations/SMACNAValidator';
+
+// =============================================================================
+// Validation Types
+// =============================================================================
+
+export interface ValidationResult {
+  isValid: boolean;
+  errors: string[];
+  warnings: string[];
+}
 
 // =============================================================================
 // Base Component Interfaces

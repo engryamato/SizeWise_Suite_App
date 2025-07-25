@@ -113,7 +113,7 @@ export const AUTH_FEATURES = {
 // =============================================================================
 
 export const AUTH_REDIRECTS = {
-  afterLogin: '/air-duct-sizer',
+  afterLogin: '/dashboard',
   forgotPassword: '/auth/forgot-password', // Phase 2 route
   createAccount: '/auth/register', // Phase 2 route
   afterLogout: '/auth/login',

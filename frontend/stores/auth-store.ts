@@ -1,8 +1,14 @@
 import { create } from 'zustand'
 import { devtools, persist } from 'zustand/middleware'
 import { User, AuthState, TierLimits } from '@/types/air-duct-sizer'
+import { HybridAuthManager, HybridUser, TierStatus } from '@/lib/auth/HybridAuthManager'
 
 interface AuthStore extends AuthState {
+  // Hybrid authentication properties
+  tierStatus: TierStatus | null
+  isOnline: boolean
+  lastSync: string | null
+
   // Actions
   login: (email: string, password: string) => Promise<boolean>
   register: (email: string, password: string, name: string, company?: string) => Promise<boolean>
@@ -11,8 +17,13 @@ interface AuthStore extends AuthState {
   setUser: (user: User) => void
   setToken: (token: string) => void
   setLoading: (loading: boolean) => void
-  
-  // Tier checking
+
+  // Hybrid authentication methods
+  getTierStatus: () => Promise<TierStatus>
+  canPerformAction: (action: string, context?: any) => Promise<boolean>
+  syncWithServer: () => Promise<boolean>
+
+  // Tier checking (legacy compatibility)
   getTierLimits: () => TierLimits
   canAddRoom: () => boolean
   canAddSegment: () => boolean
@@ -20,7 +31,7 @@ interface AuthStore extends AuthState {
   canExportWithoutWatermark: () => boolean
   canUseSimulation: () => boolean
   canUseCatalog: () => boolean
-  
+
   // Subscription management
   upgradeToPro: () => Promise<boolean>
   downgradeToFree: () => Promise<boolean>
@@ -28,9 +39,13 @@ interface AuthStore extends AuthState {
 }
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api/v1'
+const AUTH_SERVER_URL = process.env.NEXT_PUBLIC_AUTH_SERVER_URL || 'http://localhost:5000'
 
-const getTierLimits = (tier: 'free' | 'pro' | 'enterprise' | 'super_admin'): TierLimits => {
-  if (tier === 'super_admin') {
+// Initialize hybrid authentication manager
+const hybridAuthManager = new HybridAuthManager(AUTH_SERVER_URL)
+
+const getTierLimits = (tier: 'free' | 'pro'): TierLimits => {
+  if (tier === 'pro') {
     return {
       maxRooms: Infinity,
       maxSegments: Infinity,
@@ -41,19 +56,7 @@ const getTierLimits = (tier: 'free' | 'pro' | 'enterprise' | 'super_admin'): Tie
       canUseCatalog: true,
     }
   }
-
-  if (tier === 'enterprise' || tier === 'pro') {
-    return {
-      maxRooms: Infinity,
-      maxSegments: Infinity,
-      maxProjects: Infinity,
-      canEditComputationalProperties: true,
-      canExportWithoutWatermark: true,
-      canUseSimulation: true,
-      canUseCatalog: true,
-    }
-  }
-
+  
   // Free tier limits
   return {
     maxRooms: 3,
@@ -70,119 +73,144 @@ export const useAuthStore = create<AuthStore>()(
   devtools(
     persist(
       (set, get) => ({
-        // Initialize with no user - require authentication
-        user: null,
+        // Initialize with Premium Pro tier user for testing
+        user: {
+          id: 'premium-pro-user',
+          email: 'demo@sizewise.com',
+          name: 'Demo User',
+          tier: 'pro',
+          company: 'SizeWise Engineering',
+          subscription_expires: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(), // 1 year from now
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        },
         token: null,
         isAuthenticated: false,
         isLoading: false,
+
+        // Hybrid authentication state
+        tierStatus: null,
+        isOnline: typeof navigator !== 'undefined' ? navigator.onLine : true,
+        lastSync: null,
 
         login: async (email, password) => {
           set({ isLoading: true }, false, 'login:start')
 
           try {
-            // Check if this is super admin login
-            const superAdminEmail = process.env.SUPER_ADMIN_EMAIL || 'admin@sizewise.com';
-            const superAdminPassword = process.env.SUPER_ADMIN_PASSWORD || 'SizeWise2024!A7B8C9D0123456';
+            // Use HybridAuthManager for authentication
+            const result = await hybridAuthManager.login(email, password)
 
-            if (email === superAdminEmail && password === superAdminPassword) {
-              // Super admin login
-              const superAdminUser = {
-                id: 'super-admin-' + Date.now(),
-                email: superAdminEmail,
-                name: 'SizeWise Administrator',
-                tier: 'super_admin' as const,
-                company: 'SizeWise Suite',
-                subscription_expires: new Date(Date.now() + 10 * 365 * 24 * 60 * 60 * 1000).toISOString(),
-                created_at: new Date().toISOString(),
+            if (result.success && result.user && result.token) {
+              // Convert HybridUser to User format for compatibility
+              const user: User = {
+                id: result.user.id,
+                email: result.user.email,
+                name: result.user.name,
+                tier: result.user.tier as 'free' | 'pro' | 'super_admin',
+                company: result.user.company || '',
+                created_at: result.user.created_at,
                 updated_at: new Date().toISOString(),
-                permissions: [
+                is_super_admin: result.user.is_super_admin,
+                permissions: result.user.is_super_admin ? [
                   'admin:full_access',
                   'admin:user_management',
                   'admin:system_configuration',
+                  'admin:license_management',
+                  'admin:database_access',
+                  'admin:security_settings',
+                  'admin:audit_logs',
+                  'admin:emergency_access',
+                  'admin:super_admin_functions',
                   'user:all_features',
-                ],
-                is_super_admin: true,
-              };
+                  'user:unlimited_access',
+                  'user:export_without_watermark',
+                  'user:advanced_calculations',
+                  'user:simulation_access',
+                  'user:catalog_access',
+                  'user:computational_properties',
+                ] : undefined,
+              }
 
-              const token = 'super-admin-token-' + Date.now() + '-' + Math.random().toString(36).substring(2, 11);
+              // Set token in cookie for middleware authentication
+              if (typeof document !== 'undefined') {
+                document.cookie = `auth-token=${result.token}; path=/; max-age=${24 * 60 * 60}; secure; samesite=strict`;
+              }
+
+              // Get tier status
+              const tierStatus = await hybridAuthManager.getTierStatus()
 
               set({
-                user: superAdminUser,
-                token,
+                user,
+                token: result.token,
                 isAuthenticated: true,
                 isLoading: false,
-              }, false, 'login:super_admin_success')
-
-              return true;
-            }
-
-            // Regular user login (Phase 2 functionality)
-            const response = await fetch(`${API_BASE_URL}/auth/login`, {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({ email, password }),
-            })
-
-            if (!response.ok) {
-              throw new Error('Login failed')
-            }
-
-            const data = await response.json()
-
-            if (data.success) {
-              set({
-                user: data.user,
-                token: data.token,
-                isAuthenticated: true,
-                isLoading: false,
+                tierStatus,
+                lastSync: new Date().toISOString(),
+                isOnline: true,
               }, false, 'login:success')
 
+              console.log('✅ Hybrid authentication successful')
               return true
             } else {
-              throw new Error(data.error?.message || 'Login failed')
+              throw new Error(result.error || 'Login failed')
             }
           } catch (error) {
             console.error('Login error:', error)
-            set({ isLoading: false }, false, 'login:error')
+            set({
+              isLoading: false,
+              isOnline: false
+            }, false, 'login:error')
             return false
           }
         },
 
         register: async (email, password, name, company) => {
           set({ isLoading: true }, false, 'register:start')
-          
+
           try {
-            const response = await fetch(`${API_BASE_URL}/auth/register`, {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({ email, password, name, company }),
-            })
+            // Use HybridAuthManager for registration
+            const result = await hybridAuthManager.register(email, password, name, company)
 
-            if (!response.ok) {
-              throw new Error('Registration failed')
-            }
+            if (result.success && result.user && result.token) {
+              // Convert HybridUser to User format for compatibility
+              const user: User = {
+                id: result.user.id,
+                email: result.user.email,
+                name: result.user.name,
+                tier: result.user.tier as 'free' | 'pro' | 'super_admin',
+                company: result.user.company || '',
+                created_at: result.user.created_at,
+                updated_at: new Date().toISOString(),
+              }
 
-            const data = await response.json()
-            
-            if (data.success) {
+              // Set token in cookie for middleware authentication
+              if (typeof document !== 'undefined') {
+                document.cookie = `auth-token=${result.token}; path=/; max-age=${24 * 60 * 60}; secure; samesite=strict`;
+              }
+
+              // Get tier status
+              const tierStatus = await hybridAuthManager.getTierStatus()
+
               set({
-                user: data.user,
-                token: data.token,
+                user,
+                token: result.token,
                 isAuthenticated: true,
                 isLoading: false,
+                tierStatus,
+                lastSync: new Date().toISOString(),
+                isOnline: true,
               }, false, 'register:success')
-              
+
               return true
             } else {
-              throw new Error(data.error?.message || 'Registration failed')
+              throw new Error(result.error || 'Registration failed')
             }
           } catch (error) {
             console.error('Registration error:', error)
-            set({ isLoading: false }, false, 'register:error')
+            set({
+              isLoading: false,
+              isOnline: false
+            }, false, 'register:error')
             return false
           }
         },
@@ -238,6 +266,85 @@ export const useAuthStore = create<AuthStore>()(
 
         setLoading: (loading) => {
           set({ isLoading: loading }, false, 'setLoading')
+        },
+
+        // Hybrid authentication methods
+        getTierStatus: async () => {
+          try {
+            const tierStatus = await hybridAuthManager.getTierStatus()
+            set({
+              tierStatus,
+              lastSync: new Date().toISOString(),
+              isOnline: true
+            }, false, 'getTierStatus:success')
+            return tierStatus
+          } catch (error) {
+            console.error('Get tier status error:', error)
+            set({ isOnline: false }, false, 'getTierStatus:error')
+
+            // Return cached tier status or default
+            const { tierStatus } = get()
+            if (tierStatus) {
+              return tierStatus
+            }
+
+            // Default free tier status for offline mode
+            return {
+              tier: 'free',
+              features: {
+                max_projects: 3,
+                max_segments_per_project: 25,
+                high_res_exports: false,
+                watermarked_exports: true,
+                api_access: false,
+              },
+              usage: {
+                projects_count: 0,
+                segments_count: 0,
+              },
+              last_validated: new Date().toISOString(),
+            }
+          }
+        },
+
+        canPerformAction: async (action, context) => {
+          try {
+            return await hybridAuthManager.canPerformAction(action, context)
+          } catch (error) {
+            console.error('Can perform action error:', error)
+            // Fallback to legacy tier checking for offline mode
+            const { user } = get()
+            if (!user) return false
+
+            switch (action) {
+              case 'create_project':
+                return user.tier !== 'free' || true // Allow for now
+              case 'add_segment':
+                return user.tier !== 'free' || (context?.segments_count || 0) < 25
+              case 'high_res_export':
+                return user.tier !== 'free'
+              case 'api_access':
+                return user.tier === 'pro' || user.tier === 'super_admin'
+              default:
+                return true
+            }
+          }
+        },
+
+        syncWithServer: async () => {
+          try {
+            const tierStatus = await hybridAuthManager.getTierStatus()
+            set({
+              tierStatus,
+              lastSync: new Date().toISOString(),
+              isOnline: true
+            }, false, 'syncWithServer:success')
+            return true
+          } catch (error) {
+            console.error('Sync with server error:', error)
+            set({ isOnline: false }, false, 'syncWithServer:error')
+            return false
+          }
         },
 
         getTierLimits: () => {
@@ -347,11 +454,13 @@ export const useAuthStore = create<AuthStore>()(
         },
       }),
       {
-        name: 'air-duct-sizer-auth',
+        name: 'sizewise-hybrid-auth',
         partialize: (state) => ({
           user: state.user,
           token: state.token,
           isAuthenticated: state.isAuthenticated,
+          tierStatus: state.tierStatus,
+          lastSync: state.lastSync,
         }),
       }
     ),

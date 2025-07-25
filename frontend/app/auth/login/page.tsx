@@ -20,7 +20,8 @@ import { motion } from 'framer-motion';
 export default function AuthLoginPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { isAuthenticated, user } = useAuthStore();
+  const { isAuthenticated, user, isLoading } = useAuthStore();
+  const [isRedirecting, setIsRedirecting] = React.useState(false);
 
   // Get return URL from query parameters
   const returnUrl = searchParams.get('returnUrl') || '/';
@@ -31,10 +32,12 @@ export default function AuthLoginPage() {
 
   useEffect(() => {
     // If user is already authenticated, redirect to return URL or home
-    if (isAuthenticated && user) {
+    if (isAuthenticated && user && !isRedirecting) {
+      console.log('User already authenticated, redirecting to:', returnUrl);
+      setIsRedirecting(true);
       router.push(returnUrl);
     }
-  }, [isAuthenticated, user, router, returnUrl]);
+  }, [isAuthenticated, user, router, returnUrl, isRedirecting]);
 
   // =============================================================================
   // Login Success Handler

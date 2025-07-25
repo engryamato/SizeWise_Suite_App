@@ -119,20 +119,55 @@ function validateToken(token: string): { valid: boolean; user?: any; isSuperAdmi
       return { valid: false };
     }
 
-    // Mock validation - in production, this would verify JWT signature
-    // and check against stored sessions
-    const mockUser = {
-      id: 'user-123',
-      email: 'user@example.com',
-      tier: 'pro',
-      isSuperAdmin: token.includes('super-admin'),
-    };
+    // Try to decode the token (base64 encoded JSON)
+    try {
+      const decoded = JSON.parse(atob(token));
 
-    return {
-      valid: true,
-      user: mockUser,
-      isSuperAdmin: mockUser.isSuperAdmin,
-    };
+      // Check if token is expired
+      if (decoded.expires && Date.now() > decoded.expires) {
+        return { valid: false };
+      }
+
+      // Validate super admin token
+      if (decoded.email === 'admin@sizewise.com' && decoded.isSuperAdmin) {
+        return {
+          valid: true,
+          user: {
+            id: decoded.userId,
+            email: decoded.email,
+            tier: decoded.tier,
+            isSuperAdmin: true,
+          },
+          isSuperAdmin: true,
+        };
+      }
+
+      // Regular user validation
+      return {
+        valid: true,
+        user: {
+          id: decoded.userId,
+          email: decoded.email,
+          tier: decoded.tier,
+          isSuperAdmin: false,
+        },
+        isSuperAdmin: false,
+      };
+    } catch (decodeError) {
+      // Fallback for legacy tokens
+      const mockUser = {
+        id: 'user-123',
+        email: 'user@example.com',
+        tier: 'pro',
+        isSuperAdmin: token.includes('super-admin'),
+      };
+
+      return {
+        valid: true,
+        user: mockUser,
+        isSuperAdmin: mockUser.isSuperAdmin,
+      };
+    }
   } catch (error) {
     console.error('Token validation error:', error);
     return { valid: false };

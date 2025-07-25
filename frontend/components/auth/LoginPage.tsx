@@ -15,6 +15,8 @@ import { useAuthForm, useAuthentication, useRememberMe } from './hooks';
 import { EmailInput, PasswordInput, InputGroup } from './FormInput';
 import { SocialButtonGroup, SocialDivider } from './SocialButton';
 import { RememberMeToggle } from './ToggleSwitch';
+import { OfflineIndicator, useNetworkStatus } from './OfflineIndicator';
+import { TrialManagerCompact } from './TrialManager';
 import Particles from './Particles';
 import { 
   BRAND_CONFIG, 
@@ -40,15 +42,18 @@ export const LoginPage: React.FC<LoginPageProps> = ({
   const router = useRouter();
   const { rememberMe, setRememberMe } = useRememberMe();
   const { user, isAuthenticated, login, socialLogin, socialLoading } = useAuthentication();
+  const { isOnline, isRetrying } = useNetworkStatus();
   // Password visibility is handled by PasswordInput component
 
   // Form management
   const { formState, updateField, handleSubmit, setErrors } = useAuthForm(async (data) => {
     const result = await login(data);
-    
+
     if (result.success) {
       onLoginSuccess?.(result);
-      router.push(AUTH_REDIRECTS.afterLogin);
+      // Use returnUrl if provided, otherwise use default redirect
+      const redirectUrl = returnUrl && returnUrl !== '/' ? returnUrl : AUTH_REDIRECTS.afterLogin;
+      router.push(redirectUrl);
     } else {
       const error = result.error || ERROR_MESSAGES.unknownError;
       setErrors({ general: error });
@@ -59,9 +64,11 @@ export const LoginPage: React.FC<LoginPageProps> = ({
   // Redirect if already authenticated
   useEffect(() => {
     if (isAuthenticated && user) {
-      router.push(AUTH_REDIRECTS.afterLogin);
+      // Use returnUrl if provided, otherwise use default redirect
+      const redirectUrl = returnUrl && returnUrl !== '/' ? returnUrl : AUTH_REDIRECTS.afterLogin;
+      router.push(redirectUrl);
     }
-  }, [isAuthenticated, user, router]);
+  }, [isAuthenticated, user, router, returnUrl]);
 
   // Handle social login
   const handleSocialLogin = async (provider: string) => {
@@ -103,6 +110,9 @@ export const LoginPage: React.FC<LoginPageProps> = ({
         />
       </div>
 
+      {/* Offline Indicator */}
+      <OfflineIndicator position="top-right" />
+
       {/* Main Content */}
       <div className="relative z-10 w-full max-w-md">
         {/* Login Card */}
@@ -141,6 +151,16 @@ export const LoginPage: React.FC<LoginPageProps> = ({
                 showLabels={false}
               />
               <SocialDivider text="or continue with email" className="mt-6" />
+            </div>
+          )}
+
+          {/* Connection Status */}
+          {!isOnline && (
+            <div className="mb-4 p-3 bg-amber-500/10 border border-amber-500/20 rounded-lg text-amber-400 text-sm">
+              <div className="flex items-center space-x-2">
+                <div className="w-2 h-2 bg-amber-500 rounded-full animate-pulse" />
+                <span>Working offline - some features may be limited</span>
+              </div>
             </div>
           )}
 

@@ -1,8 +1,7 @@
 ---
-type: "manual"
+type: "agent_requested"
+description: "Example description"
 ---
-
-
 # Augment Code Agent – User Guidelines
 
 These instructions define the required behavior, workflow safety, and consistency for the Augment AI code agent when working within the SizeWise Suite or any related codebase. Always follow these rules unless explicitly instructed otherwise.

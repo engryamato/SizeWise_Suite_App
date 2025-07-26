@@ -15,17 +15,18 @@ import {
 import { Vector3, BufferGeometry, Float32BufferAttribute } from 'three';
 import { useCameraController } from '@/lib/hooks/useCameraController';
 import { motion } from 'framer-motion';
-import { 
-  Move3D, 
-  RotateCcw, 
-  ZoomIn, 
-  ZoomOut, 
+import {
+  Move3D,
+  RotateCcw,
+  ZoomIn,
+  ZoomOut,
   Home,
   Grid3X3,
   Eye,
   EyeOff
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { defaultPerformanceConfig } from '@/lib/utils/performance';
 
 interface DuctSegment {
   id: string;
@@ -414,7 +415,10 @@ export const Canvas3D: React.FC<Canvas3DProps> = ({
       {/* 3D Canvas */}
       <Canvas
         camera={{ position: [10, 10, 10], fov: 50 }}
-        shadows
+        shadows={process.env.NODE_ENV !== 'development'} // Disable shadows in development
+        frameloop="demand" // Render on demand for better performance
+        dpr={Math.min(window.devicePixelRatio, 2)} // Limit pixel ratio
+        performance={{ min: 0.5 }} // Allow quality reduction
         className="bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800"
       >
         <Suspense fallback={null}>

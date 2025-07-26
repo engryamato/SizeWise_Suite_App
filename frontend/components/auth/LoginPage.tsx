@@ -18,6 +18,7 @@ import { RememberMeToggle } from './ToggleSwitch';
 import { OfflineIndicator, useNetworkStatus } from './OfflineIndicator';
 import { TrialManagerCompact } from './TrialManager';
 import Particles from './Particles';
+import PerformanceMonitor from '../debug/PerformanceMonitor';
 import { 
   BRAND_CONFIG, 
   SOCIAL_PROVIDERS, 
@@ -102,11 +103,11 @@ export const LoginPage: React.FC<LoginPageProps> = ({
           particleColors={['#ffffff', '#ffffff']}
           particleCount={200}
           particleSpread={10}
-          speed={0.1}
+          speed={0.03}
           particleBaseSize={100}
           moveParticlesOnHover={true}
           alphaParticles={false}
-          disableRotation={false}
+          disableRotation={true}
         />
       </div>
 
@@ -304,6 +305,13 @@ export const LoginPage: React.FC<LoginPageProps> = ({
         {formState.isSubmitting && A11Y_CONFIG.announcements.loginStart}
         {formState.errors.general && A11Y_CONFIG.announcements.loginError}
       </div>
+
+      {/* Performance Monitor (Development Only) */}
+      <PerformanceMonitor
+        enabled={process.env.NODE_ENV === 'development'}
+        position="top-right"
+        showDetails={true}
+      />
     </div>
   );
 };

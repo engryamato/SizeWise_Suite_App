@@ -182,12 +182,9 @@ test.describe('Accessibility Testing', () => {
     const allButtons = page.getByRole('button');
     const buttonCount = await allButtons.count();
     console.log(`✅ V1 has ${buttonCount} accessible buttons for screen readers`);
-    
-    // Check for button roles
-    const buttons = page.getByRole('button');
-    const buttonCount = await buttons.count();
+
+    // Verify button accessibility
     expect(buttonCount).toBeGreaterThan(0);
-    
     console.log(`Found ${buttonCount} properly labeled buttons for screen readers`);
   });
 

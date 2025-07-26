@@ -1,5 +1,11 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Renderer, Camera, Geometry, Program, Mesh } from "ogl";
+import {
+  FrameRateLimiter,
+  AdaptiveQualityManager,
+  VisibilityController,
+  defaultPerformanceConfig
+} from '@/lib/utils/performance';
 
 import './Particles.css';
 
@@ -107,10 +113,23 @@ const Particles: React.FC<ParticlesProps> = ({
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const mouseRef = useRef({ x: 0, y: 0 });
+  const [isVisible, setIsVisible] = useState(true);
+  const [performanceOptimized, setPerformanceOptimized] = useState(false);
+  const performanceOptimizedRef = useRef(false);
 
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
+
+    // Initialize performance monitoring
+    const frameRateLimiter = new FrameRateLimiter(defaultPerformanceConfig.targetFPS);
+    const adaptiveQuality = new AdaptiveQualityManager();
+    const visibilityController = new VisibilityController();
+
+    // Set up visibility tracking
+    visibilityController.observe(container, (visible) => {
+      setIsVisible(visible);
+    });
 
     const renderer = new Renderer({ depth: false, alpha: true });
     const gl = renderer.gl;
@@ -140,7 +159,12 @@ const Particles: React.FC<ParticlesProps> = ({
       container.addEventListener("mousemove", handleMouseMove);
     }
 
-    const count = particleCount;
+    // Apply performance optimizations
+    const isDevelopment = process.env.NODE_ENV === 'development';
+    const baseCount = Math.min(particleCount, isDevelopment ? 100 : 200); // Limit in development
+    const optimizedCount = adaptiveQuality.getOptimalParticleCount(baseCount);
+    const count = Math.max(20, optimizedCount); // Minimum 20 particles
+
     const positions = new Float32Array(count * 3);
     const randoms = new Float32Array(count * 4);
     const colors = new Float32Array(count * 3);
@@ -188,10 +212,32 @@ const Particles: React.FC<ParticlesProps> = ({
     let elapsed = 0;
 
     const update = (t: number) => {
-      animationFrameId = requestAnimationFrame(update);
+      // Only render if visible and frame rate allows
+      if (!isVisible) {
+        animationFrameId = requestAnimationFrame(update);
+        return;
+      }
+
+      // Frame rate limiting
+      if (!frameRateLimiter.shouldRender(t)) {
+        animationFrameId = requestAnimationFrame(update);
+        return;
+      }
+
       const delta = t - lastTime;
       lastTime = t;
       elapsed += delta * speed;
+
+      // Update adaptive quality based on performance
+      const fpsMetrics = frameRateLimiter.getFPSMetrics();
+      const qualityLevel = adaptiveQuality.updatePerformance(fpsMetrics.current);
+
+      // Adjust performance if needed (use ref to prevent React state delay)
+      if (qualityLevel < 0.8 && !performanceOptimizedRef.current) {
+        performanceOptimizedRef.current = true;
+        setPerformanceOptimized(true);
+        console.warn('Particle performance optimized due to low FPS');
+      }
 
       program.uniforms.uTime.value = elapsed * 0.001;
 
@@ -203,13 +249,16 @@ const Particles: React.FC<ParticlesProps> = ({
         particles.position.y = 0;
       }
 
+      // Reduce rotation complexity if performance is poor
       if (!disableRotation) {
-        particles.rotation.x = Math.sin(elapsed * 0.0002) * 0.1;
-        particles.rotation.y = Math.cos(elapsed * 0.0005) * 0.15;
-        particles.rotation.z += 0.01 * speed;
+        const rotationIntensity = qualityLevel;
+        particles.rotation.x = Math.sin(elapsed * 0.0002) * 0.1 * rotationIntensity;
+        particles.rotation.y = Math.cos(elapsed * 0.0005) * 0.15 * rotationIntensity;
+        particles.rotation.z += 0.01 * speed * rotationIntensity;
       }
 
       renderer.render({ scene: particles, camera });
+      animationFrameId = requestAnimationFrame(update);
     };
 
     animationFrameId = requestAnimationFrame(update);
@@ -220,6 +269,7 @@ const Particles: React.FC<ParticlesProps> = ({
         container.removeEventListener("mousemove", handleMouseMove);
       }
       cancelAnimationFrame(animationFrameId);
+      visibilityController.disconnect();
       if (container.contains(gl.canvas)) {
         container.removeChild(gl.canvas);
       }
@@ -236,6 +286,7 @@ const Particles: React.FC<ParticlesProps> = ({
     sizeRandomness,
     cameraDistance,
     disableRotation,
+    isVisible,
   ]);
 
   return (

@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { defaultPerformanceConfig } from '@/lib/utils/performance';
 
 // Types
 interface GlassEffectProps {
@@ -19,6 +20,10 @@ const GlassEffect: React.FC<GlassEffectProps> = ({
   href,
   target = "_blank",
 }) => {
+  // Performance optimization: reduce blur intensity in development
+  const isDevelopment = process.env.NODE_ENV === 'development';
+  const blurIntensity = isDevelopment ? 2 : 3; // Reduced blur for better performance
+
   const glassStyle = {
     boxShadow: "0 6px 6px rgba(0, 0, 0, 0.2), 0 0 20px rgba(0, 0, 0, 0.1)",
     transitionTimingFunction: "cubic-bezier(0.175, 0.885, 0.32, 2.2)",
@@ -34,8 +39,8 @@ const GlassEffect: React.FC<GlassEffectProps> = ({
       <div
         className="absolute inset-0 z-0 overflow-hidden rounded-inherit rounded-3xl"
         style={{
-          backdropFilter: "blur(3px)",
-          filter: "url(#glass-distortion)",
+          backdropFilter: `blur(${blurIntensity}px)`,
+          filter: isDevelopment ? "none" : "url(#glass-distortion)", // Disable complex filter in dev
           isolation: "isolate",
         }}
       />

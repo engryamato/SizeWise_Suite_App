@@ -5,6 +5,7 @@ import { AppShellContainer } from '@/components/layout/AppShellContainer'
 import { ToasterProvider } from '@/lib/hooks/useToaster'
 import { ThemeProvider } from '@/lib/hooks/useTheme'
 import { ServiceProvider } from '@/lib/providers/ServiceProvider'
+import { TwentyFirstToolbar } from '@21st-extension/toolbar-next'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -33,6 +34,15 @@ export default function RootLayout({
             </ToasterProvider>
           </ThemeProvider>
         </ServiceProvider>
+
+        {/* 21st.dev Toolbar - Development Only */}
+        {process.env.NODE_ENV === 'development' && (
+          <TwentyFirstToolbar
+            config={{
+              plugins: [], // Add custom plugins here if needed
+            }}
+          />
+        )}
       </body>
     </html>
   )

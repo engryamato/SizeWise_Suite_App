@@ -1,0 +1,14 @@
+import { TwentyFirstToolbar } from '@21st-extension/toolbar-next';
+import { ReactPlugin } from '@21st-extension/react';
+
+export default function RootLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <html lang="en">
+      <body>
+        {/* ...existing code... */}
+        {children}
+        <TwentyFirstToolbar config={{ plugins: [ReactPlugin()] }} />
+      </body>
+    </html>
+  );
+}

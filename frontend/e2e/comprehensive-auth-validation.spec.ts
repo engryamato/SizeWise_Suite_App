@@ -112,10 +112,19 @@ test.describe('SizeWise Suite - Comprehensive Authentication & Workflow Validati
 
     // Step 6: Verify successful login and redirect
     console.log('📍 Step 6: Verifying successful login and redirect...');
-    
-    // Wait for redirect to complete
-    await page.waitForLoadState('networkidle');
-    
+
+    // Wait for authentication to complete and redirect
+    try {
+      // Wait for either dashboard or any redirect away from login
+      await page.waitForURL(url => !url.includes('/login'), { timeout: 10000 });
+      console.log('✅ Successfully redirected away from login page');
+    } catch (error) {
+      console.log('⚠️ Still on login page after 10 seconds, checking for errors...');
+    }
+
+    // Additional wait for network to settle
+    await page.waitForLoadState('networkidle', { timeout: 5000 });
+
     const currentUrl = page.url();
     console.log('Current URL after login:', currentUrl);
 
@@ -128,9 +137,18 @@ test.describe('SizeWise Suite - Comprehensive Authentication & Workflow Validati
     } else if (currentUrl.includes('/login')) {
       // Still on login page - check for error messages
       const errorMessages = await page.locator('[role="alert"], .error, .text-red').allTextContents();
-      if (errorMessages.length > 0) {
-        console.log('❌ Login failed with errors:', errorMessages);
-        throw new Error(`Login failed: ${errorMessages.join(', ')}`);
+      const visibleErrors = errorMessages.filter(msg => msg.trim().length > 0);
+      if (visibleErrors.length > 0) {
+        console.log('❌ Login failed with errors:', visibleErrors);
+        throw new Error(`Login failed: ${visibleErrors.join(', ')}`);
+      } else {
+        console.log('⚠️ Still on login page but no visible errors - authentication may be processing');
+        // Give it one more chance with a longer wait
+        await page.waitForTimeout(3000);
+        const finalUrl = page.url();
+        if (finalUrl.includes('/login')) {
+          throw new Error('Login failed: Still on login page after extended wait');
+        }
       }
     } else {
       console.log('✅ Redirected to:', currentUrl);

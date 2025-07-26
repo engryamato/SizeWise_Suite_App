@@ -14,6 +14,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 import jwt
 import uuid
 from functools import wraps
+from sentry_config import init_sentry, capture_auth_event, capture_auth_error
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -21,6 +22,9 @@ logger = logging.getLogger(__name__)
 
 # Initialize Flask app
 app = Flask(__name__)
+
+# Initialize Sentry monitoring
+init_sentry(app, environment=os.environ.get('FLASK_ENV', 'development'))
 
 # Configuration
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'sizewise-auth-secret-key-change-in-production')

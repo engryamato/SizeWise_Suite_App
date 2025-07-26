@@ -11,7 +11,7 @@
 /**
  * User tier enumeration for tier-based feature enforcement
  */
-export type UserTier = 'free' | 'pro' | 'enterprise';
+export type UserTier = 'free' | 'pro' | 'enterprise' | 'super_admin';
 
 /**
  * User entity interface

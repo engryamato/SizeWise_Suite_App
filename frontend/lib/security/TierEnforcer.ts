@@ -181,11 +181,12 @@ export class TierEnforcer {
       };
 
     } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       await this.logSecurityEvent('tier_validation_error', {
         userId,
         featureName,
         userTier,
-        error: error.message
+        error: errorMessage
       });
 
       return {

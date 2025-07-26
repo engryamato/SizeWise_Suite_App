@@ -45,7 +45,7 @@ async function stopMockServer() {
     // If we had a real mock server running, we would stop it here
     console.log('Mock server cleanup completed');
   } catch (error) {
-    console.warn('Mock server cleanup warning:', error.message);
+    console.warn('Mock server cleanup warning:', error instanceof Error ? error.message : 'Unknown error');
   }
 }
 
@@ -69,7 +69,7 @@ async function cleanupTestDatabase() {
         console.log(`Removed temporary database file: ${file}`);
       }
     } catch (error) {
-      console.warn(`Failed to remove database file ${file}:`, error.message);
+      console.warn(`Failed to remove database file ${file}:`, error instanceof Error ? error.message : 'Unknown error');
     }
   }
 }
@@ -98,7 +98,7 @@ async function cleanupTestStorage() {
         console.log(`Removed temporary storage file: ${file}`);
       }
     } catch (error) {
-      console.warn(`Failed to remove storage file ${file}:`, error.message);
+      console.warn(`Failed to remove storage file ${file}:`, error instanceof Error ? error.message : 'Unknown error');
     }
   }
 }
@@ -137,7 +137,7 @@ async function cleanupTestArtifacts() {
         }
       }
     } catch (error) {
-      console.warn(`Failed to cleanup artifacts in ${dir}:`, error.message);
+      console.warn(`Failed to cleanup artifacts in ${dir}:`, error instanceof Error ? error.message : 'Unknown error');
     }
   }
 
@@ -156,7 +156,7 @@ async function cleanupTestArtifacts() {
         console.log(`Removed temporary file: ${pattern}`);
       }
     } catch (error) {
-      console.warn(`Failed to remove temporary file ${pattern}:`, error.message);
+      console.warn(`Failed to remove temporary file ${pattern}:`, error instanceof Error ? error.message : 'Unknown error');
     }
   }
 }
@@ -198,7 +198,7 @@ async function generateTestSummary() {
     console.log(`   Timestamp: ${summaryData.timestamp}`);
 
   } catch (error) {
-    console.warn('Failed to generate test summary:', error.message);
+    console.warn('Failed to generate test summary:', error instanceof Error ? error.message : 'Unknown error');
   }
 }
 

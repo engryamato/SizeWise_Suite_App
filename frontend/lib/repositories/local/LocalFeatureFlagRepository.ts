@@ -79,7 +79,8 @@ export class LocalFeatureFlagRepository implements FeatureFlagRepository {
       if (error instanceof ValidationError) {
         throw error;
       }
-      throw new DatabaseError(`Failed to get feature flag: ${error.message}`, 'getFeatureFlag');
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      throw new DatabaseError(`Failed to get feature flag: ${errorMessage}`, 'getFeatureFlag');
     }
   }
 
@@ -106,7 +107,8 @@ export class LocalFeatureFlagRepository implements FeatureFlagRepository {
       if (error instanceof ValidationError || error instanceof UserNotFoundError) {
         throw error;
       }
-      throw new DatabaseError(`Failed to get user flags: ${error.message}`, 'getUserFlags');
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      throw new DatabaseError(`Failed to get user flags: ${errorMessage}`, 'getUserFlags');
     }
   }
 
@@ -128,7 +130,8 @@ export class LocalFeatureFlagRepository implements FeatureFlagRepository {
       const rows = stmt.all() as any[];
       return rows.map(row => this.mapRowToFeatureFlag(row));
     } catch (error) {
-      throw new DatabaseError(`Failed to get global flags: ${error.message}`, 'getGlobalFlags');
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      throw new DatabaseError(`Failed to get global flags: ${errorMessage}`, 'getGlobalFlags');
     }
   }
 
@@ -144,7 +147,7 @@ export class LocalFeatureFlagRepository implements FeatureFlagRepository {
       }
       
       const db = this.dbManager.getConnection();
-      const existingFlag = await this.getFeatureFlag(flag.userId, flag.featureName);
+      const existingFlag = await this.getFeatureFlag(flag.userId || null, flag.featureName);
       
       const transaction = db.transaction(() => {
         const stmt = db.prepare(`
@@ -178,7 +181,8 @@ export class LocalFeatureFlagRepository implements FeatureFlagRepository {
       if (error instanceof ValidationError || error instanceof UserNotFoundError) {
         throw error;
       }
-      throw new DatabaseError(`Failed to set feature flag: ${error.message}`, 'setFeatureFlag');
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      throw new DatabaseError(`Failed to set feature flag: ${errorMessage}`, 'setFeatureFlag');
     }
   }
 
@@ -214,7 +218,8 @@ export class LocalFeatureFlagRepository implements FeatureFlagRepository {
       if (error instanceof ValidationError || error instanceof UserNotFoundError) {
         throw error;
       }
-      throw new DatabaseError(`Failed to remove feature flag: ${error.message}`, 'removeFeatureFlag');
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      throw new DatabaseError(`Failed to remove feature flag: ${errorMessage}`, 'removeFeatureFlag');
     }
   }
 
@@ -243,7 +248,8 @@ export class LocalFeatureFlagRepository implements FeatureFlagRepository {
       if (error instanceof ValidationError) {
         throw error;
       }
-      throw new DatabaseError(`Failed to get flags for tier: ${error.message}`, 'getFlagsForTier');
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      throw new DatabaseError(`Failed to get flags for tier: ${errorMessage}`, 'getFlagsForTier');
     }
   }
 
@@ -254,11 +260,14 @@ export class LocalFeatureFlagRepository implements FeatureFlagRepository {
     return {
       id: row.id,
       userId: row.user_id || undefined,
+      organizationId: row.organization_id || undefined,
       featureName: row.feature_name,
       enabled: Boolean(row.enabled),
       tierRequired: row.tier_required as UserTier,
       expiresAt: row.expires_at ? new Date(row.expires_at) : undefined,
-      createdAt: new Date(row.created_at)
+      metadata: row.metadata ? JSON.parse(row.metadata) : {},
+      createdAt: new Date(row.created_at),
+      updatedAt: new Date(row.updated_at)
     };
   }
 
@@ -347,6 +356,27 @@ export class LocalFeatureFlagRepository implements FeatureFlagRepository {
     }
   }
 
+  // Super Admin methods (not implemented in local environment)
+  async superAdminResetUserFlags(userId: string, superAdminSessionId: string, reason: string): Promise<void> {
+    throw new Error('Super admin operations not supported in local environment');
+  }
+
+  async superAdminForceFeatureState(userId: string, featureName: string, enabled: boolean, superAdminSessionId: string, reason: string): Promise<void> {
+    throw new Error('Super admin operations not supported in local environment');
+  }
+
+  async superAdminGetFeatureFlagAudit(superAdminSessionId: string, filters?: any): Promise<any[]> {
+    throw new Error('Super admin operations not supported in local environment');
+  }
+
+  async superAdminEmergencyDisableUserFeatures(userId: string, superAdminSessionId: string, reason: string): Promise<void> {
+    throw new Error('Super admin operations not supported in local environment');
+  }
+
+  async superAdminGetFeatureFlagStats(superAdminSessionId: string): Promise<any> {
+    throw new Error('Super admin operations not supported in local environment');
+  }
+
   /**
    * Helper: Log change for cloud sync
    */
@@ -356,7 +386,7 @@ export class LocalFeatureFlagRepository implements FeatureFlagRepository {
       INSERT INTO change_log (user_id, entity_type, entity_id, operation, changes)
       VALUES (?, ?, ?, ?, ?)
     `);
-    
+
     stmt.run(userId, entityType, entityId, operation, JSON.stringify(changes));
   }
 }

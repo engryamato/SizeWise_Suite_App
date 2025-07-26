@@ -307,7 +307,8 @@ export class ImportService {
             // Apply merge strategy logic here
             importedCount++;
           } catch (error) {
-            errors.push(`Failed to import user ${user.id}: ${error.message}`);
+            const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+            errors.push(`Failed to import user ${user.id}: ${errorMessage}`);
           }
         }
       }
@@ -319,7 +320,8 @@ export class ImportService {
             // Apply merge strategy logic here
             importedCount++;
           } catch (error) {
-            errors.push(`Failed to import project ${project.id}: ${error.message}`);
+            const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+            errors.push(`Failed to import project ${project.id}: ${errorMessage}`);
           }
         }
       }
@@ -331,7 +333,8 @@ export class ImportService {
             // Apply merge strategy logic here
             importedCount++;
           } catch (error) {
-            errors.push(`Failed to import feature flag ${flag.id}: ${error.message}`);
+            const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+            errors.push(`Failed to import feature flag ${flag.id}: ${errorMessage}`);
           }
         }
       }
@@ -493,7 +496,8 @@ export class BackupService {
             // Restoration logic would be implemented here
             restoredCount++;
           } catch (error) {
-            errors.push(`Failed to restore user ${user.id}: ${error.message}`);
+            const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+            errors.push(`Failed to restore user ${user.id}: ${errorMessage}`);
           }
         }
       }
@@ -505,7 +509,8 @@ export class BackupService {
             // Restoration logic would be implemented here
             restoredCount++;
           } catch (error) {
-            errors.push(`Failed to restore project ${project.id}: ${error.message}`);
+            const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+            errors.push(`Failed to restore project ${project.id}: ${errorMessage}`);
           }
         }
       }
@@ -517,7 +522,8 @@ export class BackupService {
             // Restoration logic would be implemented here
             restoredCount++;
           } catch (error) {
-            errors.push(`Failed to restore feature flag ${flag.id}: ${error.message}`);
+            const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+            errors.push(`Failed to restore feature flag ${flag.id}: ${errorMessage}`);
           }
         }
       }

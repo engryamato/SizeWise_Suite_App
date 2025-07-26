@@ -44,8 +44,8 @@ const AUTH_SERVER_URL = process.env.NEXT_PUBLIC_AUTH_SERVER_URL || 'http://local
 // Initialize hybrid authentication manager
 const hybridAuthManager = new HybridAuthManager(AUTH_SERVER_URL)
 
-const getTierLimits = (tier: 'free' | 'pro'): TierLimits => {
-  if (tier === 'pro') {
+const getTierLimits = (tier: 'free' | 'pro' | 'enterprise' | 'super_admin'): TierLimits => {
+  if (tier === 'pro' || tier === 'enterprise' || tier === 'super_admin') {
     return {
       maxRooms: Infinity,
       maxSegments: Infinity,
@@ -56,7 +56,7 @@ const getTierLimits = (tier: 'free' | 'pro'): TierLimits => {
       canUseCatalog: true,
     }
   }
-  
+
   // Free tier limits - aligned with business requirements
   return {
     maxRooms: 3,
@@ -107,7 +107,7 @@ export const useAuthStore = create<AuthStore>()(
                 email: result.user.email,
                 name: result.user.name,
                 tier: result.user.tier as 'free' | 'pro' | 'super_admin',
-                company: result.user.company || '',
+                company: '',
                 created_at: result.user.created_at,
                 updated_at: new Date().toISOString(),
                 is_super_admin: result.user.is_super_admin,
@@ -178,7 +178,7 @@ export const useAuthStore = create<AuthStore>()(
                 email: result.user.email,
                 name: result.user.name,
                 tier: result.user.tier as 'free' | 'pro' | 'super_admin',
-                company: result.user.company || '',
+                company: '',
                 created_at: result.user.created_at,
                 updated_at: new Date().toISOString(),
               }

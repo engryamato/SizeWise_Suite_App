@@ -21,7 +21,7 @@ const config: Config.InitialOptions = {
   modulePaths: ['<rootDir>/src'],
   
   // Module name mapping
-  moduleNameMapping: {
+  moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/src/$1',
     '^@tests/(.*)$': '<rootDir>/tests/$1',
     '^@backend/(.*)$': '<rootDir>/../backend/$1',

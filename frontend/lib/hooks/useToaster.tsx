@@ -54,7 +54,8 @@ export function ToasterProvider({
   React.useEffect(() => {
     return () => {
       // Clear all timeouts on unmount
-      Object.values(timeoutsRef.current).forEach(clearTimeout);
+      const timeouts = timeoutsRef.current;
+      Object.values(timeouts).forEach(clearTimeout);
     };
   }, []);
 

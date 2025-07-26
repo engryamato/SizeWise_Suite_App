@@ -277,7 +277,7 @@ export class SuperAdminService {
     const user = authStore.user;
     
     if (!user) return [];
-    if (isSuperAdmin(user)) return SUPER_ADMIN_CONFIG.permissions;
+    if (isSuperAdmin(user)) return [...SUPER_ADMIN_CONFIG.permissions];
     return user.permissions || [];
   }
 

@@ -11,14 +11,14 @@
 import { SecureFeatureValidator, ValidationContext } from '../security/SecureFeatureValidator';
 import { LocalUserRepository } from '../repositories/local/LocalUserRepository';
 import { LocalFeatureFlagRepository } from '../repositories/local/LocalFeatureFlagRepository';
-// import { DatabaseManager } from '../../../backend/database/DatabaseManager';
+import { BrowserDatabaseManager } from '../database/BrowserDatabaseManager';
 
 /**
  * Feature check result with performance metrics
  */
 export interface FeatureCheckResult {
   enabled: boolean;
-  tier: 'free' | 'pro' | 'enterprise';
+  tier: 'free' | 'pro' | 'enterprise' | 'super_admin';
   reason?: string;
   responseTime: number;
   cached: boolean;
@@ -52,12 +52,12 @@ export class FeatureManager {
   private readonly secureValidator: SecureFeatureValidator;
   private readonly userRepository: LocalUserRepository;
   private readonly featureFlagRepository: LocalFeatureFlagRepository;
-  private readonly dbManager: DatabaseManager;
+  private readonly dbManager: BrowserDatabaseManager;
 
   // Enhanced performance optimization cache (optimized for <50ms response time)
   private readonly featureCache = new Map<string, { result: FeatureCheckResult; expires: number }>();
   private readonly batchCache = new Map<string, Map<string, FeatureCheckResult>>();
-  private readonly tierCache = new Map<string, { tier: 'free' | 'pro' | 'enterprise'; expires: number }>();
+  private readonly tierCache = new Map<string, { tier: 'free' | 'pro' | 'enterprise' | 'super_admin'; expires: number }>();
   private readonly cacheTimeout = 300000; // 5 minutes
   private readonly maxCacheSize = 2000; // Increased for better hit rate
   private readonly batchCacheTimeout = 600000; // 10 minutes for batch results
@@ -144,7 +144,7 @@ export class FeatureManager {
     'custom_training': 'enterprise'
   };
 
-  constructor(dbManager: DatabaseManager) {
+  constructor(dbManager: BrowserDatabaseManager) {
     this.dbManager = dbManager;
     this.secureValidator = new SecureFeatureValidator();
     this.userRepository = new LocalUserRepository(dbManager);
@@ -177,7 +177,7 @@ export class FeatureManager {
       this.cacheMissCount++;
 
       // 2. Check tier cache for user (optimization for repeated user queries)
-      let userTier: 'free' | 'pro' | 'enterprise';
+      let userTier: 'free' | 'pro' | 'enterprise' | 'super_admin';
       const tierCached = this.tierCache.get(userId);
       if (tierCached && tierCached.expires > Date.now()) {
         userTier = tierCached.tier;
@@ -229,14 +229,12 @@ export class FeatureManager {
         timestamp: Date.now()
       };
 
-      // 5. Get stored feature flag if exists (only for non-tier features)
-      const storedFlag = await this.featureFlagRepository.getFeatureFlag(userId, featureName);
-
-      // 6. Perform secure validation through cryptographic validator
+      // 5. Perform secure validation through cryptographic validator
+      // Note: We don't use stored flags since regular FeatureFlag doesn't have cryptographic fields
+      // The validator will generate a default secure flag based on tier requirements
       const validationResult = await this.secureValidator.validateFeature(
         featureName,
-        context,
-        storedFlag || undefined
+        context
       );
 
       // 7. Create result with tier information
@@ -269,12 +267,13 @@ export class FeatureManager {
       return result;
 
     } catch (error) {
-      const result = this.createErrorResult(`Feature check failed: ${error.message}`, startTime);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      const result = this.createErrorResult(`Feature check failed: ${errorMessage}`, startTime);
       this.updateUsageStats(featureName, result.responseTime, false);
       await this.logSecurityEvent('feature_check_error', {
         userId,
         featureName,
-        error: error.message
+        error: errorMessage
       });
       return result;
     }
@@ -315,15 +314,16 @@ export class FeatureManager {
       };
 
     } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       await this.logSecurityEvent('batch_feature_check_error', {
         userId,
         featureNames,
-        error: error.message
+        error: errorMessage
       });
 
       // Return error results for all features
       for (const featureName of featureNames) {
-        results.set(featureName, this.createErrorResult(`Batch check failed: ${error.message}`, startTime));
+        results.set(featureName, this.createErrorResult(`Batch check failed: ${errorMessage}`, startTime));
       }
 
       return {
@@ -357,9 +357,10 @@ export class FeatureManager {
       return enabledFeatures.sort((a, b) => a.localeCompare(b));
 
     } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       await this.logSecurityEvent('get_enabled_features_error', {
         userId,
-        error: error.message
+        error: errorMessage
       });
       return [];
     }

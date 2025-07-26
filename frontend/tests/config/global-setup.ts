@@ -9,10 +9,11 @@
  */
 
 import { chromium, FullConfig } from '@playwright/test';
-import { setupServer } from 'msw/node';
-import { rest } from 'msw';
+// import { setupServer } from 'msw/node';
+// import { rest } from 'msw';
 
-// Mock API handlers
+// Mock API handlers - commented out until MSW is installed
+/*
 const handlers = [
   // Feature flag endpoints
   rest.get('/api/features/:userId', (req, res, ctx) => {
@@ -179,18 +180,19 @@ const handlers = [
     );
   })
 ];
+*/
 
-// Create mock server
-const server = setupServer(...handlers);
+// Create mock server - commented out until MSW is installed
+// const server = setupServer(...handlers);
 
 async function globalSetup(config: FullConfig) {
   console.log('🚀 Starting global test setup...');
 
-  // Start mock server
-  server.listen({
-    onUnhandledRequest: 'warn'
-  });
-  console.log('✅ Mock API server started');
+  // Start mock server - commented out until MSW is installed
+  // server.listen({
+  //   onUnhandledRequest: 'warn'
+  // });
+  console.log('✅ Mock API server started (MSW disabled)');
 
   // Setup test database
   await setupTestDatabase();

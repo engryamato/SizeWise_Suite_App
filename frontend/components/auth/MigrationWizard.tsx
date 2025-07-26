@@ -99,7 +99,7 @@ export const MigrationWizard: React.FC<MigrationWizardProps> = ({
     setMigrationProgress(0)
     
     const projectsToMigrate = localProjects.filter(p => selectedProjects.has(p.id))
-    const results = { success: [], failed: [] }
+    const results = { success: [] as string[], failed: [] as string[] }
     
     for (let i = 0; i < projectsToMigrate.length; i++) {
       const project = projectsToMigrate[i]
@@ -174,7 +174,7 @@ export const MigrationWizard: React.FC<MigrationWizardProps> = ({
               <FolderOpen className="w-16 h-16 text-blue-600 mx-auto mb-4" />
               <h3 className="text-xl font-semibold mb-2">Scanning Local Projects</h3>
               <p className="text-gray-600 dark:text-gray-400 mb-6">
-                We're looking for projects stored locally on your device...
+                We&apos;re looking for projects stored locally on your device...
               </p>
               
               {isScanning ? (
@@ -207,7 +207,7 @@ export const MigrationWizard: React.FC<MigrationWizardProps> = ({
               </div>
               
               <p className="text-gray-600 dark:text-gray-400 mb-6">
-                Choose which projects you'd like to sync with your SizeWise account:
+                Choose which projects you&apos;d like to sync with your SizeWise account:
               </p>
               
               <div className="space-y-3 mb-6">

@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import { devtools } from 'zustand/middleware'
 import { useDebouncedCallback } from 'use-debounce'
+import { HVACTracing } from '@/lib/monitoring/HVACTracing'
 import { CalculationInput, CalculationResult, Warning, Material, Standard } from '@/types/air-duct-sizer'
 
 interface CalculationState {
@@ -191,55 +192,63 @@ export const useCalculationStore = create<CalculationState>()(
       isLoadingStandards: false,
 
       calculate: async (input, objectId) => {
-        set({ isCalculating: true }, false, 'calculate:start')
-        
-        try {
-          // Try client-side calculation first for immediate feedback
-          const clientResult = performClientSideCalculation(input)
-          
-          // Cache the result if objectId is provided
-          if (objectId) {
-            const { results } = get()
-            set({
-              results: { ...results, [objectId]: clientResult }
-            }, false, 'calculate:cache')
-          }
+        return HVACTracing.traceDuctCalculation(
+          input.duct_type || 'rectangular',
+          async () => {
+            set({ isCalculating: true }, false, 'calculate:start')
 
-          // Try backend calculation first, fallback to client-side if unavailable
-          if (shouldUseBackendCalculation(input)) {
             try {
-              const backendResult = await performBackendCalculation(input)
+              // Try client-side calculation first for immediate feedback
+              const clientResult = performClientSideCalculation(input)
 
+              // Cache the result if objectId is provided
               if (objectId) {
                 const { results } = get()
                 set({
-                  results: { ...results, [objectId]: backendResult }
-                }, false, 'calculate:backend')
+                  results: { ...results, [objectId]: clientResult }
+                }, false, 'calculate:cache')
+              }
+
+              // Try backend calculation first, fallback to client-side if unavailable
+              if (shouldUseBackendCalculation(input)) {
+                try {
+                  const backendResult = await HVACTracing.traceAPICall(
+                    '/api/v1/calculations/duct-sizing',
+                    'POST',
+                    () => performBackendCalculation(input),
+                    input
+                  )
+
+                  if (objectId) {
+                    const { results } = get()
+                    set({
+                      results: { ...results, [objectId]: backendResult }
+                    }, false, 'calculate:backend')
+                  }
+
+                  set({ isCalculating: false }, false, 'calculate:complete')
+                  return backendResult
+                } catch (error) {
+                  console.warn('Backend calculation failed, using client-side fallback:', error)
+                  // Continue with client-side calculation below
+                }
               }
 
               set({ isCalculating: false }, false, 'calculate:complete')
-              return backendResult
+              return clientResult
             } catch (error) {
-              console.warn('Backend calculation failed, using client-side fallback:', error)
-              // Continue with client-side calculation below
+              set({ isCalculating: false }, false, 'calculate:error')
+              throw error
             }
+          },
+          {
+            calculationType: input.duct_type || 'rectangular',
+            inputComplexity: determineInputComplexity(input),
+            standardsUsed: ['SMACNA', 'ASHRAE'],
+            userTier: 'free', // TODO: Get from auth store
+            fallbackUsed: !shouldUseBackendCalculation(input)
           }
-
-          set({ isCalculating: false }, false, 'calculate:complete')
-          return clientResult
-        } catch (error) {
-          console.error('Calculation error:', error)
-          set({ isCalculating: false }, false, 'calculate:error')
-          
-          const errorResult: CalculationResult = {
-            success: false,
-            input_data: input,
-            warnings: [],
-            errors: [error instanceof Error ? error.message : 'Calculation failed'],
-          }
-          
-          return errorResult
-        }
+        );
       },
 
       getResult: (objectId) => {
@@ -495,6 +504,30 @@ async function performBackendCalculation(input: CalculationInput): Promise<Calcu
     // If backend is unavailable, throw error to fallback to client-side calculation
     throw new Error(`Backend unavailable: ${error instanceof Error ? error.message : 'Unknown error'}`)
   }
+}
+
+// Helper function to determine input complexity for tracing
+const determineInputComplexity = (input: CalculationInput): 'simple' | 'moderate' | 'complex' => {
+  let complexityScore = 0
+
+  // Basic inputs
+  if (input.airflow && input.airflow > 0) complexityScore += 1
+
+  // Duct type complexity
+  if (input.duct_type === 'round') complexityScore += 1
+  else if (input.duct_type === 'rectangular') complexityScore += 2
+
+  // Material considerations
+  if (input.material && input.material !== 'galvanized_steel') complexityScore += 1
+
+  // Friction rate specified
+  if (input.friction_rate && input.friction_rate !== 0.1) complexityScore += 1
+
+  // Material considerations (already handled above)
+
+  if (complexityScore <= 2) return 'simple'
+  if (complexityScore <= 4) return 'moderate'
+  return 'complex'
 }
 
 // Create debounced calculation hook

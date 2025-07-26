@@ -27,6 +27,8 @@ import {
   TierLimits
 } from '../../types/air-duct-sizer';
 import { UserTier } from '../repositories/interfaces/UserRepository';
+import { HVACTracing } from '@/lib/monitoring/HVACTracing';
+import { useSentryErrorReporting } from '@/components/error/SentryErrorBoundary';
 
 // =============================================================================
 // Service Context Interfaces
@@ -75,7 +77,7 @@ function useBaseService<T>(
       serviceGetter();
       setLoading(false);
     } catch (err) {
-      setError(`Failed to initialize ${serviceName}: ${err.message}`);
+      setError(`Failed to initialize ${serviceName}: ${err instanceof Error ? err.message : 'Unknown error'}`);
       setLoading(false);
     }
   }, [serviceGetter, serviceName]);
@@ -377,27 +379,48 @@ export function useServices() {
  * Hook for handling async operations with loading and error states
  */
 export function useAsyncOperation<T extends any[], R>(
-  operation: (...args: T) => Promise<R>
+  operation: (...args: T) => Promise<R>,
+  operationName?: string
 ) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<R | null>(null);
+  const { reportError } = useSentryErrorReporting();
 
   const execute = useCallback(async (...args: T) => {
-    setLoading(true);
-    setError(null);
-    try {
-      const result = await operation(...args);
-      setResult(result);
-      return result;
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Unknown error';
-      setError(errorMessage);
-      throw err;
-    } finally {
-      setLoading(false);
-    }
-  }, [operation]);
+    const opName = operationName || 'async_operation';
+
+    return HVACTracing.traceAPICall(
+      `/api/service/${opName}`,
+      'POST',
+      async () => {
+        setLoading(true);
+        setError(null);
+        try {
+          const result = await operation(...args);
+          setResult(result);
+          return result;
+        } catch (err) {
+          const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+          setError(errorMessage);
+
+          // Report service integration errors to Sentry
+          reportError(err as Error, {
+            component: 'useAsyncOperation',
+            operation: opName,
+            args: args.length
+          }, {
+            service_error: 'async_operation_failure'
+          });
+
+          throw err;
+        } finally {
+          setLoading(false);
+        }
+      },
+      args
+    );
+  }, [operation, operationName, reportError]);
 
   const reset = useCallback(() => {
     setLoading(false);

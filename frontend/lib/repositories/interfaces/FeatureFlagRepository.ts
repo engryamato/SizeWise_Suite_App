@@ -11,7 +11,7 @@
 /**
  * User tier enumeration for tier-based feature enforcement
  */
-export type UserTier = 'free' | 'pro' | 'enterprise';
+export type UserTier = 'free' | 'pro' | 'enterprise' | 'super_admin';
 
 /**
  * Feature flag entity interface
@@ -20,7 +20,9 @@ export interface FeatureFlag {
   /** UUID primary key */
   id: string;
   /** User ID for user-specific flags (null for global flags) */
-  userId?: string;
+  userId?: string | null;
+  /** Organization ID for organization-specific flags */
+  organizationId?: string | null;
   /** Name of the feature flag */
   featureName: string;
   /** Whether the feature is enabled */
@@ -28,9 +30,13 @@ export interface FeatureFlag {
   /** Minimum tier required for this feature */
   tierRequired: UserTier;
   /** Optional expiration date */
-  expiresAt?: Date;
+  expiresAt?: Date | null;
+  /** Additional metadata */
+  metadata?: Record<string, any>;
   /** Flag creation timestamp */
   createdAt: Date;
+  /** Flag last update timestamp */
+  updatedAt: Date;
 }
 
 /**

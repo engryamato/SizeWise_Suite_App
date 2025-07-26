@@ -62,7 +62,8 @@ export class LocalUserRepository implements UserRepository {
       if (error instanceof ValidationError) {
         throw error;
       }
-      throw new DatabaseError(`Failed to get user: ${error.message}`, 'getUser');
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      throw new DatabaseError(`Failed to get user: ${errorMessage}`, 'getUser');
     }
   }
 
@@ -90,7 +91,8 @@ export class LocalUserRepository implements UserRepository {
 
       return this.mapRowToUser(row);
     } catch (error) {
-      throw new DatabaseError(`Failed to get current user: ${error.message}`, 'getCurrentUser');
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      throw new DatabaseError(`Failed to get current user: ${errorMessage}`, 'getCurrentUser');
     }
   }
 
@@ -134,7 +136,8 @@ export class LocalUserRepository implements UserRepository {
       if (error instanceof ValidationError) {
         throw error;
       }
-      throw new DatabaseError(`Failed to save user: ${error.message}`, 'saveUser');
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      throw new DatabaseError(`Failed to save user: ${errorMessage}`, 'saveUser');
     }
   }
 
@@ -175,7 +178,8 @@ export class LocalUserRepository implements UserRepository {
       if (error instanceof ValidationError || error instanceof UserNotFoundError) {
         throw error;
       }
-      throw new DatabaseError(`Failed to update user tier: ${error.message}`, 'updateUserTier');
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      throw new DatabaseError(`Failed to update user tier: ${errorMessage}`, 'updateUserTier');
     }
   }
 
@@ -204,7 +208,8 @@ export class LocalUserRepository implements UserRepository {
       const result = stmt.get(licenseKey);
       return result !== undefined;
     } catch (error) {
-      throw new DatabaseError(`Failed to validate license: ${error.message}`, 'validateLicense');
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      throw new DatabaseError(`Failed to validate license: ${errorMessage}`, 'validateLicense');
     }
   }
 
@@ -233,7 +238,8 @@ export class LocalUserRepository implements UserRepository {
       if (error instanceof ValidationError || error instanceof UserNotFoundError) {
         throw error;
       }
-      throw new DatabaseError(`Failed to get license info: ${error.message}`, 'getLicenseInfo');
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      throw new DatabaseError(`Failed to get license info: ${errorMessage}`, 'getLicenseInfo');
     }
   }
 
@@ -438,7 +444,8 @@ export class LocalUserRepository implements UserRepository {
       if (error instanceof UserNotFoundError || error instanceof ValidationError || error instanceof SuperAdminAuthError) {
         throw error;
       }
-      throw new DatabaseError(`Failed to reset license: ${error.message}`, 'superAdminResetLicense');
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      throw new DatabaseError(`Failed to reset license: ${errorMessage}`, 'superAdminResetLicense');
     }
   }
 
@@ -496,7 +503,8 @@ export class LocalUserRepository implements UserRepository {
       if (error instanceof UserNotFoundError || error instanceof ValidationError || error instanceof SuperAdminAuthError) {
         throw error;
       }
-      throw new DatabaseError(`Failed to recover user: ${error.message}`, 'superAdminRecoverUser');
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      throw new DatabaseError(`Failed to recover user: ${errorMessage}`, 'superAdminRecoverUser');
     }
   }
 
@@ -546,7 +554,8 @@ export class LocalUserRepository implements UserRepository {
       if (error instanceof UserNotFoundError || error instanceof ValidationError || error instanceof SuperAdminAuthError) {
         throw error;
       }
-      throw new DatabaseError(`Failed to force tier change: ${error.message}`, 'superAdminForceTierChange');
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      throw new DatabaseError(`Failed to force tier change: ${errorMessage}`, 'superAdminForceTierChange');
     }
   }
 
@@ -633,7 +642,8 @@ export class LocalUserRepository implements UserRepository {
       if (error instanceof SuperAdminAuthError) {
         throw error;
       }
-      throw new DatabaseError(`Failed to get all users: ${error.message}`, 'superAdminGetAllUsers');
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      throw new DatabaseError(`Failed to get all users: ${errorMessage}`, 'superAdminGetAllUsers');
     }
   }
 
@@ -682,7 +692,8 @@ export class LocalUserRepository implements UserRepository {
       if (error instanceof ValidationError || error instanceof SuperAdminAuthError) {
         throw error;
       }
-      throw new DatabaseError(`Failed to emergency unlock users: ${error.message}`, 'superAdminEmergencyUnlockAll');
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      throw new DatabaseError(`Failed to emergency unlock users: ${errorMessage}`, 'superAdminEmergencyUnlockAll');
     }
   }
 

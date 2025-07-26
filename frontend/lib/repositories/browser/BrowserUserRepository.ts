@@ -5,8 +5,7 @@
  * Implements UserRepository interface for offline desktop mode.
  */
 
-import { UserRepository } from '../interfaces/UserRepository';
-import { User, UserTier } from '../interfaces/UserRepository';
+import { UserRepository, User, UserTier } from '../interfaces/UserRepository';
 import { BrowserDatabaseManager } from '../../database/BrowserDatabaseManager';
 
 export class BrowserUserRepository implements UserRepository {
@@ -82,12 +81,6 @@ export class BrowserUserRepository implements UserRepository {
         tier: 'free',
         company: 'Local Company',
         licenseKey: 'OFFLINE-LICENSE-001',
-        organizationId: null,
-        settings: {
-          theme: 'system',
-          units: 'imperial',
-          autoSave: true
-        },
         createdAt: new Date(),
         updatedAt: new Date()
       };
@@ -114,6 +107,72 @@ export class BrowserUserRepository implements UserRepository {
     }
   }
 
+  // License management methods (not implemented in browser environment)
+  async validateLicense(licenseKey: string): Promise<boolean> {
+    // In offline mode, always return true for basic validation
+    return true;
+  }
+
+  async getLicenseInfo(userId: string): Promise<any> {
+    const user = await this.getUser(userId);
+    if (!user) return null;
+
+    return {
+      tier: user.tier,
+      features: this.getFeaturesForTier(user.tier),
+      expiresAt: undefined,
+      isValid: true
+    };
+  }
+
+  // Super Admin methods (not implemented in browser environment)
+  async superAdminResetLicense(userId: string, superAdminSessionId: string, reason: string): Promise<void> {
+    throw new Error('Super admin operations not supported in browser environment');
+  }
+
+  async superAdminRecoverUser(userId: string, superAdminSessionId: string, newTier?: UserTier, reason?: string): Promise<void> {
+    throw new Error('Super admin operations not supported in browser environment');
+  }
+
+  async superAdminGetUserDetails(userId: string, superAdminSessionId: string): Promise<any> {
+    throw new Error('Super admin operations not supported in browser environment');
+  }
+
+  async superAdminUpdateUserTier(userId: string, tier: UserTier, superAdminSessionId: string, reason: string): Promise<void> {
+    throw new Error('Super admin operations not supported in browser environment');
+  }
+
+  async superAdminGetAllUsers(superAdminSessionId: string, filters?: any): Promise<any[]> {
+    throw new Error('Super admin operations not supported in browser environment');
+  }
+
+  async superAdminLockUser(userId: string, superAdminSessionId: string, reason: string): Promise<void> {
+    throw new Error('Super admin operations not supported in browser environment');
+  }
+
+  async superAdminUnlockUser(userId: string, superAdminSessionId: string, reason: string): Promise<void> {
+    throw new Error('Super admin operations not supported in browser environment');
+  }
+
+  async superAdminForceTierChange(userId: string, newTier: UserTier, superAdminSessionId: string, reason: string): Promise<void> {
+    throw new Error('Super admin operations not supported in browser environment');
+  }
+
+  async superAdminEmergencyUnlockAll(superAdminSessionId: string, reason: string): Promise<number> {
+    throw new Error('Super admin operations not supported in browser environment');
+  }
+
+  private getFeaturesForTier(tier: UserTier): string[] {
+    const tierFeatures = {
+      free: ['basic_calculations', 'project_save'],
+      pro: ['basic_calculations', 'project_save', 'advanced_calculations', 'export_pdf'],
+      enterprise: ['basic_calculations', 'project_save', 'advanced_calculations', 'export_pdf', 'team_collaboration'],
+      super_admin: ['all_features']
+    };
+
+    return tierFeatures[tier] || tierFeatures.free;
+  }
+
   private mapToUser(userData: any): User {
     return {
       id: userData.id,
@@ -122,8 +181,6 @@ export class BrowserUserRepository implements UserRepository {
       tier: userData.tier,
       company: userData.company,
       licenseKey: userData.licenseKey,
-      organizationId: userData.organizationId,
-      settings: userData.settings || {},
       createdAt: new Date(userData.createdAt),
       updatedAt: new Date(userData.updatedAt)
     };
@@ -137,8 +194,6 @@ export class BrowserUserRepository implements UserRepository {
       tier: user.tier,
       company: user.company,
       licenseKey: user.licenseKey,
-      organizationId: user.organizationId,
-      settings: user.settings,
       createdAt: user.createdAt.toISOString(),
       updatedAt: user.updatedAt.toISOString()
     };

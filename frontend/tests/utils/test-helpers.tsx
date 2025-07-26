@@ -11,9 +11,7 @@
 import { render, RenderOptions, RenderResult } from '@testing-library/react';
 import { ReactElement, ReactNode } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { BrowserRouter } from 'react-router-dom';
-import { TierProvider } from '../../src/contexts/TierContext';
-import { FeatureProvider } from '../../src/contexts/FeatureContext';
+import { jest } from '@jest/globals';
 
 /**
  * Test tier configurations
@@ -201,13 +199,7 @@ export function renderWithProviders(
   function Wrapper({ children }: { children: ReactNode }) {
     return (
       <QueryClientProvider client={queryClient}>
-        <BrowserRouter>
-          <TierProvider initialTier={initialTier} initialUser={initialUser}>
-            <FeatureProvider>
-              {children}
-            </FeatureProvider>
-          </TierProvider>
-        </BrowserRouter>
+        {children}
       </QueryClientProvider>
     );
   }
@@ -271,18 +263,20 @@ export const mockApiResponses = {
   tierValidation: (tier: string, feature: string) => {
     const tierOrder = ['free', 'pro', 'enterprise'];
     const userTierIndex = tierOrder.indexOf(tier);
-    const requiredTierIndex = tierOrder.indexOf(TEST_FEATURE_FLAGS[feature]?.tier || 'enterprise');
+    const featureFlag = TEST_FEATURE_FLAGS[feature as keyof typeof TEST_FEATURE_FLAGS];
+    const requiredTierIndex = tierOrder.indexOf(featureFlag?.tier || 'enterprise');
     
     return {
       allowed: userTierIndex >= requiredTierIndex,
       currentTier: tier,
-      requiredTier: TEST_FEATURE_FLAGS[feature]?.tier || 'enterprise',
+      requiredTier: featureFlag?.tier || 'enterprise',
       feature
     };
   },
 
   projectValidation: (tier: string, projectCount: number) => {
-    const limits = TEST_TIERS[tier]?.limits;
+    const tierData = TEST_TIERS[tier as keyof typeof TEST_TIERS];
+    const limits = tierData?.limits;
     const maxProjects = limits?.projects || 0;
     
     return {
@@ -323,20 +317,7 @@ export function generateTestCalculation(type: string = 'round_duct') {
   };
 }
 
-/**
- * Assertion helpers
- */
-export function expectTierAccess(result: any, expectedTier: string) {
-  expect(result).toHaveTierAccess(expectedTier);
-}
 
-export function expectPerformanceWithin(duration: number, maxTime: number) {
-  expect(duration).toHavePerformanceWithin(maxTime);
-}
-
-export function expectSecureData(data: string) {
-  expect(data).toBeSecurelyEncrypted();
-}
 
 /**
  * Wait utilities
@@ -387,12 +368,13 @@ export function mockTierValidation(
   feature: string,
   allowed: boolean = true
 ) {
+  const featureFlag = TEST_FEATURE_FLAGS[feature as keyof typeof TEST_FEATURE_FLAGS];
   return {
     allowed,
     currentTier: tier,
-    requiredTier: TEST_FEATURE_FLAGS[feature]?.tier || 'free',
+    requiredTier: featureFlag?.tier || 'free',
     feature,
-    reason: allowed ? undefined : `${feature} requires ${TEST_FEATURE_FLAGS[feature]?.tier} tier`
+    reason: allowed ? undefined : `${feature} requires ${featureFlag?.tier} tier`
   };
 }
 
@@ -408,9 +390,6 @@ export default {
   generateTestProject,
   generateTestUser,
   generateTestCalculation,
-  expectTierAccess,
-  expectPerformanceWithin,
-  expectSecureData,
   waitForNextTick,
   waitFor,
   clearAllMocks,

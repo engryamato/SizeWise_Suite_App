@@ -11,6 +11,41 @@
 import * as crypto from 'crypto';
 import { KeystoreManager } from './KeystoreManager';
 
+// Frontend stub for SuperAdminValidator (backend implementation exists)
+class SuperAdminValidator {
+  constructor(securityManager: any) {
+    // Frontend stub - actual implementation in backend
+  }
+
+  async authenticateSuperAdmin(...args: any[]): Promise<any> {
+    throw new Error('SuperAdminValidator not available in frontend');
+  }
+
+  async requestEmergencyAccess(...args: any[]): Promise<any> {
+    throw new Error('SuperAdminValidator not available in frontend');
+  }
+
+  async validateSession(...args: any[]): Promise<any> {
+    throw new Error('SuperAdminValidator not available in frontend');
+  }
+
+  async revokeSession(...args: any[]): Promise<any> {
+    throw new Error('SuperAdminValidator not available in frontend');
+  }
+
+  async registerHardwareKey(...args: any[]): Promise<any> {
+    throw new Error('SuperAdminValidator not available in frontend');
+  }
+
+  getSecurityStatistics(): any {
+    return null;
+  }
+
+  getAuditTrail(limit: number = 100): any[] {
+    return [];
+  }
+}
+
 // Local interfaces for super admin functionality
 export interface SuperAdminValidationResult {
   isValid: boolean;
@@ -42,7 +77,7 @@ export interface AuthSession {
   sessionId: string;
   userId: string;
   email: string;
-  tier: 'free' | 'pro' | 'enterprise';
+  tier: 'free' | 'pro' | 'enterprise' | 'super_admin';
   issuedAt: number;
   expiresAt: number;
   lastActivity: number;
@@ -145,16 +180,23 @@ export class AuthenticationManager {
 
       if (email === SUPER_ADMIN_EMAIL && password === SUPER_ADMIN_PASSWORD) {
         // Create super admin session
-        const superAdminSession = {
-          sessionId: crypto.randomBytes(32).toString('hex'),
+        const sessionId = crypto.randomBytes(32).toString('hex');
+        const now = Date.now();
+        const superAdminSession: SuperAdminSession = {
+          sessionId,
           userId: 'super-admin',
           email: email,
           tier: 'super_admin' as const,
-          createdAt: Date.now(),
-          lastActivity: Date.now(),
+          issuedAt: now,
+          expiresAt: now + (8 * 60 * 60 * 1000), // 8 hours
+          lastActivity: now,
           deviceFingerprint: await this.generateDeviceFingerprint(),
+          permissions: ['admin:full_access', 'admin:super_admin_functions'],
+          superAdminSessionId: sessionId,
+          hardwareKeyId: 'emergency-access',
+          emergencyAccess: true,
           superAdminPermissions: ['all'],
-          emergencyAccess: true
+          superAdminExpiresAt: now + (30 * 60 * 1000) // 30 minutes
         };
 
         this.currentSuperAdminSession = superAdminSession;
@@ -165,7 +207,8 @@ export class AuthenticationManager {
           userId: superAdminSession.userId,
           email: superAdminSession.email,
           tier: superAdminSession.tier,
-          createdAt: superAdminSession.createdAt,
+          issuedAt: superAdminSession.issuedAt,
+          expiresAt: superAdminSession.expiresAt,
           lastActivity: superAdminSession.lastActivity,
           deviceFingerprint: superAdminSession.deviceFingerprint,
           permissions: superAdminSession.superAdminPermissions
@@ -184,7 +227,8 @@ export class AuthenticationManager {
             userId: superAdminSession.userId,
             email: superAdminSession.email,
             tier: superAdminSession.tier,
-            createdAt: superAdminSession.createdAt,
+            issuedAt: superAdminSession.issuedAt,
+            expiresAt: superAdminSession.expiresAt,
             lastActivity: superAdminSession.lastActivity,
             deviceFingerprint: superAdminSession.deviceFingerprint,
             permissions: superAdminSession.superAdminPermissions
@@ -207,13 +251,14 @@ export class AuthenticationManager {
       };
 
     } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       await this.logSecurityEvent('authentication_error', {
         email: email,
-        error: error.message
+        error: errorMessage
       });
       return {
         success: false,
-        error: `Authentication failed: ${error.message}`,
+        error: `Authentication failed: ${errorMessage}`,
         securityEvent: 'AUTHENTICATION_ERROR'
       };
     }
@@ -280,10 +325,11 @@ export class AuthenticationManager {
       };
 
     } catch (error) {
-      await this.logSecurityEvent('authentication_error', { error: error.message });
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      await this.logSecurityEvent('authentication_error', { error: errorMessage });
       return {
         success: false,
-        error: `Authentication failed: ${error.message}`,
+        error: `Authentication failed: ${errorMessage}`,
         securityEvent: 'AUTHENTICATION_ERROR'
       };
     }
@@ -353,10 +399,11 @@ export class AuthenticationManager {
       };
 
     } catch (error) {
-      await this.logSecurityEvent('jwt_validation_error', { error: error.message });
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      await this.logSecurityEvent('jwt_validation_error', { error: errorMessage });
       return {
         success: false,
-        error: `JWT validation failed: ${error.message}`,
+        error: `JWT validation failed: ${errorMessage}`,
         securityEvent: 'JWT_VALIDATION_ERROR'
       };
     }
@@ -387,7 +434,8 @@ export class AuthenticationManager {
       return this.currentSession;
 
     } catch (error) {
-      await this.logSecurityEvent('session_retrieval_error', { error: error.message });
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      await this.logSecurityEvent('session_retrieval_error', { error: errorMessage });
       return null;
     }
   }
@@ -446,10 +494,11 @@ export class AuthenticationManager {
       };
 
     } catch (error) {
-      await this.logSecurityEvent('session_refresh_error', { error: error.message });
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      await this.logSecurityEvent('session_refresh_error', { error: errorMessage });
       return {
         success: false,
-        error: `Session refresh failed: ${error.message}`,
+        error: `Session refresh failed: ${errorMessage}`,
         securityEvent: 'SESSION_REFRESH_ERROR'
       };
     }
@@ -470,7 +519,8 @@ export class AuthenticationManager {
       await this.clearSession();
 
     } catch (error) {
-      await this.logSecurityEvent('logout_error', { error: error.message });
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      await this.logSecurityEvent('logout_error', { error: errorMessage });
     }
   }
 
@@ -595,7 +645,8 @@ export class AuthenticationManager {
       return `${encodedHeader}.${encodedPayload}.${signature}`;
 
     } catch (error) {
-      throw new Error(`JWT generation failed: ${error.message}`);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      throw new Error(`JWT generation failed: ${errorMessage}`);
     }
   }
 
@@ -722,7 +773,8 @@ export class AuthenticationManager {
       });
 
     } catch (error) {
-      throw new Error(`Session storage failed: ${error.message}`);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      throw new Error(`Session storage failed: ${errorMessage}`);
     }
   }
 
@@ -856,17 +908,21 @@ export class AuthenticationManager {
       }
 
       // Create super admin session
+      const now = Date.now();
       const superAdminSession: SuperAdminSession = {
-        id: validationResult.sessionId!,
+        sessionId: validationResult.sessionId!,
         userId: request.userId,
-        createdAt: Date.now(),
+        email: 'super-admin@sizewise.com',
+        tier: 'super_admin' as const,
+        issuedAt: now,
         expiresAt: validationResult.expiresAt!.getTime(),
-        lastActivity: Date.now(),
-        isValid: true,
+        lastActivity: now,
+        deviceFingerprint: await this.generateDeviceFingerprint(),
+        permissions: validationResult.permissions.map((p: any) => p.action),
         superAdminSessionId: validationResult.sessionId!,
         hardwareKeyId: request.hardwareKeyId,
         emergencyAccess: validationResult.emergencyAccess,
-        superAdminPermissions: validationResult.permissions.map(p => p.action),
+        superAdminPermissions: validationResult.permissions.map((p: any) => p.action),
         superAdminExpiresAt: validationResult.expiresAt!.getTime()
       };
 
@@ -886,14 +942,15 @@ export class AuthenticationManager {
       };
 
     } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       await this.logSecurityEvent('super_admin_auth_error', {
         userId: request.userId,
-        error: error.message
+        error: errorMessage
       });
 
       return {
         success: false,
-        error: `Super admin authentication failed: ${error.message}`,
+        error: `Super admin authentication failed: ${errorMessage}`,
         requiresHardwareKey: true
       };
     }
@@ -931,17 +988,21 @@ export class AuthenticationManager {
       }
 
       // Create emergency super admin session
+      const now = Date.now();
       const emergencySession: SuperAdminSession = {
-        id: validationResult.sessionId!,
+        sessionId: validationResult.sessionId!,
         userId: 'emergency',
-        createdAt: Date.now(),
+        email: 'emergency@sizewise.com',
+        tier: 'super_admin' as const,
+        issuedAt: now,
         expiresAt: validationResult.expiresAt!.getTime(),
-        lastActivity: Date.now(),
-        isValid: true,
+        lastActivity: now,
+        deviceFingerprint: await this.generateDeviceFingerprint(),
+        permissions: validationResult.permissions.map((p: any) => p.action),
         superAdminSessionId: validationResult.sessionId!,
         hardwareKeyId: 'emergency',
         emergencyAccess: true,
-        superAdminPermissions: validationResult.permissions.map(p => p.action),
+        superAdminPermissions: validationResult.permissions.map((p: any) => p.action),
         superAdminExpiresAt: validationResult.expiresAt!.getTime()
       };
 
@@ -960,14 +1021,15 @@ export class AuthenticationManager {
       };
 
     } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       await this.logSecurityEvent('emergency_access_error', {
         reason: request.reason,
-        error: error.message
+        error: errorMessage
       });
 
       return {
         success: false,
-        error: `Emergency access failed: ${error.message}`
+        error: `Emergency access failed: ${errorMessage}`
       };
     }
   }
@@ -1001,9 +1063,10 @@ export class AuthenticationManager {
       const validationResult = await this.superAdminValidator.validateSession(sessionId);
       return validationResult.valid;
     } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       await this.logSecurityEvent('super_admin_session_validation_error', {
         sessionId,
-        error: error.message
+        error: errorMessage
       });
       return false;
     }
@@ -1047,8 +1110,9 @@ export class AuthenticationManager {
 
       return success;
     } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       await this.logSecurityEvent('super_admin_session_revocation_error', {
-        error: error.message
+        error: errorMessage
       });
       return false;
     }
@@ -1080,21 +1144,21 @@ export class AuthenticationManager {
       await this.logSecurityEvent('hardware_key_registration', {
         adminUserId,
         success: result.success,
-        keyId: result.keyId,
-        algorithm: keyCredential.algorithm
+        keyId: result.keyId
       });
 
       return result;
     } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       await this.logSecurityEvent('hardware_key_registration_error', {
         adminUserId,
-        error: error.message
+        error: errorMessage
       });
 
       return {
         success: false,
         keyId: '',
-        reason: `Hardware key registration failed: ${error.message}`
+        reason: `Hardware key registration failed: ${errorMessage}`
       };
     }
   }

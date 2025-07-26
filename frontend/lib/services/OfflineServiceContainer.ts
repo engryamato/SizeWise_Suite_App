@@ -9,19 +9,19 @@
 
 import { createDataService, DataService } from '../data/DataService';
 import { FeatureManager } from '../features/FeatureManager';
+import { RepositoryContainer, DatabaseInitializer } from '../database/DatabaseInitializer';
 // import { TierEnforcer } from '../../../backend/services/enforcement/TierEnforcer';
 // import { AirDuctCalculator } from '../../../backend/services/calculations/AirDuctCalculator';
 // import { SMACNAValidator } from '../../../backend/services/calculations/SMACNAValidator';
-import { 
-  Project, 
-  User, 
-  CalculationInput, 
-  CalculationResult, 
-  ExportOptions, 
+import {
+  CalculationInput,
+  CalculationResult,
+  ExportOptions,
   ExportResult,
-  TierLimits 
+  TierLimits
 } from '../../types/air-duct-sizer';
-import { UserTier } from '../repositories/interfaces/UserRepository';
+import { Project } from '../repositories/interfaces/ProjectRepository';
+import { User, UserTier } from '../repositories/interfaces/UserRepository';
 
 /**
  * Service container interface for dependency injection
@@ -172,6 +172,26 @@ export class OfflineUserService {
   }
 }
 
+// Stub implementations for missing backend services
+class AirDuctCalculator {
+  async calculate(input: CalculationInput): Promise<CalculationResult> {
+    // Stub implementation - would be replaced with actual calculation logic
+    throw new Error('AirDuctCalculator not implemented in offline mode');
+  }
+
+  async calculateDuctSizing(input: CalculationInput): Promise<CalculationResult> {
+    // Stub implementation - would be replaced with actual calculation logic
+    throw new Error('AirDuctCalculator not implemented in offline mode');
+  }
+}
+
+class SMACNAValidator {
+  async validate(input: CalculationInput): Promise<boolean> {
+    // Stub implementation - would be replaced with actual validation logic
+    return true;
+  }
+}
+
 /**
  * Calculation service for offline mode
  */
@@ -265,14 +285,9 @@ export class OfflineExportService {
     try {
       // Simulate export process for offline mode
       return {
-        id: `export-${Date.now()}`,
-        projectId,
-        format: options.format,
-        status: 'completed',
         success: true,
-        downloadUrl: `/exports/${projectId}.${options.format}`,
-        createdAt: new Date().toISOString(),
-        completedAt: new Date().toISOString()
+        exportId: `export-${Date.now()}`,
+        downloadUrl: `/exports/${projectId}.${options.format}`
       };
     } catch (error) {
       console.error('Failed to export project:', error);
@@ -284,13 +299,9 @@ export class OfflineExportService {
     try {
       // Return mock status for offline mode
       return {
-        id: exportId,
-        projectId: 'unknown',
-        format: 'pdf',
-        status: 'completed',
         success: true,
-        createdAt: new Date().toISOString(),
-        completedAt: new Date().toISOString()
+        exportId: exportId,
+        downloadUrl: `/api/exports/${exportId}/download`
       };
     } catch (error) {
       console.error('Failed to get export status:', error);
@@ -331,7 +342,10 @@ export class OfflineTierService {
   async hasFeatureAccess(feature: string): Promise<boolean> {
     try {
       const user = await this.repositories.userRepository.getCurrentUser();
-      const result = await this.featureManager.isEnabled(feature, user?.id);
+      if (!user?.id) {
+        return false;
+      }
+      const result = await this.featureManager.isEnabled(feature, user.id);
       return result.enabled;
     } catch (error) {
       console.error('Failed to check feature access:', error);
@@ -371,13 +385,30 @@ export class OfflineTierService {
           canExportWithoutWatermark: true,
           canUseSimulation: true,
           canUseCatalog: true
+        },
+        super_admin: {
+          maxRooms: -1, // Unlimited
+          maxSegments: -1, // Unlimited
+          maxProjects: -1, // Unlimited
+          canEditComputationalProperties: true,
+          canExportWithoutWatermark: true,
+          canUseSimulation: true,
+          canUseCatalog: true
         }
       };
 
       return limits[tier];
     } catch (error) {
       console.error('Failed to get tier limits:', error);
-      return limits.free;
+      return {
+        maxRooms: 5,
+        maxSegments: 10,
+        maxProjects: 3,
+        canEditComputationalProperties: false,
+        canExportWithoutWatermark: false,
+        canUseSimulation: false,
+        canUseCatalog: false
+      };
     }
   }
 
@@ -411,10 +442,7 @@ export async function createOfflineServiceContainer(): Promise<OfflineServiceCon
   const repositories = dbResult.repositories;
 
   // Create feature manager
-  const featureManager = new FeatureManager(
-    repositories.featureFlagRepository,
-    repositories.userRepository
-  );
+  const featureManager = new FeatureManager(dbResult.dbManager!);
 
   // Create services
   const projectService = new OfflineProjectService(repositories);

@@ -10,12 +10,12 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { FeatureManager, FeatureCheckResult, BatchFeatureResult } from '../features/FeatureManager';
-// import { DatabaseManager } from '../../../backend/database/DatabaseManager';
+import { BrowserDatabaseManager, initializeBrowserDatabase } from '../database/BrowserDatabaseManager';
 
 /**
  * User tier type alias
  */
-export type UserTier = 'free' | 'pro' | 'enterprise';
+export type UserTier = 'free' | 'pro' | 'enterprise' | 'super_admin';
 
 /**
  * Feature flag hook result
@@ -55,7 +55,7 @@ export interface UseFeatureFlagOptions {
 
 // Global feature manager instance (singleton pattern)
 let globalFeatureManager: FeatureManager | null = null;
-let globalDbManager: DatabaseManager | null = null;
+let globalDbManager: BrowserDatabaseManager | null = null;
 
 /**
  * Initialize global feature manager
@@ -63,8 +63,7 @@ let globalDbManager: DatabaseManager | null = null;
 const initializeFeatureManager = async (): Promise<FeatureManager> => {
   if (!globalFeatureManager) {
     if (!globalDbManager) {
-      globalDbManager = new DatabaseManager({ filePath: 'sizewise.db' });
-      await globalDbManager.initialize();
+      globalDbManager = await initializeBrowserDatabase();
     }
     globalFeatureManager = new FeatureManager(globalDbManager);
   }
@@ -156,13 +155,13 @@ export function useFeatureFlag(
       }
 
     } catch (err) {
-      const errorMessage = `Failed to check feature '${featureName}': ${err.message}`;
-      
+      const errorMessage = `Failed to check feature '${featureName}': ${err instanceof Error ? err.message : 'Unknown error'}`;
+
       if (mountedRef.current) {
         setError(errorMessage);
         setEnabled(false);
         setTier(null);
-        
+
         if (onError) {
           onError(errorMessage);
         }
@@ -301,12 +300,12 @@ export function useBatchFeatureFlag(
       }
 
     } catch (err) {
-      const errorMessage = `Failed to check features [${featureNames.join(', ')}]: ${err.message}`;
-      
+      const errorMessage = `Failed to check features [${featureNames.join(', ')}]: ${err instanceof Error ? err.message : 'Unknown error'}`;
+
       if (mountedRef.current) {
         setError(errorMessage);
         setFeatures({});
-        
+
         if (onError) {
           onError(errorMessage);
         }
@@ -405,7 +404,7 @@ export function useUserTier(options: UseFeatureFlagOptions = {}): {
           }
         }
       } catch (err) {
-        const errorMessage = `Failed to get user tier: ${err.message}`;
+        const errorMessage = `Failed to get user tier: ${err instanceof Error ? err.message : 'Unknown error'}`;
         setError(errorMessage);
         if (onError) {
           onError(errorMessage);
@@ -421,7 +420,7 @@ export function useUserTier(options: UseFeatureFlagOptions = {}): {
   const hasAccess = useCallback((requiredTier: UserTier): boolean => {
     if (!tier) return false;
     
-    const tierHierarchy = { free: 1, pro: 2, enterprise: 3 };
+    const tierHierarchy = { free: 1, pro: 2, enterprise: 3, super_admin: 4 };
     return tierHierarchy[tier] >= tierHierarchy[requiredTier];
   }, [tier]);
 

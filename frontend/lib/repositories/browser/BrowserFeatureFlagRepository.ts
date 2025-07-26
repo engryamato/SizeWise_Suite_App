@@ -5,8 +5,7 @@
  * Implements FeatureFlagRepository interface for offline desktop mode.
  */
 
-import { FeatureFlagRepository } from '../interfaces/FeatureFlagRepository';
-import { FeatureFlag } from '../interfaces/FeatureFlagRepository';
+import { FeatureFlagRepository, FeatureFlag } from '../interfaces/FeatureFlagRepository';
 import { BrowserDatabaseManager } from '../../database/BrowserDatabaseManager';
 
 export class BrowserFeatureFlagRepository implements FeatureFlagRepository {
@@ -16,7 +15,7 @@ export class BrowserFeatureFlagRepository implements FeatureFlagRepository {
     this.dbManager = dbManager;
   }
 
-  async getFeatureFlag(featureName: string, userId?: string): Promise<FeatureFlag | null> {
+  async getFeatureFlag(userId: string | null, featureName: string): Promise<FeatureFlag | null> {
     try {
       // First try to get user-specific flag
       if (userId) {
@@ -99,7 +98,7 @@ export class BrowserFeatureFlagRepository implements FeatureFlagRepository {
 
   async enableFeature(featureName: string, userId?: string): Promise<void> {
     try {
-      const existingFlag = await this.getFeatureFlag(featureName, userId);
+      const existingFlag = await this.getFeatureFlag(userId || null, featureName);
       
       if (existingFlag) {
         existingFlag.enabled = true;
@@ -129,8 +128,8 @@ export class BrowserFeatureFlagRepository implements FeatureFlagRepository {
 
   async disableFeature(featureName: string, userId?: string): Promise<void> {
     try {
-      const existingFlag = await this.getFeatureFlag(featureName, userId);
-      
+      const existingFlag = await this.getFeatureFlag(userId || null, featureName);
+
       if (existingFlag) {
         existingFlag.enabled = false;
         existingFlag.updatedAt = new Date();
@@ -140,6 +139,69 @@ export class BrowserFeatureFlagRepository implements FeatureFlagRepository {
       console.error('Failed to disable feature:', error);
       throw error;
     }
+  }
+
+  // Required interface methods
+  async getUserFlags(userId: string): Promise<FeatureFlag[]> {
+    return this.getFeatureFlagsByUser(userId);
+  }
+
+  async getGlobalFlags(): Promise<FeatureFlag[]> {
+    return this.getGlobalFeatureFlags();
+  }
+
+  async setFeatureFlag(flag: FeatureFlag): Promise<void> {
+    return this.saveFeatureFlag(flag);
+  }
+
+  async removeFeatureFlag(userId: string | null, featureName: string): Promise<void> {
+    try {
+      const existingFlag = await this.getFeatureFlag(userId, featureName);
+      if (existingFlag) {
+        await this.deleteFeatureFlag(existingFlag.id);
+      }
+    } catch (error) {
+      console.error('Failed to remove feature flag:', error);
+      throw error;
+    }
+  }
+
+  async getFlagsForTier(tier: string): Promise<FeatureFlag[]> {
+    try {
+      const allFlags = await this.getAllFeatureFlags();
+      // Filter flags based on tier hierarchy
+      const tierHierarchy = { free: 1, pro: 2, enterprise: 3, super_admin: 4 };
+      const userTierLevel = tierHierarchy[tier as keyof typeof tierHierarchy] || 0;
+
+      return allFlags.filter(flag => {
+        const flagTierLevel = tierHierarchy[flag.tierRequired as keyof typeof tierHierarchy] || 0;
+        return flagTierLevel <= userTierLevel;
+      });
+    } catch (error) {
+      console.error('Failed to get flags for tier:', error);
+      throw error;
+    }
+  }
+
+  // Super Admin methods (not implemented in browser environment)
+  async superAdminResetUserFlags(userId: string, superAdminSessionId: string, reason: string): Promise<void> {
+    throw new Error('Super admin operations not supported in browser environment');
+  }
+
+  async superAdminForceFeatureState(userId: string, featureName: string, enabled: boolean, superAdminSessionId: string, reason: string): Promise<void> {
+    throw new Error('Super admin operations not supported in browser environment');
+  }
+
+  async superAdminGetFeatureFlagAudit(superAdminSessionId: string, filters?: any): Promise<any[]> {
+    throw new Error('Super admin operations not supported in browser environment');
+  }
+
+  async superAdminEmergencyDisableUserFeatures(userId: string, superAdminSessionId: string, reason: string): Promise<void> {
+    throw new Error('Super admin operations not supported in browser environment');
+  }
+
+  async superAdminGetFeatureFlagStats(superAdminSessionId: string): Promise<any> {
+    throw new Error('Super admin operations not supported in browser environment');
   }
 
   private mapToFeatureFlag(flagData: any): FeatureFlag {

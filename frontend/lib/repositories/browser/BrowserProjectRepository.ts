@@ -5,8 +5,7 @@
  * Implements ProjectRepository interface for offline desktop mode.
  */
 
-import { ProjectRepository } from '../interfaces/ProjectRepository';
-import { Project } from '../interfaces/ProjectRepository';
+import { ProjectRepository, Project } from '../interfaces/ProjectRepository';
 import { BrowserDatabaseManager } from '../../database/BrowserDatabaseManager';
 
 export class BrowserProjectRepository implements ProjectRepository {
@@ -106,6 +105,48 @@ export class BrowserProjectRepository implements ProjectRepository {
       console.error('Failed to bulk save projects:', error);
       throw error;
     }
+  }
+
+  // Required interface methods
+  async listProjects(userId: string, tier: string): Promise<Project[]> {
+    try {
+      const projects = await this.getProjectsByUser(userId);
+
+      // Apply tier-based filtering
+      if (tier === 'free') {
+        return projects.slice(0, 3); // Free tier limited to 3 projects
+      }
+
+      return projects; // Pro and enterprise get all projects
+    } catch (error) {
+      console.error('Failed to list projects:', error);
+      throw error;
+    }
+  }
+
+  async canCreateProject(userId: string, tier: string): Promise<boolean> {
+    try {
+      const projectCount = await this.getProjectCount(userId);
+
+      // Free tier limited to 3 projects
+      if (tier === 'free') {
+        return projectCount < 3;
+      }
+
+      // Pro and enterprise have no limits
+      return true;
+    } catch (error) {
+      console.error('Failed to check project creation permission:', error);
+      throw error;
+    }
+  }
+
+  async exportProjects(userId: string): Promise<Project[]> {
+    return this.getProjectsByUser(userId);
+  }
+
+  async importProjects(projects: Project[]): Promise<void> {
+    return this.bulkSaveProjects(projects);
   }
 
   private mapToProject(projectData: any): Project {

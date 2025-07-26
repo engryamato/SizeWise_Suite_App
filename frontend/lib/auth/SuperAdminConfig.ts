@@ -124,7 +124,7 @@ export function createSuperAdminUser(): User {
     subscription_expires: new Date(Date.now() + 10 * 365 * 24 * 60 * 60 * 1000).toISOString(), // 10 years
     created_at: now,
     updated_at: now,
-    permissions: SUPER_ADMIN_CONFIG.permissions,
+    permissions: [...SUPER_ADMIN_CONFIG.permissions],
     is_super_admin: true,
   };
 }

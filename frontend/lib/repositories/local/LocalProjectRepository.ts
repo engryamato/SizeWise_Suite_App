@@ -58,7 +58,8 @@ export class LocalProjectRepository implements ProjectRepository {
       if (error instanceof ValidationError) {
         throw error;
       }
-      throw new DatabaseError(`Failed to get project: ${error.message}`, 'getProject');
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      throw new DatabaseError(`Failed to get project: ${errorMessage}`, 'getProject');
     }
   }
 
@@ -96,14 +97,23 @@ export class LocalProjectRepository implements ProjectRepository {
           project.id,
           project.userId,
           null, // organization_id for future use
-          project.name,
-          project.client || null,
-          project.address || null,
+          project.project_name,
+          project.client_name || null,
+          project.project_location || null,
           null, // building_type for future use
-          project.metadata ? JSON.stringify(project.metadata) : null,
+          JSON.stringify({
+            project_number: project.project_number,
+            project_description: project.project_description,
+            estimator_name: project.estimator_name,
+            rooms: project.rooms,
+            segments: project.segments,
+            equipment: project.equipment,
+            computational_properties: project.computational_properties,
+            code_standards: project.code_standards
+          }),
           null, // settings for future use
           'active',
-          existingProject ? existingProject.createdAt.toISOString() : new Date().toISOString(),
+          existingProject ? existingProject.date_created : new Date().toISOString(),
           new Date().toISOString()
         );
 
@@ -116,7 +126,8 @@ export class LocalProjectRepository implements ProjectRepository {
       if (error instanceof ValidationError || error instanceof TierLimitExceededError) {
         throw error;
       }
-      throw new DatabaseError(`Failed to save project: ${error.message}`, 'saveProject');
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      throw new DatabaseError(`Failed to save project: ${errorMessage}`, 'saveProject');
     }
   }
 
@@ -155,7 +166,8 @@ export class LocalProjectRepository implements ProjectRepository {
       if (error instanceof ValidationError || error instanceof ProjectNotFoundError) {
         throw error;
       }
-      throw new DatabaseError(`Failed to delete project: ${error.message}`, 'deleteProject');
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      throw new DatabaseError(`Failed to delete project: ${errorMessage}`, 'deleteProject');
     }
   }
 
@@ -189,7 +201,8 @@ export class LocalProjectRepository implements ProjectRepository {
       if (error instanceof ValidationError || error instanceof UserNotFoundError) {
         throw error;
       }
-      throw new DatabaseError(`Failed to list projects: ${error.message}`, 'listProjects');
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      throw new DatabaseError(`Failed to list projects: ${errorMessage}`, 'listProjects');
     }
   }
 
@@ -213,7 +226,8 @@ export class LocalProjectRepository implements ProjectRepository {
       if (error instanceof ValidationError || error instanceof UserNotFoundError) {
         throw error;
       }
-      throw new DatabaseError(`Failed to get project count: ${error.message}`, 'getProjectCount');
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      throw new DatabaseError(`Failed to get project count: ${errorMessage}`, 'getProjectCount');
     }
   }
 
@@ -230,7 +244,8 @@ export class LocalProjectRepository implements ProjectRepository {
       const projectCount = await this.getProjectCount(userId);
       return projectCount < 3;
     } catch (error) {
-      throw new DatabaseError(`Failed to check project creation limit: ${error.message}`, 'canCreateProject');
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      throw new DatabaseError(`Failed to check project creation limit: ${errorMessage}`, 'canCreateProject');
     }
   }
 
@@ -257,7 +272,8 @@ export class LocalProjectRepository implements ProjectRepository {
       if (error instanceof ValidationError || error instanceof UserNotFoundError) {
         throw error;
       }
-      throw new DatabaseError(`Failed to export projects: ${error.message}`, 'exportProjects');
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      throw new DatabaseError(`Failed to export projects: ${errorMessage}`, 'exportProjects');
     }
   }
 
@@ -286,15 +302,24 @@ export class LocalProjectRepository implements ProjectRepository {
             project.id,
             project.userId,
             null,
-            project.name,
-            project.client || null,
-            project.address || null,
+            project.project_name,
+            project.client_name || null,
+            project.project_location || null,
             null,
-            project.metadata ? JSON.stringify(project.metadata) : null,
+            JSON.stringify({
+              project_number: project.project_number,
+              project_description: project.project_description,
+              estimator_name: project.estimator_name,
+              rooms: project.rooms,
+              segments: project.segments,
+              equipment: project.equipment,
+              computational_properties: project.computational_properties,
+              code_standards: project.code_standards
+            }),
             null,
             'active',
-            project.createdAt.toISOString(),
-            project.lastModified.toISOString()
+            project.date_created,
+            project.last_modified
           );
         }
       });
@@ -304,7 +329,8 @@ export class LocalProjectRepository implements ProjectRepository {
       if (error instanceof ValidationError) {
         throw error;
       }
-      throw new DatabaseError(`Failed to import projects: ${error.message}`, 'importProjects');
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      throw new DatabaseError(`Failed to import projects: ${errorMessage}`, 'importProjects');
     }
   }
 
@@ -312,15 +338,25 @@ export class LocalProjectRepository implements ProjectRepository {
    * Helper: Map database row to Project object
    */
   private mapRowToProject(row: any): Project {
+    const metadata = row.metadata ? JSON.parse(row.metadata) : {};
+
     return {
       id: row.id,
       userId: row.user_id,
-      name: row.name,
-      client: row.client || undefined,
-      address: row.address || undefined,
-      metadata: row.metadata ? JSON.parse(row.metadata) : undefined,
-      createdAt: new Date(row.created_at),
-      lastModified: new Date(row.last_modified)
+      project_name: row.name,
+      project_number: metadata.project_number || '',
+      project_description: metadata.project_description || '',
+      project_location: row.address || '',
+      client_name: row.client || '',
+      estimator_name: metadata.estimator_name || '',
+      date_created: row.created_at,
+      last_modified: row.last_modified,
+      version: '1.0',
+      rooms: metadata.rooms || [],
+      segments: metadata.segments || [],
+      equipment: metadata.equipment || [],
+      computational_properties: metadata.computational_properties || {},
+      code_standards: metadata.code_standards || {}
     };
   }
 
@@ -344,11 +380,11 @@ export class LocalProjectRepository implements ProjectRepository {
     if (!project.userId) {
       throw new ValidationError('User ID is required', 'userId');
     }
-    if (!project.name || project.name.trim().length === 0) {
-      throw new ValidationError('Project name is required', 'name');
+    if (!project.project_name || project.project_name.trim().length === 0) {
+      throw new ValidationError('Project name is required', 'project_name');
     }
-    if (project.name.length > 255) {
-      throw new ValidationError('Project name too long (max 255 characters)', 'name');
+    if (project.project_name.length > 255) {
+      throw new ValidationError('Project name too long (max 255 characters)', 'project_name');
     }
     
     this.validateUUID(project.id);

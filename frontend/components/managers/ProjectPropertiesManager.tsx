@@ -258,10 +258,8 @@ export const ProjectPropertiesManager: React.FC<ProjectPropertiesManagerProps> =
       updateProject({
         project_name: updatedInfo.name,
         project_location: updatedInfo.location,
-        description: updatedInfo.description,
-        client_name: updatedInfo.clientName,
-        estimator_name: updatedInfo.estimatorName,
-        version: updatedInfo.version
+        contractor_name: updatedInfo.clientName || updatedInfo.estimatorName,
+        user_name: updatedInfo.estimatorName
       });
     }
   };

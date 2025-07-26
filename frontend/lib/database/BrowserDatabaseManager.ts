@@ -246,7 +246,8 @@ export class BrowserDatabaseManager {
         const count = await this.count(storeName);
         stats.stores[storeName] = { count };
       } catch (error) {
-        stats.stores[storeName] = { count: 0, error: error.message };
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        stats.stores[storeName] = { count: 0, error: errorMessage };
       }
     }
 

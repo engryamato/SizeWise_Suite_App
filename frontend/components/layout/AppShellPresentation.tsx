@@ -16,7 +16,7 @@ import { CenteredNavigation } from '../ui/CenteredNavigation';
 import LaserBackground from '../ui/LaserBackground';
 import { Sidebar } from '../ui/Sidebar';
 import { StatusBar } from '../ui/StatusBar';
-import { Toaster } from '../ui/Toaster';
+
 import { ToolRouteGuard } from '../guards/ToolRouteGuard';
 import { User, Notification } from '../../types/air-duct-sizer';
 import { UserTier } from '../../lib/repositories/interfaces/UserRepository';
@@ -110,7 +110,7 @@ export const AppShellPresentation: React.FC<AppShellPresentationProps> = ({
         <main id="main-content" className="relative z-10">
           {children}
         </main>
-        <Toaster notifications={notifications} onDismiss={onNotificationDismiss} />
+
       </div>
     );
   }
@@ -163,14 +163,7 @@ export const AppShellPresentation: React.FC<AppShellPresentationProps> = ({
               transition={{ type: "spring", damping: 25, stiffness: 200 }}
               className="w-80 bg-white/80 dark:bg-gray-900/80 backdrop-blur-lg border-r border-gray-200/50 dark:border-gray-700/50 shadow-lg"
             >
-              <Sidebar
-                isOpen={sidebarOpen}
-                activePanel={activePanel}
-                selectedObjects={selectedObjects}
-                onClose={onSidebarToggle}
-                onPanelChange={onPanelChange}
-                onObjectSelect={() => {}} // This would be connected to actual selection logic
-              />
+              <Sidebar />
             </motion.aside>
           )}
         </AnimatePresence>
@@ -230,11 +223,7 @@ export const AppShellPresentation: React.FC<AppShellPresentationProps> = ({
 
 
 
-      {/* Toast Notifications */}
-      <Toaster 
-        notifications={notifications} 
-        onDismiss={onNotificationDismiss}
-      />
+
 
       {/* Tier Badge removed for clean UX - users don't need constant subscription reminders */}
     </div>

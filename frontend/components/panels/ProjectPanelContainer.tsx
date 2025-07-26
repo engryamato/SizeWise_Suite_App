@@ -22,7 +22,7 @@ import {
   TierLimits 
 } from '../../types/air-duct-sizer';
 import { UserTier } from '../../lib/repositories/interfaces/UserRepository';
-import { ProjectPanelPresentation } from './ProjectPanelPresentation';
+import { ProjectPanel } from '../ui/panels/ProjectPanel';
 
 /**
  * Project panel container component
@@ -288,7 +288,7 @@ export const ProjectPanelContainer: React.FC<Omit<ProjectPanelProps, 'data' | 'u
     ...props
   };
 
-  return <ProjectPanelPresentation {...presentationProps} />;
+  return <ProjectPanel />;
 };
 
 /**

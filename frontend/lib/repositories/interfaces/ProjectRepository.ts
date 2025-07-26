@@ -11,7 +11,7 @@
 /**
  * User tier enumeration for tier-based feature enforcement
  */
-export type UserTier = 'free' | 'pro' | 'enterprise';
+export type UserTier = 'free' | 'pro' | 'enterprise' | 'super_admin';
 
 /**
  * Project entity interface
@@ -22,17 +22,33 @@ export interface Project {
   /** Foreign key to users table */
   userId: string;
   /** Project name (required, non-empty) */
-  name: string;
+  project_name: string;
+  /** Project number */
+  project_number: string;
+  /** Project description (optional) */
+  project_description?: string;
+  /** Project location (optional) */
+  project_location?: string;
   /** Client name (optional) */
-  client?: string;
-  /** Project address (optional) */
-  address?: string;
-  /** Flexible metadata storage */
-  metadata?: Record<string, any>;
+  client_name?: string;
+  /** Estimator name (optional) */
+  estimator_name?: string;
   /** Project creation timestamp */
-  createdAt: Date;
+  date_created: string;
   /** Last modification timestamp */
-  lastModified: Date;
+  last_modified: string;
+  /** Project version */
+  version: string;
+  /** Project rooms */
+  rooms: any[];
+  /** Project segments */
+  segments: any[];
+  /** Project equipment */
+  equipment: any[];
+  /** Computational properties */
+  computational_properties: any;
+  /** Code standards */
+  code_standards: any;
 }
 
 /**

@@ -3,6 +3,8 @@
 import React, { useRef, useEffect, useState } from 'react'
 import { useUIStore } from '@/stores/ui-store'
 import { useProjectStore } from '@/stores/project-store'
+import { HVACTracing } from '@/lib/monitoring/HVACTracing'
+import { useSentryErrorReporting } from '@/components/error/SentryErrorBoundary'
 
 interface SimpleCanvasProps {
   width: number
@@ -15,6 +17,7 @@ export const SimpleCanvas: React.FC<SimpleCanvasProps> = ({ width, height }) => 
   const [startPoint, setStartPoint] = useState<{ x: number; y: number } | null>(null)
   const [currentPoint, setCurrentPoint] = useState<{ x: number; y: number } | null>(null)
   const [isPanning, setIsPanning] = useState(false)
+  const { reportError } = useSentryErrorReporting()
   
   const {
     drawingState,
@@ -71,7 +74,14 @@ export const SimpleCanvas: React.FC<SimpleCanvasProps> = ({ width, height }) => 
         pdfUrlRef.current = url
         revokeUrl = url
       } catch (err) {
-        // Ignore PDF errors
+        console.error('Failed to load PDF background:', err)
+        reportError(err as Error, {
+          component: 'SimpleCanvas',
+          action: 'load_pdf_background',
+          projectId: currentProject?.id
+        }, {
+          canvas_error: 'pdf_load_failure'
+        })
       }
     }
     loadPdfImage()

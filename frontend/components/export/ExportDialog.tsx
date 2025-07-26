@@ -36,12 +36,15 @@ export const ExportDialog: React.FC<ExportDialogProps> = ({
   } = useExportStore()
 
   const userTier = user?.tier || 'free'
-  const isProUser = userTier === 'pro'
+  const isProUser = userTier === 'pro' || userTier === 'enterprise' || userTier === 'super_admin'
+
+  // Map user tier to export tier (enterprise and super_admin get pro export privileges)
+  const exportTier: 'free' | 'pro' = isProUser ? 'pro' : 'free'
 
   if (!isOpen || !currentProject) return null
 
   // Validate project for export
-  const validation = validateExport(currentProject, userTier)
+  const validation = validateExport(currentProject, exportTier)
 
   const exportFormats = [
     {
@@ -88,7 +91,7 @@ export const ExportDialog: React.FC<ExportDialogProps> = ({
     const result = await exportProject(
       currentProject,
       selectedFormat,
-      userTier,
+      exportTier,
       canvasElement
     )
 

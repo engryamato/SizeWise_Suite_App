@@ -105,7 +105,7 @@ function AirDuctSizerV1Page() {
   useEffect(() => {
     setDuctSegments(demoSegments);
     toast.info('Demo Data Loaded', 'Sample duct segments have been loaded for demonstration.');
-  }, []); // Empty dependency array - only run once on mount
+  }, [demoSegments, toast]); // Include dependencies
 
   // Monitor online status
   useEffect(() => {
@@ -182,11 +182,11 @@ function AirDuctSizerV1Page() {
     setSelectedElement(null);
     toast.success('Element deleted', 'Element removed from canvas');
     setSaveStatus('unsaved');
-  }, []);
+  }, [toast]);
 
   const handleElementCopy = useCallback((id: string) => {
     toast.success('Element copied', 'Element copied to clipboard');
-  }, []);
+  }, [toast]);
 
   const handleRunCalculation = useCallback(async () => {
     setIsCalculating(true);
@@ -310,7 +310,7 @@ function AirDuctSizerV1Page() {
     setDuctSegments(prev => [...prev, segment]);
     setSaveStatus('unsaved');
     toast.success('Duct Added', 'New duct segment added to the system.');
-  }, []);
+  }, [toast]);
 
   const handleSegmentUpdate = useCallback((id: string, updates: Partial<DuctSegment>) => {
     setDuctSegments(prev =>

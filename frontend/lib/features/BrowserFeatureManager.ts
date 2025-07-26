@@ -99,7 +99,7 @@ export class BrowserFeatureManager {
       return {
         enabled: false,
         tier: 'free',
-        reason: `Error checking feature: ${error.message}`,
+        reason: `Error checking feature: ${error instanceof Error ? error.message : 'Unknown error'}`,
         responseTime: Date.now() - startTime,
         cached: false
       };

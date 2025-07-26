@@ -1,15 +1,17 @@
 /**
  * PerformanceMonitor - Application Performance Monitoring
- * 
+ *
  * MISSION-CRITICAL: Monitor and optimize application performance
  * Tracks startup time, feature flag performance, and memory usage
- * 
+ *
  * Performance Requirements:
  * - Application startup: <3s
  * - Feature flag evaluation: <50ms
  * - Memory usage: <100MB baseline
  * - Cache hit rate: >90%
  */
+
+import { logger, logPerformance } from './SentryLogger';
 
 export interface PerformanceMetric {
   name: string;
@@ -184,11 +186,70 @@ export class PerformanceMonitor {
   }
 
   /**
-   * Record error for monitoring
+   * Record error for monitoring with Sentry integration
    */
-  recordError(category: string, error: Error): void {
+  recordError(category: string, error: Error, context?: Record<string, any>): void {
     this.recordMetric(`error_${category}`, 1, 'count', category as any);
     console.error(`Performance Monitor - ${category} error:`, error);
+
+    // Send error to Sentry if available
+    if (typeof window !== 'undefined') {
+      import('@sentry/nextjs').then(({ captureException, withScope }) => {
+        withScope((scope) => {
+          scope.setTag('category', category);
+          scope.setTag('source', 'PerformanceMonitor');
+          scope.setContext('performance', {
+            category,
+            timestamp: new Date().toISOString(),
+            ...context
+          });
+          captureException(error);
+        });
+      }).catch(() => {
+        // Sentry not available, continue with console logging only
+      });
+    }
+  }
+
+  /**
+   * Record performance span to Sentry
+   */
+  recordSentrySpan<T>(
+    operation: string,
+    name: string,
+    callback: () => T | Promise<T>,
+    attributes?: Record<string, any>
+  ): T | Promise<T> {
+    if (typeof window !== 'undefined') {
+      return import('@sentry/nextjs').then(({ startSpan }) => {
+        return startSpan(
+          {
+            op: operation,
+            name: name,
+          },
+          (span) => {
+            // Add custom attributes
+            if (attributes) {
+              Object.entries(attributes).forEach(([key, value]) => {
+                span.setAttribute(key, value);
+              });
+            }
+
+            // Add performance context
+            span.setAttribute('source', 'PerformanceMonitor');
+            span.setAttribute('timestamp', new Date().toISOString());
+
+            return callback();
+          }
+        );
+      }).catch(() => {
+        // Sentry not available, execute callback directly
+        return callback();
+      });
+    } else {
+      // Server-side or Sentry not available
+      return callback();
+    }
   }
 
   /**
@@ -231,6 +292,18 @@ export class PerformanceMonitor {
     };
 
     this.metrics.push(metric);
+
+    // Send performance metric to Sentry
+    logPerformance({
+      name,
+      value,
+      unit,
+      context: {
+        component: 'PerformanceMonitor',
+        category,
+        timestamp: metric.timestamp
+      }
+    });
 
     // Limit metrics history to prevent memory leaks
     if (this.metrics.length > this.maxMetricsHistory) {

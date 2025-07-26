@@ -54,9 +54,12 @@ export const CanvasSystemContainer: React.FC<CanvasContainerProps> = ({
     drawingState,
     selectedObjects,
     setViewport,
-    setGrid,
+    setGridVisible,
+    setSnapToGrid,
+    setGridSize,
     setDrawingTool,
-    setSelectedObjects,
+    selectMultiple,
+    clearSelection,
     planScale
   } = useUIStore();
 
@@ -148,9 +151,9 @@ export const CanvasSystemContainer: React.FC<CanvasContainerProps> = ({
       newSelection = ids;
     }
     
-    setSelectedObjects(newSelection);
+    selectMultiple(newSelection);
     onObjectSelect?.(newSelection);
-  }, [currentSelectedObjects, setSelectedObjects, onObjectSelect]);
+  }, [currentSelectedObjects, selectMultiple, onObjectSelect]);
 
   const handleObjectUpdate = useCallback((id: string, updates: any) => {
     // Determine object type and update accordingly
@@ -227,7 +230,7 @@ export const CanvasSystemContainer: React.FC<CanvasContainerProps> = ({
     
     if (width < 10 || height < 10) return; // Minimum size check
 
-    const newRoom: Partial<Room> = {
+    const newRoom: Omit<Room, "room_id"> = {
       name: `Room ${rooms.length + 1}`,
       dimensions: {
         length: width / planScale,
@@ -246,7 +249,7 @@ export const CanvasSystemContainer: React.FC<CanvasContainerProps> = ({
     
     if (length < 20) return; // Minimum length check
 
-    const newSegment: Partial<Segment> = {
+    const newSegment: Omit<Segment, "segment_id"> = {
       type: 'straight',
       material: 'Galvanized Steel',
       size: { width: 12, height: 8 }, // Default size
@@ -259,7 +262,7 @@ export const CanvasSystemContainer: React.FC<CanvasContainerProps> = ({
   }, [planScale, addSegment]);
 
   const createEquipment = useCallback((point: { x: number; y: number }) => {
-    const newEquipment: Partial<Equipment> = {
+    const newEquipment: Omit<Equipment, "equipment_id"> = {
       type: 'Air Handler',
       airflow: 1000, // Default airflow
       x: point.x,
@@ -302,8 +305,9 @@ export const CanvasSystemContainer: React.FC<CanvasContainerProps> = ({
       }
     } catch (error) {
       console.error('Calculation failed:', error);
-      setValidationWarnings(prev => 
-        new Map(prev).set(objectId, [`Calculation failed: ${error.message}`])
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      setValidationWarnings(prev =>
+        new Map(prev).set(objectId, [`Calculation failed: ${errorMessage}`])
       );
     }
   }, [calculation.service, getSegmentById, currentProject, updateSegment]);
@@ -318,7 +322,7 @@ export const CanvasSystemContainer: React.FC<CanvasContainerProps> = ({
 
       switch (event.key) {
         case 'Escape':
-          setSelectedObjects([]);
+          clearSelection();
           setDrawingTool('select');
           break;
         case 'Delete':
@@ -329,7 +333,7 @@ export const CanvasSystemContainer: React.FC<CanvasContainerProps> = ({
               // This would integrate with actual deletion logic
               console.log('Delete object:', id);
             });
-            setSelectedObjects([]);
+            clearSelection();
           }
           break;
         case 'r':
@@ -361,7 +365,7 @@ export const CanvasSystemContainer: React.FC<CanvasContainerProps> = ({
 
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [currentSelectedObjects, setSelectedObjects, setDrawingTool, onDrawingToolChange]);
+  }, [currentSelectedObjects, clearSelection, setDrawingTool, onDrawingToolChange]);
 
   // =============================================================================
   // Render

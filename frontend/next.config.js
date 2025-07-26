@@ -50,6 +50,7 @@ const nextConfig = {
   // Enable experimental features for better performance
   experimental: {
     optimizePackageImports: ['lucide-react'],
+    // Note: instrumentationHook is no longer needed as instrumentation.js is available by default
   },
 
   // API proxy configuration for development

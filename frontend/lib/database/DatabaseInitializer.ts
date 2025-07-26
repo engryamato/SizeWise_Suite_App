@@ -217,7 +217,7 @@ export class DatabaseInitializer {
         organizationId: null,
         featureName: 'air_duct_sizer',
         enabled: true,
-        tierRequired: 'free',
+        tierRequired: 'free' as const,
         expiresAt: null,
         metadata: { description: 'Basic air duct sizing calculations' },
         createdAt: new Date(),
@@ -229,7 +229,7 @@ export class DatabaseInitializer {
         organizationId: null,
         featureName: 'project_management',
         enabled: true,
-        tierRequired: 'free',
+        tierRequired: 'free' as const,
         expiresAt: null,
         metadata: { description: 'Basic project management features' },
         createdAt: new Date(),
@@ -241,7 +241,7 @@ export class DatabaseInitializer {
         organizationId: null,
         featureName: 'basic_export',
         enabled: true,
-        tierRequired: 'free',
+        tierRequired: 'free' as const,
         expiresAt: null,
         metadata: { description: 'Basic export functionality with watermark' },
         createdAt: new Date(),
@@ -252,12 +252,18 @@ export class DatabaseInitializer {
     for (const feature of defaultFeatures) {
       try {
         const existing = await this.repositories.featureFlagRepository.getFeatureFlag(
-          feature.featureName,
-          feature.userId
+          feature.userId || null,
+          feature.featureName
         );
         
         if (!existing) {
-          await this.repositories.featureFlagRepository.saveFeatureFlag(feature);
+          const featureFlag = {
+            ...feature,
+            userId: feature.userId || undefined,
+            organizationId: feature.organizationId || undefined,
+            expiresAt: feature.expiresAt || undefined
+          };
+          await this.repositories.featureFlagRepository.setFeatureFlag(featureFlag);
         }
       } catch (error) {
         console.warn(`Failed to initialize feature flag ${feature.featureName}:`, error);

@@ -67,12 +67,15 @@ const DefaultUpgradePrompt: React.FC<UpgradePromptProps> = ({
   const tierDisplayNames = {
     free: 'Free',
     pro: 'Pro',
-    enterprise: 'Enterprise'
+    enterprise: 'Enterprise',
+    super_admin: 'Super Admin'
   };
 
   const tierColors = {
+    free: 'bg-gray-500 hover:bg-gray-600',
     pro: 'bg-blue-500 hover:bg-blue-600',
-    enterprise: 'bg-purple-500 hover:bg-purple-600'
+    enterprise: 'bg-purple-500 hover:bg-purple-600',
+    super_admin: 'bg-red-500 hover:bg-red-600'
   };
 
   const handleUpgradeClick = useCallback(() => {
@@ -301,6 +304,7 @@ export const MultiFeatureGate: React.FC<MultiFeatureGateProps> = ({
     return <DefaultLoadingComponent className={className} />;
   }
   
+  const errors = featureStates.filter(state => state.error).map(state => state.error);
   if (errors.length > 0) {
     return <DefaultErrorComponent error={errors.join(', ')} className={className} />;
   }

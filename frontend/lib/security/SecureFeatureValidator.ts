@@ -42,7 +42,7 @@ export interface ValidationResult {
  */
 export interface ValidationContext {
   userId: string;
-  userTier: 'free' | 'pro' | 'enterprise';
+  userTier: 'free' | 'pro' | 'enterprise' | 'super_admin';
   licenseValid: boolean;
   timestamp: number;
 }
@@ -103,9 +103,11 @@ export class SecureFeatureValidator {
       }
 
       // 4. Perform cryptographic tier enforcement
+      // Map super_admin to enterprise for tier validation
+      const tierForValidation = context.userTier === 'super_admin' ? 'enterprise' : context.userTier;
       const tierValidation = await this.tierEnforcer.validateTierAccess(
-        featureName, 
-        context.userTier, 
+        featureName,
+        tierForValidation,
         context.userId
       );
 
@@ -160,17 +162,18 @@ export class SecureFeatureValidator {
       return result;
 
     } catch (error) {
-      const result = { 
-        valid: false, 
-        enabled: false, 
-        error: error.message,
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      const result = {
+        valid: false,
+        enabled: false,
+        error: errorMessage,
         securityEvent: 'VALIDATION_ERROR'
       };
-      
+
       await this.logSecurityEvent('validation_error', {
         userId: context.userId,
         featureName,
-        error: error.message
+        error: errorMessage
       });
 
       return result;
@@ -238,10 +241,11 @@ export class SecureFeatureValidator {
       return { valid: true, enabled: flag.enabled };
 
     } catch (error) {
-      return { 
-        valid: false, 
-        enabled: false, 
-        error: `Flag validation failed: ${error.message}`,
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      return {
+        valid: false,
+        enabled: false,
+        error: `Flag validation failed: ${errorMessage}`,
         securityEvent: 'VALIDATION_ERROR'
       };
     }
@@ -282,7 +286,8 @@ export class SecureFeatureValidator {
       };
 
     } catch (error) {
-      throw new Error(`Secure flag generation failed: ${error.message}`);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      throw new Error(`Secure flag generation failed: ${errorMessage}`);
     }
   }
 
@@ -318,7 +323,9 @@ export class SecureFeatureValidator {
   private async generateDefaultFlag(featureName: string, context: ValidationContext): Promise<SecureFeatureFlag> {
     // Get tier requirements for feature
     const tierRequired = this.getFeatureTierRequirement(featureName);
-    const enabled = this.tierEnforcer.isTierSufficient(context.userTier, tierRequired);
+    // Map super_admin to enterprise for tier validation
+    const tierForValidation = context.userTier === 'super_admin' ? 'enterprise' : context.userTier;
+    const enabled = this.tierEnforcer.isTierSufficient(tierForValidation, tierRequired);
 
     return await this.generateSecureFlag(
       featureName,
@@ -374,7 +381,8 @@ export class SecureFeatureValidator {
         .digest('hex');
 
     } catch (error) {
-      throw new Error(`Signature generation failed: ${error.message}`);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      throw new Error(`Signature generation failed: ${errorMessage}`);
     }
   }
 

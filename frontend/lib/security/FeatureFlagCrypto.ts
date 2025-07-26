@@ -98,9 +98,10 @@ export class FeatureFlagCrypto {
       };
 
     } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       return {
         success: false,
-        error: `Encryption failed: ${error.message}`
+        error: `Encryption failed: ${errorMessage}`
       };
     }
   }
@@ -149,9 +150,10 @@ export class FeatureFlagCrypto {
       };
 
     } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       return {
         success: false,
-        error: `Decryption failed: ${error.message}`
+        error: `Decryption failed: ${errorMessage}`
       };
     }
   }
@@ -171,7 +173,8 @@ export class FeatureFlagCrypto {
       return Buffer.from(JSON.stringify(encryptionResult.encryptedFlag)).toString('base64');
 
     } catch (error) {
-      throw new Error(`Storage encryption failed: ${error.message}`);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      throw new Error(`Storage encryption failed: ${errorMessage}`);
     }
   }
 
@@ -192,7 +195,8 @@ export class FeatureFlagCrypto {
       return decryptionResult.data;
 
     } catch (error) {
-      throw new Error(`Storage decryption failed: ${error.message}`);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      throw new Error(`Storage decryption failed: ${errorMessage}`);
     }
   }
 
@@ -228,7 +232,8 @@ export class FeatureFlagCrypto {
       return Buffer.from(JSON.stringify(token)).toString('base64');
 
     } catch (error) {
-      throw new Error(`Token generation failed: ${error.message}`);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      throw new Error(`Token generation failed: ${errorMessage}`);
     }
   }
 
@@ -266,7 +271,8 @@ export class FeatureFlagCrypto {
       return { valid: true, data: decryptionResult.data };
 
     } catch (error) {
-      return { valid: false, error: `Token validation failed: ${error.message}` };
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      return { valid: false, error: `Token validation failed: ${errorMessage}` };
     }
   }
 
@@ -302,7 +308,8 @@ export class FeatureFlagCrypto {
     try {
       this.encryptionKey = await this.deriveEncryptionKey();
     } catch (error) {
-      throw new Error(`Encryption key initialization failed: ${error.message}`);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      throw new Error(`Encryption key initialization failed: ${errorMessage}`);
     }
   }
 
@@ -329,7 +336,8 @@ export class FeatureFlagCrypto {
       return crypto.pbkdf2Sync(machineData, salt, 100000, this.keyLength, 'sha256');
 
     } catch (error) {
-      throw new Error(`Key derivation failed: ${error.message}`);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      throw new Error(`Key derivation failed: ${errorMessage}`);
     }
   }
 

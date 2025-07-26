@@ -1,17 +1,19 @@
 /**
  * SuperAdminConfig - Build Flag Configuration for Super Admin Features
- * 
+ *
  * MISSION-CRITICAL: Controls super administrator feature availability
  * Uses build flags and runtime checks to enable/disable super admin access
- * 
+ *
  * Security Features:
  * - Build-time feature flags
  * - Runtime environment checks
  * - Development vs production controls
  * - Emergency access configuration
- * 
+ *
  * @see docs/implementation/security/super-admin-architecture.md
  */
+
+import React from 'react';
 
 /**
  * Super Admin Build Configuration

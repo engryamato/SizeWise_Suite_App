@@ -79,7 +79,7 @@ export const AppShellContainer: React.FC<AppShellProps> = ({
 
   // Local component state
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [userTier, setUserTier] = useState<'free' | 'pro' | 'enterprise'>('free');
+  const [userTier, setUserTier] = useState<'free' | 'pro' | 'enterprise' | 'super_admin'>('free');
 
   // Determine layout configuration
   const isMinimalLayout = minimal || MINIMAL_LAYOUT_ROUTES.some(route =>
@@ -174,7 +174,7 @@ export const AppShellContainer: React.FC<AppShellProps> = ({
     isToolPage,
 
     // User and authentication
-    user: user || currentUser,
+    user: (user || currentUser) || undefined,
     isAuthenticated,
     userTier,
 

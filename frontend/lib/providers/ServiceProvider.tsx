@@ -11,9 +11,10 @@
 
 'use client';
 
-import React, { createContext, useContext, useEffect, useState, useMemo, ReactNode } from 'react';
+import React, { createContext, useContext, useEffect, useState, useMemo, useCallback, ReactNode } from 'react';
 import { ServiceContainer, ServiceContextValue } from '../hooks/useServiceIntegration';
 import { createEnhancedOfflineServiceContainer } from '../services/EnhancedOfflineServiceContainer';
+import { logger } from '../monitoring/SentryLogger';
 
 // =============================================================================
 // Service Context
@@ -92,18 +93,9 @@ export function ServiceProvider({
   };
 
   /**
-   * Initialize services if not provided
-   */
-  useEffect(() => {
-    if (!services && !initialized) {
-      initializeServices();
-    }
-  }, [services, initialized, initializeServices]);
-
-  /**
    * Initialize service container based on mode
    */
-  async function initializeServices() {
+  const initializeServices = useCallback(async () => {
     setLoading(true);
     setError(null);
 
@@ -117,10 +109,26 @@ export function ServiceProvider({
       const errorMessage = err instanceof Error ? err.message : 'Failed to initialize services';
       setError(errorMessage);
       console.error('Service initialization failed:', err);
+
+      // Log service initialization error to Sentry
+      logger.error('Service initialization failed', err as Error, {
+        component: 'ServiceProvider',
+        mode,
+        config: defaultConfig
+      });
     } finally {
       setLoading(false);
     }
-  }
+  }, [mode, defaultConfig]);
+
+  /**
+   * Initialize services if not provided
+   */
+  useEffect(() => {
+    if (!services && !initialized) {
+      initializeServices();
+    }
+  }, [services, initialized, initializeServices]);
 
   /**
    * Create service container based on mode

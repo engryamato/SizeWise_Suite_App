@@ -11,6 +11,7 @@ import os
 import sys
 from dotenv import load_dotenv
 import structlog
+from sentry_config import init_sentry
 
 # Add parent directory to Python path for imports
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -42,7 +43,10 @@ logger = structlog.get_logger()
 def create_app(config_name='development'):
     """Application factory pattern for Flask app creation."""
     app = Flask(__name__)
-    
+
+    # Initialize Sentry monitoring
+    init_sentry(app, environment=config_name)
+
     # Enable CORS for frontend communication
     CORS(app, origins=['http://localhost:3000', 'http://127.0.0.1:3000'])
     

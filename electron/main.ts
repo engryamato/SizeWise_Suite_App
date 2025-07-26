@@ -12,6 +12,12 @@ import { app, BrowserWindow, ipcMain, dialog, shell, Menu } from 'electron';
 import { join } from 'path';
 import { readFileSync } from 'fs';
 import isDev from 'electron-is-dev';
+import {
+  initSentry,
+  captureDesktopPerformance,
+  captureWindowEvent,
+  captureElectronError
+} from './sentry.config';
 import { DatabaseManager } from '../backend/database/DatabaseManager';
 import { FeatureManager } from '../backend/features/FeatureManager';
 import { TierEnforcer } from '../backend/services/enforcement/TierEnforcer';
@@ -80,12 +86,19 @@ class ElectronApp {
    * Initialize Electron application
    */
   private initializeApp(): void {
+    // Initialize Sentry monitoring
+    initSentry();
+
     // Handle app ready event
     app.whenReady().then(async () => {
       try {
         await this.onAppReady();
       } catch (error) {
         console.error('Failed to initialize app:', error);
+        captureElectronError(error as Error, {
+          component: 'main',
+          operation: 'app_initialization'
+        });
         this.handleStartupError(error);
       }
     });

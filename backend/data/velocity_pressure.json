@@ -1,0 +1,303 @@
+{
+  "metadata": {
+    "version": "1.0.0",
+    "standard": "ASHRAE Fundamentals",
+    "description": "Pre-calculated velocity pressure lookup tables for HVAC calculations",
+    "units": {
+      "velocity": "FPM",
+      "velocity_pressure": "in wg",
+      "air_density": "lb/ft³",
+      "temperature": "°F"
+    },
+    "sources": [
+      "ASHRAE Fundamentals 2021",
+      "Velocity pressure formula: VP = (V/4005)² × (ρ/0.075)"
+    ],
+    "notes": [
+      "Tables calculated for standard air density (0.075 lb/ft³) at 70°F",
+      "Density corrections provided for different temperatures and altitudes",
+      "Linear interpolation recommended for intermediate values"
+    ]
+  },
+  "standard_conditions": {
+    "temperature": 70,
+    "air_density": 0.075,
+    "barometric_pressure": 29.92,
+    "altitude": 0
+  },
+  "velocity_pressure_table": {
+    "100": 0.0006,
+    "150": 0.0014,
+    "200": 0.0025,
+    "250": 0.0039,
+    "300": 0.0056,
+    "350": 0.0076,
+    "400": 0.0100,
+    "450": 0.0126,
+    "500": 0.0156,
+    "550": 0.0189,
+    "600": 0.0225,
+    "650": 0.0264,
+    "700": 0.0306,
+    "750": 0.0351,
+    "800": 0.0399,
+    "850": 0.0450,
+    "900": 0.0505,
+    "950": 0.0562,
+    "1000": 0.0623,
+    "1050": 0.0687,
+    "1100": 0.0754,
+    "1150": 0.0824,
+    "1200": 0.0898,
+    "1250": 0.0975,
+    "1300": 0.1055,
+    "1350": 0.1138,
+    "1400": 0.1224,
+    "1450": 0.1314,
+    "1500": 0.1406,
+    "1550": 0.1502,
+    "1600": 0.1601,
+    "1650": 0.1703,
+    "1700": 0.1808,
+    "1750": 0.1916,
+    "1800": 0.2027,
+    "1850": 0.2141,
+    "1900": 0.2258,
+    "1950": 0.2378,
+    "2000": 0.2501,
+    "2100": 0.2754,
+    "2200": 0.3022,
+    "2300": 0.3304,
+    "2400": 0.3600,
+    "2500": 0.3910,
+    "2600": 0.4233,
+    "2700": 0.4571,
+    "2800": 0.4922,
+    "2900": 0.5287,
+    "3000": 0.5665,
+    "3100": 0.6057,
+    "3200": 0.6462,
+    "3300": 0.6881,
+    "3400": 0.7313,
+    "3500": 0.7759,
+    "3600": 0.8218,
+    "3700": 0.8691,
+    "3800": 0.9177,
+    "3900": 0.9677,
+    "4000": 1.0190,
+    "4100": 1.0716,
+    "4200": 1.1256,
+    "4300": 1.1809,
+    "4400": 1.2375,
+    "4500": 1.2955,
+    "4600": 1.3548,
+    "4700": 1.4154,
+    "4800": 1.4774,
+    "4900": 1.5407,
+    "5000": 1.6053
+  },
+  "temperature_corrections": {
+    "32": {
+      "density": 0.0808,
+      "correction_factor": 1.077,
+      "notes": "Freezing point"
+    },
+    "40": {
+      "density": 0.0794,
+      "correction_factor": 1.059
+    },
+    "50": {
+      "density": 0.0778,
+      "correction_factor": 1.037
+    },
+    "60": {
+      "density": 0.0764,
+      "correction_factor": 1.019
+    },
+    "70": {
+      "density": 0.0750,
+      "correction_factor": 1.000,
+      "notes": "Standard condition"
+    },
+    "80": {
+      "density": 0.0735,
+      "correction_factor": 0.980
+    },
+    "90": {
+      "density": 0.0722,
+      "correction_factor": 0.963
+    },
+    "100": {
+      "density": 0.0709,
+      "correction_factor": 0.945
+    },
+    "110": {
+      "density": 0.0697,
+      "correction_factor": 0.929
+    },
+    "120": {
+      "density": 0.0685,
+      "correction_factor": 0.913
+    },
+    "130": {
+      "density": 0.0674,
+      "correction_factor": 0.899
+    },
+    "140": {
+      "density": 0.0662,
+      "correction_factor": 0.883
+    },
+    "150": {
+      "density": 0.0651,
+      "correction_factor": 0.868
+    },
+    "160": {
+      "density": 0.0641,
+      "correction_factor": 0.855
+    },
+    "170": {
+      "density": 0.0630,
+      "correction_factor": 0.840
+    },
+    "180": {
+      "density": 0.0620,
+      "correction_factor": 0.827
+    },
+    "190": {
+      "density": 0.0610,
+      "correction_factor": 0.813
+    },
+    "200": {
+      "density": 0.0601,
+      "correction_factor": 0.801,
+      "notes": "High temperature limit"
+    }
+  },
+  "altitude_corrections": {
+    "0": {
+      "pressure": 29.92,
+      "correction_factor": 1.000,
+      "notes": "Sea level"
+    },
+    "1000": {
+      "pressure": 28.86,
+      "correction_factor": 0.964
+    },
+    "2000": {
+      "pressure": 27.82,
+      "correction_factor": 0.930
+    },
+    "3000": {
+      "pressure": 26.81,
+      "correction_factor": 0.896
+    },
+    "4000": {
+      "pressure": 25.84,
+      "correction_factor": 0.864
+    },
+    "5000": {
+      "pressure": 24.89,
+      "correction_factor": 0.832,
+      "notes": "Denver, CO"
+    },
+    "6000": {
+      "pressure": 23.98,
+      "correction_factor": 0.801
+    },
+    "7000": {
+      "pressure": 23.09,
+      "correction_factor": 0.772
+    },
+    "8000": {
+      "pressure": 22.22,
+      "correction_factor": 0.743
+    },
+    "9000": {
+      "pressure": 21.38,
+      "correction_factor": 0.715
+    },
+    "10000": {
+      "pressure": 20.58,
+      "correction_factor": 0.688,
+      "notes": "High altitude limit"
+    }
+  },
+  "humidity_corrections": {
+    "0": {
+      "correction_factor": 1.000,
+      "notes": "Dry air"
+    },
+    "10": {
+      "correction_factor": 0.999
+    },
+    "20": {
+      "correction_factor": 0.998
+    },
+    "30": {
+      "correction_factor": 0.996
+    },
+    "40": {
+      "correction_factor": 0.995
+    },
+    "50": {
+      "correction_factor": 0.993,
+      "notes": "Standard condition"
+    },
+    "60": {
+      "correction_factor": 0.992
+    },
+    "70": {
+      "correction_factor": 0.990
+    },
+    "80": {
+      "correction_factor": 0.988
+    },
+    "90": {
+      "correction_factor": 0.986
+    },
+    "100": {
+      "correction_factor": 0.984,
+      "notes": "Saturated air"
+    }
+  },
+  "interpolation_methods": {
+    "linear": {
+      "description": "Linear interpolation between adjacent values",
+      "formula": "VP = VP1 + (V - V1) × (VP2 - VP1) / (V2 - V1)",
+      "accuracy": "±0.1% for velocities within table range"
+    },
+    "quadratic": {
+      "description": "Quadratic interpolation for higher accuracy",
+      "formula": "VP = a × V² + b × V + c",
+      "accuracy": "±0.01% for velocities within table range",
+      "notes": "Recommended for critical applications"
+    }
+  },
+  "calculation_examples": {
+    "standard_conditions": {
+      "velocity": 1500,
+      "temperature": 70,
+      "altitude": 0,
+      "humidity": 50,
+      "velocity_pressure": 0.1406,
+      "method": "Direct table lookup"
+    },
+    "corrected_conditions": {
+      "velocity": 1500,
+      "temperature": 100,
+      "altitude": 5000,
+      "humidity": 30,
+      "base_velocity_pressure": 0.1406,
+      "temperature_correction": 0.945,
+      "altitude_correction": 0.832,
+      "humidity_correction": 0.996,
+      "corrected_velocity_pressure": 0.1095,
+      "method": "VP_corrected = VP_base × temp_factor × alt_factor × humidity_factor"
+    }
+  },
+  "performance_notes": {
+    "lookup_optimization": "Use binary search for velocity lookup in large tables",
+    "caching": "Cache frequently used correction factors",
+    "precision": "Round final results to 4 decimal places for engineering accuracy"
+  }
+}

@@ -1,0 +1,349 @@
+{
+  "metadata": {
+    "version": "2.0.0",
+    "standard": "ASHRAE/SMACNA",
+    "description": "Enhanced duct material roughness factors and properties for HVAC calculations",
+    "units": {
+      "roughness": "feet",
+      "density": "lb/ft³",
+      "thermal_conductivity": "Btu/(hr·ft·°F)"
+    },
+    "sources": [
+      "ASHRAE Fundamentals 2021",
+      "SMACNA HVAC Duct Design Manual",
+      "Moody Diagram",
+      "Engineering Toolbox"
+    ],
+    "notes": [
+      "Roughness factors are absolute roughness values in feet",
+      "Aging factors account for material degradation over time",
+      "Surface condition modifiers adjust for installation quality"
+    ]
+  },
+  "materials": {
+    "galvanized_steel": {
+      "name": "Galvanized Steel",
+      "description": "Standard HVAC ductwork material",
+      "base_roughness": 0.0003,
+      "density": 490,
+      "thermal_conductivity": 26.0,
+      "aging_factors": {
+        "new": 1.0,
+        "5_years": 1.2,
+        "10_years": 1.5,
+        "15_years": 2.0,
+        "20_years": 2.5
+      },
+      "surface_conditions": {
+        "excellent": 0.8,
+        "good": 1.0,
+        "fair": 1.3,
+        "poor": 1.8
+      },
+      "applications": ["Supply ducts", "Return ducts", "Exhaust ducts"],
+      "temperature_range": {
+        "min": -40,
+        "max": 200,
+        "units": "°F"
+      },
+      "notes": "Most common HVAC ductwork material. Corrosion resistance depends on coating quality."
+    },
+    "aluminum": {
+      "name": "Aluminum",
+      "description": "Lightweight ductwork material",
+      "base_roughness": 0.0002,
+      "density": 169,
+      "thermal_conductivity": 136.0,
+      "aging_factors": {
+        "new": 1.0,
+        "5_years": 1.1,
+        "10_years": 1.3,
+        "15_years": 1.6,
+        "20_years": 2.0
+      },
+      "surface_conditions": {
+        "excellent": 0.8,
+        "good": 1.0,
+        "fair": 1.2,
+        "poor": 1.5
+      },
+      "applications": ["Lightweight ducts", "Coastal applications", "Clean rooms"],
+      "temperature_range": {
+        "min": -300,
+        "max": 400,
+        "units": "°F"
+      },
+      "notes": "Excellent corrosion resistance. Higher thermal conductivity than steel."
+    },
+    "stainless_steel": {
+      "name": "Stainless Steel",
+      "description": "Corrosion-resistant steel ductwork",
+      "base_roughness": 0.0002,
+      "density": 500,
+      "thermal_conductivity": 9.4,
+      "aging_factors": {
+        "new": 1.0,
+        "5_years": 1.05,
+        "10_years": 1.1,
+        "15_years": 1.2,
+        "20_years": 1.3
+      },
+      "surface_conditions": {
+        "excellent": 0.7,
+        "good": 1.0,
+        "fair": 1.2,
+        "poor": 1.4
+      },
+      "applications": ["Corrosive environments", "Food processing", "Pharmaceutical"],
+      "temperature_range": {
+        "min": -400,
+        "max": 1500,
+        "units": "°F"
+      },
+      "notes": "Excellent corrosion resistance. Minimal aging effects. Higher cost."
+    },
+    "pvc": {
+      "name": "PVC Plastic",
+      "description": "Plastic ductwork for special applications",
+      "base_roughness": 0.0001,
+      "density": 87,
+      "thermal_conductivity": 0.1,
+      "aging_factors": {
+        "new": 1.0,
+        "5_years": 1.3,
+        "10_years": 1.8,
+        "15_years": 2.5,
+        "20_years": 3.0
+      },
+      "surface_conditions": {
+        "excellent": 0.9,
+        "good": 1.0,
+        "fair": 1.4,
+        "poor": 2.0
+      },
+      "applications": ["Chemical exhaust", "Underground ducts", "Corrosive environments"],
+      "temperature_range": {
+        "min": 32,
+        "max": 140,
+        "units": "°F"
+      },
+      "notes": "Very smooth when new but ages poorly. Limited temperature range."
+    },
+    "fiberglass": {
+      "name": "Fiberglass Duct Board",
+      "description": "Insulated fiberglass ductwork",
+      "base_roughness": 0.0005,
+      "density": 150,
+      "thermal_conductivity": 0.25,
+      "aging_factors": {
+        "new": 1.0,
+        "5_years": 1.5,
+        "10_years": 2.2,
+        "15_years": 3.0,
+        "20_years": 4.0
+      },
+      "surface_conditions": {
+        "excellent": 1.0,
+        "good": 1.2,
+        "fair": 1.8,
+        "poor": 2.5
+      },
+      "applications": ["Low-pressure systems", "Insulated ducts", "Residential HVAC"],
+      "temperature_range": {
+        "min": -20,
+        "max": 250,
+        "units": "°F"
+      },
+      "notes": "Built-in insulation. Surface can degrade significantly over time."
+    },
+    "flexible_duct": {
+      "name": "Flexible Duct",
+      "description": "Flexible ductwork for short runs",
+      "base_roughness": 0.003,
+      "density": 50,
+      "thermal_conductivity": 0.2,
+      "aging_factors": {
+        "new": 1.0,
+        "5_years": 1.8,
+        "10_years": 2.5,
+        "15_years": 3.5,
+        "20_years": 5.0
+      },
+      "surface_conditions": {
+        "excellent": 1.0,
+        "good": 1.3,
+        "fair": 2.0,
+        "poor": 3.0
+      },
+      "applications": ["Final connections", "Residential branch ducts", "Temporary installations"],
+      "temperature_range": {
+        "min": -20,
+        "max": 180,
+        "units": "°F"
+      },
+      "notes": "High pressure loss. Should be kept as short as possible and fully extended."
+    },
+    "concrete": {
+      "name": "Concrete",
+      "description": "Cast concrete ducts",
+      "base_roughness": 0.003,
+      "density": 2400,
+      "thermal_conductivity": 0.8,
+      "aging_factors": {
+        "new": 1.0,
+        "5_years": 1.2,
+        "10_years": 1.5,
+        "15_years": 2.0,
+        "20_years": 2.5
+      },
+      "surface_conditions": {
+        "excellent": 0.8,
+        "good": 1.0,
+        "fair": 1.5,
+        "poor": 2.5
+      },
+      "applications": ["Underground ducts", "Large commercial systems", "Tunnels"],
+      "temperature_range": {
+        "min": -40,
+        "max": 200,
+        "units": "°F"
+      },
+      "notes": "Very durable but rough surface. Finish quality critical for performance."
+    },
+    "brick": {
+      "name": "Brick Masonry",
+      "description": "Brick-lined ducts",
+      "base_roughness": 0.01,
+      "density": 1920,
+      "thermal_conductivity": 0.4,
+      "aging_factors": {
+        "new": 1.0,
+        "5_years": 1.3,
+        "10_years": 1.8,
+        "15_years": 2.5,
+        "20_years": 3.0
+      },
+      "surface_conditions": {
+        "excellent": 0.8,
+        "good": 1.0,
+        "fair": 1.5,
+        "poor": 2.0
+      },
+      "applications": ["Industrial exhaust", "High-temperature applications", "Chimneys"],
+      "temperature_range": {
+        "min": -40,
+        "max": 1000,
+        "units": "°F"
+      },
+      "notes": "Very rough surface. Mortar joints significantly affect roughness."
+    },
+    "spiral_steel": {
+      "name": "Spiral Steel",
+      "description": "Spiral-seam steel ductwork",
+      "base_roughness": 0.0004,
+      "density": 490,
+      "thermal_conductivity": 26.0,
+      "aging_factors": {
+        "new": 1.0,
+        "5_years": 1.3,
+        "10_years": 1.6,
+        "15_years": 2.0,
+        "20_years": 2.5
+      },
+      "surface_conditions": {
+        "excellent": 0.9,
+        "good": 1.0,
+        "fair": 1.3,
+        "poor": 1.8
+      },
+      "applications": ["Round ducts", "Industrial HVAC", "Large diameter ducts"],
+      "temperature_range": {
+        "min": -40,
+        "max": 200,
+        "units": "°F"
+      },
+      "notes": "Spiral seam creates slightly higher roughness than flat sheet construction."
+    },
+    "phenolic_foam": {
+      "name": "Phenolic Foam",
+      "description": "Pre-insulated phenolic foam ductwork",
+      "base_roughness": 0.0003,
+      "density": 50,
+      "thermal_conductivity": 0.018,
+      "aging_factors": {
+        "new": 1.0,
+        "5_years": 1.2,
+        "10_years": 1.5,
+        "15_years": 2.0,
+        "20_years": 2.8
+      },
+      "surface_conditions": {
+        "excellent": 0.9,
+        "good": 1.0,
+        "fair": 1.4,
+        "poor": 2.0
+      },
+      "applications": ["Clean rooms", "Pharmaceutical", "Food processing"],
+      "temperature_range": {
+        "min": -40,
+        "max": 250,
+        "units": "°F"
+      },
+      "notes": "Excellent insulation properties. Smooth interior surface when new."
+    }
+  },
+  "calculation_methods": {
+    "effective_roughness": {
+      "formula": "ε_eff = ε_base × aging_factor × surface_condition_factor",
+      "description": "Calculate effective roughness considering aging and surface condition",
+      "variables": {
+        "ε_base": "Base material roughness (feet)",
+        "aging_factor": "Factor based on duct age",
+        "surface_condition_factor": "Factor based on installation quality"
+      }
+    },
+    "relative_roughness": {
+      "formula": "ε/D = ε_eff / diameter",
+      "description": "Calculate relative roughness for friction factor calculations",
+      "variables": {
+        "ε_eff": "Effective roughness (feet)",
+        "diameter": "Duct diameter (feet)"
+      }
+    }
+  },
+  "selection_guidelines": {
+    "supply_ducts": {
+      "recommended": ["galvanized_steel", "aluminum", "stainless_steel"],
+      "avoid": ["flexible_duct"],
+      "notes": "Prioritize smooth surfaces for energy efficiency"
+    },
+    "return_ducts": {
+      "recommended": ["galvanized_steel", "fiberglass", "aluminum"],
+      "acceptable": ["flexible_duct"],
+      "notes": "Lower pressure requirements allow more material options"
+    },
+    "exhaust_ducts": {
+      "recommended": ["galvanized_steel", "stainless_steel", "pvc"],
+      "special_conditions": {
+        "corrosive": ["stainless_steel", "pvc"],
+        "high_temperature": ["stainless_steel", "brick"]
+      },
+      "notes": "Material selection depends on exhaust characteristics"
+    }
+  },
+  "maintenance_factors": {
+    "cleaning_frequency": {
+      "galvanized_steel": "5-10 years",
+      "aluminum": "5-10 years",
+      "stainless_steel": "10-15 years",
+      "pvc": "3-5 years",
+      "fiberglass": "Not recommended",
+      "flexible_duct": "Replace rather than clean"
+    },
+    "inspection_intervals": {
+      "standard": "Annual visual inspection",
+      "critical_applications": "Semi-annual inspection",
+      "corrosive_environments": "Quarterly inspection"
+    }
+  }
+}

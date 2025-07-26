@@ -1,0 +1,305 @@
+{
+  "metadata": {
+    "version": "1.0.0",
+    "standard": "ASHRAE Fundamentals",
+    "description": "Comprehensive air properties database for HVAC calculations",
+    "units": {
+      "temperature": "°F",
+      "pressure": "in Hg",
+      "altitude": "ft",
+      "density": "lb/ft³",
+      "viscosity": "lb/(ft·s)",
+      "specific_heat": "Btu/(lb·°F)",
+      "thermal_conductivity": "Btu/(hr·ft·°F)",
+      "humidity": "% RH"
+    },
+    "sources": [
+      "ASHRAE Fundamentals 2021",
+      "NIST Webbook",
+      "Psychrometric calculations"
+    ],
+    "notes": [
+      "Properties calculated for standard atmospheric pressure (29.92 in Hg) at sea level unless otherwise specified",
+      "Humidity effects calculated using psychrometric relationships",
+      "Interpolation recommended for intermediate values"
+    ]
+  },
+  "standard_conditions": {
+    "temperature": 70,
+    "pressure": 29.92,
+    "altitude": 0,
+    "humidity": 50,
+    "density": 0.075,
+    "viscosity": 1.204e-5,
+    "specific_heat": 0.240,
+    "thermal_conductivity": 0.0148
+  },
+  "temperature_properties": {
+    "32": {
+      "density": 0.0808,
+      "viscosity": 1.110e-5,
+      "specific_heat": 0.240,
+      "thermal_conductivity": 0.0140,
+      "notes": "Freezing point of water"
+    },
+    "40": {
+      "density": 0.0794,
+      "viscosity": 1.135e-5,
+      "specific_heat": 0.240,
+      "thermal_conductivity": 0.0142
+    },
+    "50": {
+      "density": 0.0778,
+      "viscosity": 1.165e-5,
+      "specific_heat": 0.240,
+      "thermal_conductivity": 0.0144
+    },
+    "60": {
+      "density": 0.0764,
+      "viscosity": 1.190e-5,
+      "specific_heat": 0.240,
+      "thermal_conductivity": 0.0146
+    },
+    "70": {
+      "density": 0.0750,
+      "viscosity": 1.204e-5,
+      "specific_heat": 0.240,
+      "thermal_conductivity": 0.0148,
+      "notes": "Standard design condition"
+    },
+    "80": {
+      "density": 0.0735,
+      "viscosity": 1.241e-5,
+      "specific_heat": 0.240,
+      "thermal_conductivity": 0.0150
+    },
+    "90": {
+      "density": 0.0722,
+      "viscosity": 1.265e-5,
+      "specific_heat": 0.240,
+      "thermal_conductivity": 0.0152
+    },
+    "100": {
+      "density": 0.0709,
+      "viscosity": 1.289e-5,
+      "specific_heat": 0.240,
+      "thermal_conductivity": 0.0154
+    },
+    "110": {
+      "density": 0.0697,
+      "viscosity": 1.313e-5,
+      "specific_heat": 0.241,
+      "thermal_conductivity": 0.0156
+    },
+    "120": {
+      "density": 0.0685,
+      "viscosity": 1.337e-5,
+      "specific_heat": 0.241,
+      "thermal_conductivity": 0.0158
+    },
+    "130": {
+      "density": 0.0674,
+      "viscosity": 1.361e-5,
+      "specific_heat": 0.241,
+      "thermal_conductivity": 0.0160
+    },
+    "140": {
+      "density": 0.0662,
+      "viscosity": 1.385e-5,
+      "specific_heat": 0.241,
+      "thermal_conductivity": 0.0162
+    },
+    "150": {
+      "density": 0.0651,
+      "viscosity": 1.409e-5,
+      "specific_heat": 0.242,
+      "thermal_conductivity": 0.0164
+    },
+    "160": {
+      "density": 0.0641,
+      "viscosity": 1.433e-5,
+      "specific_heat": 0.242,
+      "thermal_conductivity": 0.0166
+    },
+    "170": {
+      "density": 0.0630,
+      "viscosity": 1.457e-5,
+      "specific_heat": 0.242,
+      "thermal_conductivity": 0.0168
+    },
+    "180": {
+      "density": 0.0620,
+      "viscosity": 1.481e-5,
+      "specific_heat": 0.243,
+      "thermal_conductivity": 0.0170
+    },
+    "190": {
+      "density": 0.0610,
+      "viscosity": 1.505e-5,
+      "specific_heat": 0.243,
+      "thermal_conductivity": 0.0172
+    },
+    "200": {
+      "density": 0.0601,
+      "viscosity": 1.529e-5,
+      "specific_heat": 0.244,
+      "thermal_conductivity": 0.0174,
+      "notes": "High temperature limit for standard HVAC applications"
+    }
+  },
+  "altitude_corrections": {
+    "0": {
+      "pressure": 29.92,
+      "density_factor": 1.000,
+      "notes": "Sea level"
+    },
+    "1000": {
+      "pressure": 28.86,
+      "density_factor": 0.964
+    },
+    "2000": {
+      "pressure": 27.82,
+      "density_factor": 0.930
+    },
+    "3000": {
+      "pressure": 26.81,
+      "density_factor": 0.896
+    },
+    "4000": {
+      "pressure": 25.84,
+      "density_factor": 0.864
+    },
+    "5000": {
+      "pressure": 24.89,
+      "density_factor": 0.832,
+      "notes": "Denver, CO approximate altitude"
+    },
+    "6000": {
+      "pressure": 23.98,
+      "density_factor": 0.801
+    },
+    "7000": {
+      "pressure": 23.09,
+      "density_factor": 0.772
+    },
+    "8000": {
+      "pressure": 22.22,
+      "density_factor": 0.743
+    },
+    "9000": {
+      "pressure": 21.38,
+      "density_factor": 0.715
+    },
+    "10000": {
+      "pressure": 20.58,
+      "density_factor": 0.688,
+      "notes": "High altitude limit for standard HVAC applications"
+    }
+  },
+  "humidity_effects": {
+    "0": {
+      "density_factor": 1.000,
+      "specific_heat_factor": 1.000,
+      "notes": "Dry air"
+    },
+    "10": {
+      "density_factor": 0.999,
+      "specific_heat_factor": 1.002
+    },
+    "20": {
+      "density_factor": 0.998,
+      "specific_heat_factor": 1.004
+    },
+    "30": {
+      "density_factor": 0.996,
+      "specific_heat_factor": 1.007
+    },
+    "40": {
+      "density_factor": 0.995,
+      "specific_heat_factor": 1.009
+    },
+    "50": {
+      "density_factor": 0.993,
+      "specific_heat_factor": 1.012,
+      "notes": "Standard design condition"
+    },
+    "60": {
+      "density_factor": 0.992,
+      "specific_heat_factor": 1.014
+    },
+    "70": {
+      "density_factor": 0.990,
+      "specific_heat_factor": 1.017
+    },
+    "80": {
+      "density_factor": 0.988,
+      "specific_heat_factor": 1.020
+    },
+    "90": {
+      "density_factor": 0.986,
+      "specific_heat_factor": 1.023
+    },
+    "100": {
+      "density_factor": 0.984,
+      "specific_heat_factor": 1.026,
+      "notes": "Saturated air"
+    }
+  },
+  "calculation_methods": {
+    "density_correction": {
+      "formula": "ρ_corrected = ρ_base × (T_base/T_actual) × (P_actual/P_base) × humidity_factor",
+      "description": "Corrects density for temperature, pressure, and humidity",
+      "variables": {
+        "ρ_base": "Base density at standard conditions (lb/ft³)",
+        "T_base": "Base temperature (°R = °F + 459.67)",
+        "T_actual": "Actual temperature (°R)",
+        "P_base": "Base pressure (in Hg)",
+        "P_actual": "Actual pressure (in Hg)",
+        "humidity_factor": "Humidity correction factor"
+      }
+    },
+    "viscosity_correction": {
+      "formula": "μ_corrected = μ_base × (T_actual/T_base)^0.7",
+      "description": "Corrects viscosity for temperature using Sutherland's law approximation",
+      "variables": {
+        "μ_base": "Base viscosity at standard conditions (lb/(ft·s))",
+        "T_base": "Base temperature (°R)",
+        "T_actual": "Actual temperature (°R)"
+      }
+    },
+    "interpolation": {
+      "method": "linear",
+      "description": "Linear interpolation recommended for intermediate values",
+      "formula": "y = y1 + (x - x1) × (y2 - y1) / (x2 - x1)"
+    }
+  },
+  "validation_ranges": {
+    "temperature": {
+      "min": 32,
+      "max": 200,
+      "units": "°F",
+      "warnings": {
+        "below_40": "Low temperature may cause condensation issues",
+        "above_180": "High temperature requires special material considerations"
+      }
+    },
+    "altitude": {
+      "min": 0,
+      "max": 10000,
+      "units": "ft",
+      "warnings": {
+        "above_5000": "High altitude requires density corrections",
+        "above_8000": "Very high altitude - verify equipment ratings"
+      }
+    },
+    "humidity": {
+      "min": 0,
+      "max": 100,
+      "units": "% RH",
+      "warnings": {
+        "above_80": "High humidity may cause condensation in ducts",
+        "below_20": "Very dry air may cause static electricity issues"
+      }
+    }
+  }
+}

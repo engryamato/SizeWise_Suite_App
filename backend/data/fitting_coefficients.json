@@ -1,0 +1,244 @@
+{
+  "metadata": {
+    "version": "1.0.0",
+    "standard": "ASHRAE/SMACNA",
+    "description": "Fitting loss coefficients (K-factors) for HVAC ductwork components",
+    "units": "dimensionless",
+    "lastUpdated": "2025-07-26",
+    "sources": [
+      "ASHRAE Fundamentals 2021",
+      "SMACNA HVAC Duct Design Manual",
+      "AMCA Publication 201"
+    ]
+  },
+  "round_fittings": {
+    "elbows": {
+      "90deg_round_smooth": {
+        "description": "90° smooth radius elbow",
+        "radius_to_diameter_ratios": {
+          "0.5": { "K": 0.60, "notes": "Sharp turn" },
+          "0.75": { "K": 0.35, "notes": "Standard turn" },
+          "1.0": { "K": 0.25, "notes": "Medium radius" },
+          "1.5": { "K": 0.15, "notes": "Long radius - recommended" },
+          "2.0": { "K": 0.10, "notes": "Very long radius" }
+        }
+      },
+      "90deg_round_mitered": {
+        "description": "90° mitered elbow",
+        "configurations": {
+          "single_miter": { "K": 1.20, "notes": "Single 90° miter" },
+          "double_miter": { "K": 0.80, "notes": "Two 45° miters" },
+          "triple_miter": { "K": 0.60, "notes": "Three 30° miters" }
+        }
+      },
+      "45deg_round_smooth": {
+        "description": "45° smooth radius elbow",
+        "radius_to_diameter_ratios": {
+          "0.5": { "K": 0.25, "notes": "Sharp turn" },
+          "0.75": { "K": 0.18, "notes": "Standard turn" },
+          "1.0": { "K": 0.15, "notes": "Medium radius" },
+          "1.5": { "K": 0.10, "notes": "Long radius - recommended" }
+        }
+      },
+      "30deg_round_smooth": {
+        "description": "30° smooth radius elbow",
+        "radius_to_diameter_ratios": {
+          "0.5": { "K": 0.15, "notes": "Sharp turn" },
+          "1.0": { "K": 0.08, "notes": "Medium radius" },
+          "1.5": { "K": 0.06, "notes": "Long radius - recommended" }
+        }
+      }
+    },
+    "tees": {
+      "tee_round_branch_90deg": {
+        "description": "Round tee with 90° branch",
+        "flow_patterns": {
+          "straight_through": {
+            "area_ratios": {
+              "0.25": { "K": 0.15, "notes": "Small branch, 25% area" },
+              "0.50": { "K": 0.30, "notes": "Medium branch, 50% area" },
+              "0.75": { "K": 0.50, "notes": "Large branch, 75% area" },
+              "1.00": { "K": 0.75, "notes": "Equal area branch" }
+            }
+          },
+          "branch_flow": {
+            "area_ratios": {
+              "0.25": { "K": 1.50, "notes": "Small branch, 25% area" },
+              "0.50": { "K": 1.00, "notes": "Medium branch, 50% area" },
+              "0.75": { "K": 0.75, "notes": "Large branch, 75% area" },
+              "1.00": { "K": 0.60, "notes": "Equal area branch" }
+            }
+          }
+        }
+      },
+      "tee_round_branch_45deg": {
+        "description": "Round tee with 45° branch",
+        "flow_patterns": {
+          "straight_through": {
+            "area_ratios": {
+              "0.25": { "K": 0.10, "notes": "Small branch, 25% area" },
+              "0.50": { "K": 0.20, "notes": "Medium branch, 50% area" },
+              "0.75": { "K": 0.35, "notes": "Large branch, 75% area" }
+            }
+          },
+          "branch_flow": {
+            "area_ratios": {
+              "0.25": { "K": 1.20, "notes": "Small branch, 25% area" },
+              "0.50": { "K": 0.80, "notes": "Medium branch, 50% area" },
+              "0.75": { "K": 0.60, "notes": "Large branch, 75% area" }
+            }
+          }
+        }
+      }
+    },
+    "transitions": {
+      "round_to_round_gradual": {
+        "description": "Gradual round-to-round transition",
+        "length_to_diameter_ratios": {
+          "2.0": { "K": 0.05, "notes": "Very gradual - recommended" },
+          "1.5": { "K": 0.08, "notes": "Gradual" },
+          "1.0": { "K": 0.15, "notes": "Standard" },
+          "0.5": { "K": 0.30, "notes": "Abrupt" }
+        }
+      },
+      "round_to_round_sudden": {
+        "description": "Sudden round-to-round transition",
+        "area_ratios": {
+          "expansion": {
+            "1.5": { "K": 0.25, "notes": "50% area increase" },
+            "2.0": { "K": 0.56, "notes": "100% area increase" },
+            "3.0": { "K": 0.81, "notes": "200% area increase" }
+          },
+          "contraction": {
+            "0.67": { "K": 0.08, "notes": "33% area reduction" },
+            "0.50": { "K": 0.25, "notes": "50% area reduction" },
+            "0.33": { "K": 0.42, "notes": "67% area reduction" }
+          }
+        }
+      }
+    },
+    "entries_exits": {
+      "duct_entrance": {
+        "description": "Duct entrance from plenum or room",
+        "configurations": {
+          "sharp_edge": { "K": 0.50, "notes": "Sharp-edged entrance" },
+          "rounded_edge": { "K": 0.25, "notes": "Rounded entrance (r/D = 0.1)" },
+          "bell_mouth": { "K": 0.05, "notes": "Bell mouth entrance (r/D = 0.2)" }
+        }
+      },
+      "duct_exit": {
+        "description": "Duct exit to plenum or room",
+        "configurations": {
+          "sharp_edge": { "K": 1.00, "notes": "Sharp-edged exit" },
+          "gradual_expansion": { "K": 0.50, "notes": "Gradual expansion exit" }
+        }
+      }
+    }
+  },
+  "rectangular_fittings": {
+    "elbows": {
+      "90deg_rect_smooth": {
+        "description": "90° smooth rectangular elbow",
+        "aspect_ratios": {
+          "1.0": {
+            "radius_ratios": {
+              "0.5": { "K": 0.65, "notes": "Square duct, sharp turn" },
+              "1.0": { "K": 0.30, "notes": "Square duct, medium radius" },
+              "1.5": { "K": 0.20, "notes": "Square duct, long radius" }
+            }
+          },
+          "2.0": {
+            "radius_ratios": {
+              "0.5": { "K": 0.75, "notes": "2:1 aspect, sharp turn" },
+              "1.0": { "K": 0.35, "notes": "2:1 aspect, medium radius" },
+              "1.5": { "K": 0.25, "notes": "2:1 aspect, long radius" }
+            }
+          },
+          "4.0": {
+            "radius_ratios": {
+              "0.5": { "K": 0.90, "notes": "4:1 aspect, sharp turn" },
+              "1.0": { "K": 0.45, "notes": "4:1 aspect, medium radius" },
+              "1.5": { "K": 0.30, "notes": "4:1 aspect, long radius" }
+            }
+          }
+        }
+      },
+      "90deg_rect_mitered": {
+        "description": "90° mitered rectangular elbow",
+        "configurations": {
+          "single_miter": { "K": 1.30, "notes": "Single 90° miter" },
+          "double_miter": { "K": 0.90, "notes": "Two 45° miters" },
+          "triple_miter": { "K": 0.70, "notes": "Three 30° miters" }
+        }
+      }
+    },
+    "transitions": {
+      "rect_to_rect_gradual": {
+        "description": "Gradual rectangular-to-rectangular transition",
+        "length_to_width_ratios": {
+          "2.0": { "K": 0.08, "notes": "Very gradual - recommended" },
+          "1.5": { "K": 0.12, "notes": "Gradual" },
+          "1.0": { "K": 0.20, "notes": "Standard" },
+          "0.5": { "K": 0.40, "notes": "Abrupt" }
+        }
+      },
+      "rect_to_round": {
+        "description": "Rectangular to round transition",
+        "length_to_diameter_ratios": {
+          "2.0": { "K": 0.10, "notes": "Very gradual - recommended" },
+          "1.5": { "K": 0.15, "notes": "Gradual" },
+          "1.0": { "K": 0.25, "notes": "Standard" },
+          "0.5": { "K": 0.50, "notes": "Abrupt" }
+        }
+      }
+    }
+  },
+  "special_fittings": {
+    "dampers": {
+      "butterfly_damper": {
+        "description": "Butterfly damper",
+        "opening_angles": {
+          "0": { "K": 999.0, "notes": "Fully closed" },
+          "10": { "K": 52.0, "notes": "10° open" },
+          "20": { "K": 12.0, "notes": "20° open" },
+          "30": { "K": 5.2, "notes": "30° open" },
+          "45": { "K": 1.8, "notes": "45° open" },
+          "60": { "K": 0.9, "notes": "60° open" },
+          "90": { "K": 0.2, "notes": "Fully open" }
+        }
+      },
+      "parallel_blade_damper": {
+        "description": "Parallel blade damper",
+        "opening_angles": {
+          "0": { "K": 999.0, "notes": "Fully closed" },
+          "10": { "K": 36.0, "notes": "10° open" },
+          "20": { "K": 8.8, "notes": "20° open" },
+          "30": { "K": 3.8, "notes": "30° open" },
+          "45": { "K": 1.4, "notes": "45° open" },
+          "60": { "K": 0.7, "notes": "60° open" },
+          "90": { "K": 0.15, "notes": "Fully open" }
+        }
+      }
+    },
+    "diffusers": {
+      "supply_diffuser_ceiling": {
+        "description": "Ceiling supply diffuser",
+        "types": {
+          "square_perforated": { "K": 2.5, "notes": "Square perforated face" },
+          "round_perforated": { "K": 2.0, "notes": "Round perforated face" },
+          "linear_slot": { "K": 1.5, "notes": "Linear slot diffuser" },
+          "directional": { "K": 3.0, "notes": "Directional throw diffuser" }
+        }
+      },
+      "return_grille": {
+        "description": "Return air grille",
+        "types": {
+          "fixed_blade": { "K": 1.3, "notes": "Fixed blade grille" },
+          "adjustable_blade": { "K": 1.8, "notes": "Adjustable blade grille" },
+          "perforated": { "K": 1.0, "notes": "Perforated face grille" },
+          "egg_crate": { "K": 2.2, "notes": "Egg crate grille" }
+        }
+      }
+    }
+  }
+}

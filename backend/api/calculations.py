@@ -15,6 +15,17 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspa
 # Import the core calculator directly instead of the module wrapper
 from core.calculations.air_duct_calculator import AirDuctCalculator
 
+# Import advanced calculators for Phase 4: Cross-Platform Implementation
+from core.calculations.velocity_pressure_calculator import (
+    VelocityPressureCalculator, VelocityPressureMethod, VelocityPressureInput,
+    DuctGeometry, ValidationLevel
+)
+from core.calculations.enhanced_friction_calculator import (
+    EnhancedFrictionCalculator, FrictionMethod, FrictionCalculationInput,
+    MaterialAge, SurfaceCondition
+)
+from core.calculations.air_properties_calculator import AirConditions
+
 logger = structlog.get_logger()
 
 calculations_bp = Blueprint('calculations', __name__)
@@ -214,6 +225,340 @@ def calculate_grease_duct():
     except Exception as e:
         logger.error("Grease duct calculation failed", error=str(e))
         return jsonify({'error': 'Calculation failed', 'message': str(e)}), 500
+
+
+@calculations_bp.route('/velocity-pressure', methods=['POST'])
+def calculate_velocity_pressure():
+    """
+    Calculate velocity pressure using advanced methods.
+
+    Expected input:
+    {
+        "velocity": float,  # FPM
+        "method": str,  # optional, calculation method
+        "air_conditions": {  # optional
+            "temperature": float,  # °F
+            "altitude": float,  # feet
+            "humidity": float  # %
+        },
+        "validation_level": str  # optional, "none", "basic", "standard", "strict"
+    }
+    """
+    try:
+        data = request.get_json()
+
+        if not data or 'velocity' not in data:
+            return jsonify({'error': 'Velocity is required'}), 400
+
+        # Parse method
+        method_str = data.get('method', 'enhanced_formula')
+        try:
+            method = VelocityPressureMethod(method_str)
+        except ValueError:
+            method = VelocityPressureMethod.ENHANCED_FORMULA
+
+        # Parse air conditions
+        air_conditions = None
+        if 'air_conditions' in data:
+            ac_data = data['air_conditions']
+            air_conditions = AirConditions(
+                temperature=ac_data.get('temperature', 70.0),
+                altitude=ac_data.get('altitude', 0.0),
+                humidity=ac_data.get('humidity', 50.0),
+                pressure=ac_data.get('pressure')
+            )
+
+        # Parse validation level
+        validation_str = data.get('validation_level', 'standard')
+        try:
+            validation_level = ValidationLevel(validation_str)
+        except ValueError:
+            validation_level = ValidationLevel.STANDARD
+
+        # Create input parameters
+        input_params = VelocityPressureInput(
+            velocity=data['velocity'],
+            method=method,
+            air_conditions=air_conditions,
+            air_density=data.get('air_density'),
+            turbulence_correction=data.get('turbulence_correction', False),
+            compressibility_correction=data.get('compressibility_correction', False),
+            validation_level=validation_level
+        )
+
+        # Calculate velocity pressure
+        result = VelocityPressureCalculator.calculate_velocity_pressure(input_params)
+
+        # Format response
+        response = {
+            'input': data,
+            'results': {
+                'velocity_pressure': result.velocity_pressure,
+                'method': result.method.value,
+                'velocity': result.velocity,
+                'air_density': result.air_density,
+                'density_ratio': result.density_ratio,
+                'accuracy': result.accuracy,
+                'corrections': {
+                    'temperature': result.corrections.temperature,
+                    'pressure': result.corrections.pressure,
+                    'altitude': result.corrections.altitude,
+                    'humidity': result.corrections.humidity,
+                    'turbulence': result.corrections.turbulence,
+                    'compressibility': result.corrections.compressibility,
+                    'combined': result.corrections.combined
+                },
+                'warnings': result.warnings,
+                'recommendations': result.recommendations
+            },
+            'metadata': {
+                'calculation_time': 'instant',
+                'version': VelocityPressureCalculator.VERSION,
+                'standard_reference': result.calculation_details.standard_reference if result.calculation_details else None
+            }
+        }
+
+        if result.uncertainty_bounds:
+            response['results']['uncertainty_bounds'] = {
+                'lower': result.uncertainty_bounds.lower,
+                'upper': result.uncertainty_bounds.upper,
+                'confidence_level': result.uncertainty_bounds.confidence_level
+            }
+
+        logger.info("Velocity pressure calculation completed",
+                   velocity=data['velocity'], method=method.value)
+        return jsonify(response)
+
+    except Exception as e:
+        logger.error("Velocity pressure calculation failed", error=str(e))
+        return jsonify({'error': 'Calculation failed', 'message': str(e)}), 500
+
+
+@calculations_bp.route('/velocity-pressure/inverse', methods=['POST'])
+def calculate_velocity_from_pressure():
+    """
+    Calculate velocity from velocity pressure (inverse calculation).
+
+    Expected input:
+    {
+        "velocity_pressure": float,  # inches w.g.
+        "air_conditions": {  # optional
+            "temperature": float,  # °F
+            "altitude": float,  # feet
+            "humidity": float  # %
+        }
+    }
+    """
+    try:
+        data = request.get_json()
+
+        if not data or 'velocity_pressure' not in data:
+            return jsonify({'error': 'Velocity pressure is required'}), 400
+
+        # Parse air conditions
+        air_conditions = None
+        if 'air_conditions' in data:
+            ac_data = data['air_conditions']
+            air_conditions = AirConditions(
+                temperature=ac_data.get('temperature', 70.0),
+                altitude=ac_data.get('altitude', 0.0),
+                humidity=ac_data.get('humidity', 50.0),
+                pressure=ac_data.get('pressure')
+            )
+
+        # Calculate velocity
+        result = VelocityPressureCalculator.calculate_velocity_from_pressure(
+            data['velocity_pressure'],
+            air_conditions,
+            data.get('air_density')
+        )
+
+        # Format response
+        response = {
+            'input': data,
+            'results': {
+                'velocity': result['velocity'],
+                'accuracy': result['accuracy'],
+                'warnings': result['warnings']
+            },
+            'metadata': {
+                'calculation_time': 'instant',
+                'version': VelocityPressureCalculator.VERSION
+            }
+        }
+
+        logger.info("Inverse velocity pressure calculation completed",
+                   velocity_pressure=data['velocity_pressure'])
+        return jsonify(response)
+
+    except Exception as e:
+        logger.error("Inverse velocity pressure calculation failed", error=str(e))
+        return jsonify({'error': 'Calculation failed', 'message': str(e)}), 500
+
+
+@calculations_bp.route('/enhanced-friction', methods=['POST'])
+def calculate_enhanced_friction():
+    """
+    Calculate friction loss using enhanced methods with material aging and environmental corrections.
+
+    Expected input:
+    {
+        "velocity": float,  # FPM
+        "hydraulic_diameter": float,  # inches
+        "length": float,  # feet
+        "material": str,  # material type
+        "method": str,  # optional, calculation method
+        "material_age": str,  # optional, aging condition
+        "surface_condition": str,  # optional, surface condition
+        "air_conditions": {  # optional
+            "temperature": float,  # °F
+            "altitude": float,  # feet
+            "humidity": float  # %
+        },
+        "shape_factor": float  # optional, for rectangular ducts
+    }
+    """
+    try:
+        data = request.get_json()
+
+        # Validate required fields
+        required_fields = ['velocity', 'hydraulic_diameter', 'length', 'material']
+        for field in required_fields:
+            if field not in data:
+                return jsonify({'error': f'{field} is required'}), 400
+
+        # Parse method
+        method_str = data.get('method', 'enhanced_darcy')
+        try:
+            method = FrictionMethod(method_str)
+        except ValueError:
+            method = FrictionMethod.ENHANCED_DARCY
+
+        # Parse material age
+        age_str = data.get('material_age', 'good')
+        try:
+            material_age = MaterialAge(age_str)
+        except ValueError:
+            material_age = MaterialAge.GOOD
+
+        # Parse surface condition
+        surface_str = data.get('surface_condition', 'good')
+        try:
+            surface_condition = SurfaceCondition(surface_str)
+        except ValueError:
+            surface_condition = SurfaceCondition.GOOD
+
+        # Parse air conditions
+        air_conditions = None
+        if 'air_conditions' in data:
+            ac_data = data['air_conditions']
+            air_conditions = AirConditions(
+                temperature=ac_data.get('temperature', 70.0),
+                altitude=ac_data.get('altitude', 0.0),
+                humidity=ac_data.get('humidity', 50.0),
+                pressure=ac_data.get('pressure')
+            )
+
+        # Create input parameters
+        input_params = FrictionCalculationInput(
+            velocity=data['velocity'],
+            hydraulic_diameter=data['hydraulic_diameter'],
+            length=data['length'],
+            material=data['material'],
+            method=method,
+            material_age=material_age,
+            surface_condition=surface_condition,
+            air_conditions=air_conditions,
+            shape_factor=data.get('shape_factor', 1.0),
+            validation_level=data.get('validation_level', 'standard')
+        )
+
+        # Calculate friction loss
+        result = EnhancedFrictionCalculator.calculate_friction_loss(input_params)
+
+        # Format response
+        response = {
+            'input': data,
+            'results': {
+                'friction_loss': result.friction_loss,
+                'friction_rate': result.friction_rate,
+                'friction_factor': result.friction_factor,
+                'method': result.method.value,
+                'flow_regime': result.flow_regime.value,
+                'reynolds_number': result.reynolds_number,
+                'relative_roughness': result.relative_roughness,
+                'accuracy': result.accuracy,
+                'material_properties': {
+                    'base_roughness': result.material_properties.roughness,
+                    'aging_factor': result.material_properties.aging_factor,
+                    'surface_factor': result.material_properties.surface_factor,
+                    'combined_roughness': result.material_properties.combined_roughness
+                },
+                'warnings': result.warnings,
+                'recommendations': result.recommendations
+            },
+            'metadata': {
+                'calculation_time': 'instant',
+                'version': EnhancedFrictionCalculator.VERSION
+            }
+        }
+
+        logger.info("Enhanced friction calculation completed",
+                   velocity=data['velocity'], method=method.value, material=data['material'])
+        return jsonify(response)
+
+    except Exception as e:
+        logger.error("Enhanced friction calculation failed", error=str(e))
+        return jsonify({'error': 'Calculation failed', 'message': str(e)}), 500
+
+
+@calculations_bp.route('/advanced-calculators/info', methods=['GET'])
+def get_advanced_calculators_info():
+    """
+    Get information about available advanced calculation methods and options.
+    """
+    try:
+        info = {
+            'velocity_pressure_calculator': {
+                'version': VelocityPressureCalculator.VERSION,
+                'methods': [method.value for method in VelocityPressureMethod],
+                'validation_levels': [level.value for level in ValidationLevel],
+                'velocity_ranges': {
+                    method.value: VelocityPressureCalculator.VELOCITY_RANGES[method]
+                    for method in VelocityPressureMethod
+                },
+                'accuracy_estimates': {
+                    method.value: VelocityPressureCalculator.METHOD_ACCURACY[method]
+                    for method in VelocityPressureMethod
+                }
+            },
+            'enhanced_friction_calculator': {
+                'version': EnhancedFrictionCalculator.VERSION,
+                'methods': [method.value for method in FrictionMethod],
+                'material_ages': [age.value for age in MaterialAge],
+                'surface_conditions': [condition.value for condition in SurfaceCondition],
+                'flow_regimes': [regime.value for regime in FlowRegime],
+                'supported_materials': list(EnhancedFrictionCalculator.MATERIAL_ROUGHNESS.keys()),
+                'aging_factors': {
+                    age.value: EnhancedFrictionCalculator.AGING_FACTORS[age]
+                    for age in MaterialAge
+                },
+                'surface_factors': {
+                    condition.value: EnhancedFrictionCalculator.SURFACE_FACTORS[condition]
+                    for condition in SurfaceCondition
+                },
+                'accuracy_estimates': {
+                    method.value: EnhancedFrictionCalculator.METHOD_ACCURACY[method]
+                    for method in FrictionMethod
+                }
+            }
+        }
+
+        return jsonify(info)
+
+    except Exception as e:
+        logger.error("Failed to get advanced calculators info", error=str(e))
+        return jsonify({'error': 'Failed to get info', 'message': str(e)}), 500
 
 @calculations_bp.route('/engine-exhaust', methods=['POST'])
 def calculate_engine_exhaust():

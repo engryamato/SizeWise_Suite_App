@@ -319,7 +319,7 @@ export class AirDuctCalculator {
   /**
    * Calculate pressure loss using Darcy-Weisbach equation
    */
-  private static calculatePressureLoss(velocity: number, length: number, diameter: number, material: string): number {
+  public static calculatePressureLoss(velocity: number, length: number, diameter: number, material: string): number {
     const materialProps = this.MATERIAL_PROPERTIES[material] || this.MATERIAL_PROPERTIES.galvanized_steel;
     const roughness = materialProps.roughnessFactor;
 
@@ -348,7 +348,7 @@ export class AirDuctCalculator {
   /**
    * Calculate Reynolds number
    */
-  private static calculateReynoldsNumber(velocity: number, diameter: number): number {
+  public static calculateReynoldsNumber(velocity: number, diameter: number): number {
     const velocityFps = velocity / 60; // FPM to FPS
     const diameterFt = diameter / 12; // inches to feet
     const kinematicViscosity = 1.57e-4; // ft²/s for air at standard conditions
@@ -359,7 +359,7 @@ export class AirDuctCalculator {
   /**
    * Calculate friction factor using Colebrook-White equation
    */
-  private static calculateFrictionFactor(reynolds: number, material: string, diameter: number): number {
+  public static calculateFrictionFactor(reynolds: number, material: string, diameter: number): number {
     const materialProps = this.MATERIAL_PROPERTIES[material] || this.MATERIAL_PROPERTIES.galvanized_steel;
     const roughness = materialProps.roughnessFactor;
     const diameterFt = diameter / 12;

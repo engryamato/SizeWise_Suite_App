@@ -9,7 +9,7 @@ import { withAirDuctSizerAccess } from '@/components/hoc/withToolAccess'
 
 // V1 Components
 import { ProjectPropertiesManager } from '@/components/managers/ProjectPropertiesManager'
-import { DrawingToolFAB, DrawingTool } from '@/components/ui/DrawingToolFAB'
+import { DrawingToolFAB, DrawingMode } from '@/components/ui/DrawingToolFAB'
 import { ContextPropertyPanel, ElementProperties } from '@/components/ui/ContextPropertyPanel'
 import { ModelSummaryPanel } from '@/components/ui/ModelSummaryPanel'
 import { StatusBar } from '@/components/ui/StatusBar'
@@ -45,7 +45,7 @@ function AirDuctSizerV1Page() {
   const [showWelcomeMessage, setShowWelcomeMessage] = useState(true);
 
   // Drawing and selection state
-  const [activeTool, setActiveTool] = useState<DrawingTool>('select');
+  const [drawingMode, setDrawingMode] = useState<DrawingMode>('off');
   const [selectedElement, setSelectedElement] = useState<ElementProperties | null>(null);
   const [ductSegments, setDuctSegments] = useState<DuctSegment[]>([]);
 
@@ -148,8 +148,8 @@ function AirDuctSizerV1Page() {
 
   // Event handlers
 
-  const handleToolChange = useCallback((tool: DrawingTool) => {
-    setActiveTool(tool);
+  const handleDrawingModeChange = useCallback((mode: DrawingMode) => {
+    setDrawingMode(mode);
   }, []);
 
   const handleElementSelect = useCallback((elementId: string, position: { x: number; y: number }) => {
@@ -410,7 +410,7 @@ function AirDuctSizerV1Page() {
           onSegmentDelete={handleSegmentDelete}
           showGrid={gridEnabled}
           showGizmo={true}
-          activeTool={activeTool}
+          activeTool={drawingMode === 'on' || drawingMode === 'drawing' ? 'line' : 'select'}
           onElementSelect={handleElementSelect}
           onCameraReady={handleCameraReady}
         />
@@ -418,8 +418,8 @@ function AirDuctSizerV1Page() {
 
       {/* Drawing Tool FAB */}
       <DrawingToolFAB
-        activeTool={activeTool}
-        onToolChange={handleToolChange}
+        drawingMode={drawingMode}
+        onDrawingModeChange={handleDrawingModeChange}
         onPropertyPanelOpen={() => {
           // Handle property panel opening if needed
         }}

@@ -1,0 +1,963 @@
+{
+  "version": "3.0.0",
+  "description": "Advanced HVAC fitting database with complex configurations for Phase 3 implementation",
+  "lastUpdated": "2025-01-26T00:00:00Z",
+  "metadata": {
+    "totalFittings": 24,
+    "categories": ["transitions", "terminals", "controls", "specialty"],
+    "calculationMethods": ["single_k_factor", "multi_parameter", "performance_curve", "cfd_derived"],
+    "standards": ["SMACNA", "ASHRAE", "NFPA", "ACCA"]
+  },
+  "categories": {
+    "transitions": {
+      "rect_to_round": {
+        "gradual_transition": {
+          "id": "trans_rect_round_gradual",
+          "version": "1.0",
+          "category": "transition",
+          "complexity": "complex",
+          "performanceClass": "standard",
+          "description": "Gradual rectangular to round transition with optimized flow characteristics",
+          "calculationMethod": "multi_parameter",
+          "flowCharacteristics": {
+            "nominalFlow": {"minimum": 100, "maximum": 10000, "optimal": 2000, "units": "cfm"},
+            "operatingRange": {"minimum": 50, "maximum": 12000, "optimal": 2000, "units": "cfm"},
+            "turndownRatio": 20,
+            "flowPattern": "converging",
+            "velocityProfile": {
+              "uniformityIndex": 0.85,
+              "peakVelocityRatio": 1.15,
+              "boundaryLayerThickness": 0.5,
+              "flowSeparationRisk": "low"
+            },
+            "turbulenceFactors": {
+              "turbulenceIntensity": 8,
+              "mixingFactor": 0.7,
+              "pressureRecoveryFactor": 0.6,
+              "downstreamDevelopmentLength": 8
+            }
+          },
+          "pressureLossProfile": {
+            "calculationMethod": "multi_parameter",
+            "kFactorData": {
+              "baseKFactor": 0.15,
+              "parameterDependencies": [
+                {
+                  "parameter": "length_to_diameter_ratio",
+                  "relationship": "polynomial",
+                  "coefficients": [0.15, -0.08, 0.02],
+                  "validRange": [1.0, 4.0],
+                  "description": "Length to diameter ratio effect on pressure loss"
+                },
+                {
+                  "parameter": "area_ratio",
+                  "relationship": "exponential",
+                  "coefficients": [0.1, 1.2],
+                  "validRange": [0.5, 2.0],
+                  "description": "Area change ratio effect"
+                }
+              ],
+              "reynoldsCorrection": {
+                "enabled": true,
+                "method": "colebrook",
+                "coefficients": [0.02, -0.001],
+                "validRange": [10000, 500000]
+              },
+              "geometryCorrections": [
+                {
+                  "parameter": "aspect_ratio",
+                  "correctionFactor": 1.1,
+                  "applicableRange": [2.0, 8.0],
+                  "description": "Rectangular duct aspect ratio correction"
+                }
+              ]
+            },
+            "performanceCurves": [
+              {
+                "parameter": "reynolds_number",
+                "units": "dimensionless",
+                "dataPoints": [
+                  {"x": 10000, "y": 1.15, "uncertainty": 0.05},
+                  {"x": 50000, "y": 1.05, "uncertainty": 0.03},
+                  {"x": 100000, "y": 1.00, "uncertainty": 0.02},
+                  {"x": 300000, "y": 0.98, "uncertainty": 0.02}
+                ],
+                "interpolationMethod": "cubic",
+                "extrapolationAllowed": false
+              }
+            ],
+            "correctionFactors": {
+              "temperatureCorrection": true,
+              "densityCorrection": true,
+              "viscosityCorrection": true,
+              "roughnessCorrection": true,
+              "installationCorrection": true
+            },
+            "uncertaintyBounds": {
+              "lowerBound": 10,
+              "upperBound": 15,
+              "confidenceLevel": 95,
+              "basisOfUncertainty": "CFD validation and experimental data"
+            }
+          },
+          "physicalProperties": {
+            "dimensions": {
+              "length": 24,
+              "width": 0,
+              "height": 0,
+              "inletDiameter": 0,
+              "outletDiameter": 12,
+              "connectionType": "flanged"
+            },
+            "materials": [
+              {
+                "material": "galvanized_steel",
+                "thickness": 0.0625,
+                "roughness": 0.0005,
+                "corrosionResistance": "medium",
+                "temperatureRating": [-40, 200]
+              }
+            ],
+            "weight": 25,
+            "thermalProperties": {
+              "thermalConductivity": 26.0,
+              "heatCapacity": 0.11,
+              "thermalExpansion": 0.0000065,
+              "insulationRequired": false
+            },
+            "acousticProperties": {
+              "insertionLoss": [2, 3, 4, 5, 6, 7, 8, 9],
+              "transmissionLoss": [15, 18, 22, 25, 28, 30, 32, 35],
+              "regeneratedNoise": [25, 22, 20, 18, 16, 14, 12, 10],
+              "octaveBands": [63, 125, 250, 500, 1000, 2000, 4000, 8000]
+            }
+          },
+          "installationRequirements": {
+            "minimumStraightLength": {
+              "upstream": 3,
+              "downstream": 8
+            },
+            "supportRequirements": [
+              {
+                "location": "center",
+                "loadCapacity": 50,
+                "supportType": "hanger"
+              }
+            ],
+            "accessRequirements": [
+              {
+                "purpose": "inspection",
+                "minimumClearance": 12,
+                "frequency": "annual"
+              }
+            ],
+            "clearanceRequirements": [
+              {
+                "direction": "top",
+                "minimumDistance": 6,
+                "reason": "Installation access"
+              }
+            ],
+            "specialTools": ["flange alignment tool", "gasket installation kit"]
+          },
+          "validationRules": [
+            {
+              "ruleId": "VR001",
+              "description": "Velocity limit check",
+              "severity": "warning",
+              "condition": {
+                "parameter": "velocity",
+                "operator": ">",
+                "value": 2500
+              },
+              "message": "Velocity exceeds recommended limit for standard applications"
+            }
+          ],
+          "compatibilityMatrix": {
+            "compatibleWith": ["straight_duct", "elbow_90", "tee_branch"],
+            "incompatibleWith": ["sharp_transition"],
+            "requiresSpecialHandling": ["high_velocity_duct"],
+            "interactionEffects": [
+              {
+                "adjacentFittingType": "elbow_90",
+                "distance": 5,
+                "effect": "increase",
+                "magnitude": 1.15,
+                "description": "Increased turbulence from upstream elbow"
+              }
+            ]
+          },
+          "manufacturer": "ACME HVAC",
+          "model": "TR-2000-GR",
+          "certifications": ["SMACNA", "ASHRAE_90.1", "UL_181"],
+          "lastUpdated": "2025-01-26T00:00:00Z"
+        }
+      }
+    },
+    "terminals": {
+      "vav_boxes": {
+        "single_duct_vav": {
+          "id": "term_vav_single_duct",
+          "version": "1.0",
+          "category": "terminal",
+          "complexity": "variable",
+          "performanceClass": "standard",
+          "description": "Single duct VAV terminal unit with pressure independent control",
+          "calculationMethod": "performance_curve",
+          "flowCharacteristics": {
+            "nominalFlow": {"minimum": 100, "maximum": 2000, "optimal": 1000, "units": "cfm"},
+            "operatingRange": {"minimum": 50, "maximum": 2200, "optimal": 1000, "units": "cfm"},
+            "turndownRatio": 10,
+            "flowPattern": "straight_through",
+            "velocityProfile": {
+              "uniformityIndex": 0.90,
+              "peakVelocityRatio": 1.10,
+              "boundaryLayerThickness": 0.3,
+              "flowSeparationRisk": "low"
+            },
+            "turbulenceFactors": {
+              "turbulenceIntensity": 5,
+              "mixingFactor": 0.8,
+              "pressureRecoveryFactor": 0.7,
+              "downstreamDevelopmentLength": 6
+            }
+          },
+          "pressureLossProfile": {
+            "calculationMethod": "performance_curve",
+            "kFactorData": {
+              "baseKFactor": 0.25,
+              "parameterDependencies": [
+                {
+                  "parameter": "damper_position",
+                  "relationship": "lookup",
+                  "coefficients": [],
+                  "validRange": [10, 100],
+                  "description": "Damper position percentage"
+                }
+              ],
+              "reynoldsCorrection": {
+                "enabled": false,
+                "method": "custom",
+                "coefficients": [],
+                "validRange": [0, 0]
+              },
+              "geometryCorrections": []
+            },
+            "performanceCurves": [
+              {
+                "parameter": "damper_position_100",
+                "units": "percent_open",
+                "dataPoints": [
+                  {"x": 100, "y": 0.05, "uncertainty": 0.01},
+                  {"x": 500, "y": 0.15, "uncertainty": 0.01},
+                  {"x": 1000, "y": 0.35, "uncertainty": 0.02},
+                  {"x": 1500, "y": 0.65, "uncertainty": 0.03},
+                  {"x": 2000, "y": 1.05, "uncertainty": 0.05}
+                ],
+                "interpolationMethod": "cubic",
+                "extrapolationAllowed": false
+              },
+              {
+                "parameter": "damper_position_50",
+                "units": "percent_open",
+                "dataPoints": [
+                  {"x": 50, "y": 0.15, "uncertainty": 0.02},
+                  {"x": 250, "y": 0.45, "uncertainty": 0.03},
+                  {"x": 500, "y": 1.05, "uncertainty": 0.05},
+                  {"x": 750, "y": 1.95, "uncertainty": 0.08},
+                  {"x": 1000, "y": 3.15, "uncertainty": 0.12}
+                ],
+                "interpolationMethod": "cubic",
+                "extrapolationAllowed": false
+              }
+            ],
+            "correctionFactors": {
+              "temperatureCorrection": false,
+              "densityCorrection": true,
+              "viscosityCorrection": false,
+              "roughnessCorrection": false,
+              "installationCorrection": true
+            },
+            "uncertaintyBounds": {
+              "lowerBound": 5,
+              "upperBound": 10,
+              "confidenceLevel": 95,
+              "basisOfUncertainty": "Manufacturer testing data"
+            }
+          },
+          "physicalProperties": {
+            "dimensions": {
+              "length": 36,
+              "width": 24,
+              "height": 12,
+              "inletDiameter": 12,
+              "outletDiameter": 10,
+              "connectionType": "flanged"
+            },
+            "materials": [
+              {
+                "material": "galvanized_steel",
+                "thickness": 0.0625,
+                "roughness": 0.0005,
+                "corrosionResistance": "medium",
+                "temperatureRating": [32, 140]
+              }
+            ],
+            "weight": 45,
+            "thermalProperties": {
+              "thermalConductivity": 26.0,
+              "heatCapacity": 0.11,
+              "thermalExpansion": 0.0000065,
+              "insulationRequired": false
+            },
+            "acousticProperties": {
+              "insertionLoss": [5, 8, 12, 15, 18, 20, 22, 25],
+              "transmissionLoss": [20, 25, 30, 35, 40, 42, 45, 48],
+              "regeneratedNoise": [30, 28, 25, 22, 20, 18, 16, 14],
+              "octaveBands": [63, 125, 250, 500, 1000, 2000, 4000, 8000]
+            }
+          },
+          "installationRequirements": {
+            "minimumStraightLength": {
+              "upstream": 5,
+              "downstream": 3
+            },
+            "supportRequirements": [
+              {
+                "location": "inlet",
+                "loadCapacity": 75,
+                "supportType": "bracket"
+              },
+              {
+                "location": "outlet",
+                "loadCapacity": 50,
+                "supportType": "hanger"
+              }
+            ],
+            "accessRequirements": [
+              {
+                "purpose": "maintenance",
+                "minimumClearance": 18,
+                "frequency": "monthly"
+              },
+              {
+                "purpose": "adjustment",
+                "minimumClearance": 12,
+                "frequency": "weekly"
+              }
+            ],
+            "clearanceRequirements": [
+              {
+                "direction": "front",
+                "minimumDistance": 24,
+                "reason": "Control access"
+              },
+              {
+                "direction": "top",
+                "minimumDistance": 12,
+                "reason": "Actuator clearance"
+              }
+            ],
+            "specialTools": ["calibration kit", "actuator adjustment tool"]
+          },
+          "validationRules": [
+            {
+              "ruleId": "VR002",
+              "description": "Minimum flow check",
+              "severity": "error",
+              "condition": {
+                "parameter": "flow",
+                "operator": "<",
+                "value": 50
+              },
+              "message": "Flow below minimum operating range"
+            },
+            {
+              "ruleId": "VR003",
+              "description": "Turndown ratio check",
+              "severity": "warning",
+              "condition": {
+                "parameter": "turndown_ratio",
+                "operator": ">",
+                "value": 10
+              },
+              "message": "Turndown ratio exceeds recommended limit"
+            }
+          ],
+          "compatibilityMatrix": {
+            "compatibleWith": ["straight_duct", "flexible_duct", "diffuser_linear"],
+            "incompatibleWith": ["high_velocity_duct"],
+            "requiresSpecialHandling": ["fire_damper"],
+            "interactionEffects": [
+              {
+                "adjacentFittingType": "fire_damper",
+                "distance": 3,
+                "effect": "increase",
+                "magnitude": 1.25,
+                "description": "Additional pressure loss from fire damper interaction"
+              }
+            ]
+          },
+          "manufacturer": "Johnson Controls",
+          "model": "VMA-1200-PI",
+          "certifications": ["AHRI_880", "ASHRAE_90.1", "UL_2043"],
+          "lastUpdated": "2025-01-26T00:00:00Z"
+        }
+      }
+    },
+    "controls": {
+      "dampers": {
+        "fire_damper": {
+          "id": "ctrl_fire_damper",
+          "version": "1.0",
+          "category": "control",
+          "complexity": "simple",
+          "performanceClass": "standard",
+          "description": "Fire damper with fusible link for fire protection systems",
+          "calculationMethod": "single_k_factor",
+          "flowCharacteristics": {
+            "nominalFlow": {"minimum": 200, "maximum": 8000, "optimal": 2000, "units": "cfm"},
+            "operatingRange": {"minimum": 100, "maximum": 10000, "optimal": 2000, "units": "cfm"},
+            "turndownRatio": 50,
+            "flowPattern": "straight_through",
+            "velocityProfile": {
+              "uniformityIndex": 0.95,
+              "peakVelocityRatio": 1.05,
+              "boundaryLayerThickness": 0.2,
+              "flowSeparationRisk": "low"
+            },
+            "turbulenceFactors": {
+              "turbulenceIntensity": 3,
+              "mixingFactor": 0.9,
+              "pressureRecoveryFactor": 0.85,
+              "downstreamDevelopmentLength": 4
+            }
+          },
+          "pressureLossProfile": {
+            "calculationMethod": "single_k_factor",
+            "kFactorData": {
+              "baseKFactor": 0.19,
+              "parameterDependencies": [],
+              "reynoldsCorrection": {
+                "enabled": false,
+                "method": "custom",
+                "coefficients": [],
+                "validRange": [0, 0]
+              },
+              "geometryCorrections": [
+                {
+                  "parameter": "blade_thickness",
+                  "correctionFactor": 1.05,
+                  "applicableRange": [0.125, 0.25],
+                  "description": "Blade thickness correction factor"
+                }
+              ]
+            },
+            "performanceCurves": [],
+            "correctionFactors": {
+              "temperatureCorrection": false,
+              "densityCorrection": true,
+              "viscosityCorrection": false,
+              "roughnessCorrection": false,
+              "installationCorrection": true
+            },
+            "uncertaintyBounds": {
+              "lowerBound": 8,
+              "upperBound": 12,
+              "confidenceLevel": 95,
+              "basisOfUncertainty": "UL testing standards"
+            }
+          },
+          "physicalProperties": {
+            "dimensions": {
+              "length": 6,
+              "width": 24,
+              "height": 24,
+              "inletDiameter": 0,
+              "outletDiameter": 0,
+              "connectionType": "flanged"
+            },
+            "materials": [
+              {
+                "material": "galvanized_steel",
+                "thickness": 0.125,
+                "roughness": 0.0005,
+                "corrosionResistance": "high",
+                "temperatureRating": [32, 350]
+              }
+            ],
+            "weight": 35,
+            "thermalProperties": {
+              "thermalConductivity": 26.0,
+              "heatCapacity": 0.11,
+              "thermalExpansion": 0.0000065,
+              "insulationRequired": false
+            },
+            "acousticProperties": {
+              "insertionLoss": [1, 2, 3, 4, 5, 6, 7, 8],
+              "transmissionLoss": [25, 30, 35, 40, 45, 48, 50, 52],
+              "regeneratedNoise": [20, 18, 16, 14, 12, 10, 8, 6],
+              "octaveBands": [63, 125, 250, 500, 1000, 2000, 4000, 8000]
+            }
+          },
+          "installationRequirements": {
+            "minimumStraightLength": {
+              "upstream": 2,
+              "downstream": 2
+            },
+            "supportRequirements": [
+              {
+                "location": "frame",
+                "loadCapacity": 100,
+                "supportType": "bracket"
+              }
+            ],
+            "accessRequirements": [
+              {
+                "purpose": "inspection",
+                "minimumClearance": 6,
+                "frequency": "annual"
+              }
+            ],
+            "clearanceRequirements": [
+              {
+                "direction": "front",
+                "minimumDistance": 12,
+                "reason": "Fusible link access"
+              }
+            ],
+            "specialTools": ["fusible link replacement kit"]
+          },
+          "validationRules": [
+            {
+              "ruleId": "VR004",
+              "description": "Fire rating compliance",
+              "severity": "error",
+              "condition": {
+                "parameter": "fire_rating",
+                "operator": ">=",
+                "value": 90
+              },
+              "message": "Fire damper must meet minimum 90-minute fire rating"
+            }
+          ],
+          "compatibilityMatrix": {
+            "compatibleWith": ["straight_duct", "fire_rated_duct"],
+            "incompatibleWith": ["flexible_duct"],
+            "requiresSpecialHandling": ["vav_box"],
+            "interactionEffects": []
+          },
+          "manufacturer": "Ruskin",
+          "model": "FSD60-24x24",
+          "certifications": ["UL_555", "NFPA_90A", "SMACNA"],
+          "lastUpdated": "2025-01-26T00:00:00Z"
+        }
+      }
+    },
+    "specialty": {
+      "sound_attenuators": {
+        "parallel_baffle": {
+          "id": "spec_sound_att_parallel",
+          "version": "1.0",
+          "category": "specialty",
+          "complexity": "complex",
+          "performanceClass": "precision",
+          "description": "Parallel baffle sound attenuator for noise control",
+          "calculationMethod": "multi_parameter",
+          "flowCharacteristics": {
+            "nominalFlow": {"minimum": 500, "maximum": 15000, "optimal": 5000, "units": "cfm"},
+            "operatingRange": {"minimum": 300, "maximum": 18000, "optimal": 5000, "units": "cfm"},
+            "turndownRatio": 30,
+            "flowPattern": "straight_through",
+            "velocityProfile": {
+              "uniformityIndex": 0.80,
+              "peakVelocityRatio": 1.25,
+              "boundaryLayerThickness": 1.0,
+              "flowSeparationRisk": "medium"
+            },
+            "turbulenceFactors": {
+              "turbulenceIntensity": 12,
+              "mixingFactor": 0.6,
+              "pressureRecoveryFactor": 0.4,
+              "downstreamDevelopmentLength": 12
+            }
+          },
+          "pressureLossProfile": {
+            "calculationMethod": "multi_parameter",
+            "kFactorData": {
+              "baseKFactor": 0.75,
+              "parameterDependencies": [
+                {
+                  "parameter": "baffle_spacing",
+                  "relationship": "polynomial",
+                  "coefficients": [0.75, -0.15, 0.05],
+                  "validRange": [4, 12],
+                  "description": "Baffle spacing in inches"
+                },
+                {
+                  "parameter": "length_to_height_ratio",
+                  "relationship": "linear",
+                  "coefficients": [0.1, 0.05],
+                  "validRange": [2, 8],
+                  "description": "Attenuator length to height ratio"
+                }
+              ],
+              "reynoldsCorrection": {
+                "enabled": true,
+                "method": "custom",
+                "coefficients": [0.05, -0.002],
+                "validRange": [20000, 200000]
+              },
+              "geometryCorrections": [
+                {
+                  "parameter": "baffle_material",
+                  "correctionFactor": 1.15,
+                  "applicableRange": [0, 1],
+                  "description": "Acoustic material correction"
+                }
+              ]
+            },
+            "performanceCurves": [
+              {
+                "parameter": "velocity",
+                "units": "fpm",
+                "dataPoints": [
+                  {"x": 500, "y": 0.65, "uncertainty": 0.05},
+                  {"x": 1000, "y": 0.75, "uncertainty": 0.04},
+                  {"x": 1500, "y": 0.90, "uncertainty": 0.04},
+                  {"x": 2000, "y": 1.10, "uncertainty": 0.05},
+                  {"x": 2500, "y": 1.35, "uncertainty": 0.06}
+                ],
+                "interpolationMethod": "cubic",
+                "extrapolationAllowed": true
+              }
+            ],
+            "correctionFactors": {
+              "temperatureCorrection": true,
+              "densityCorrection": true,
+              "viscosityCorrection": true,
+              "roughnessCorrection": true,
+              "installationCorrection": true
+            },
+            "uncertaintyBounds": {
+              "lowerBound": 12,
+              "upperBound": 18,
+              "confidenceLevel": 90,
+              "basisOfUncertainty": "Acoustic testing and CFD analysis"
+            }
+          },
+          "physicalProperties": {
+            "dimensions": {
+              "length": 60,
+              "width": 48,
+              "height": 24,
+              "inletDiameter": 0,
+              "outletDiameter": 0,
+              "connectionType": "flanged"
+            },
+            "materials": [
+              {
+                "material": "galvanized_steel",
+                "thickness": 0.0625,
+                "roughness": 0.0005,
+                "corrosionResistance": "medium",
+                "temperatureRating": [32, 180]
+              },
+              {
+                "material": "acoustic_foam",
+                "thickness": 2.0,
+                "roughness": 0.1,
+                "corrosionResistance": "low",
+                "temperatureRating": [32, 160]
+              }
+            ],
+            "weight": 125,
+            "thermalProperties": {
+              "thermalConductivity": 0.25,
+              "heatCapacity": 0.24,
+              "thermalExpansion": 0.000012,
+              "insulationRequired": false
+            },
+            "acousticProperties": {
+              "insertionLoss": [15, 25, 35, 45, 50, 48, 42, 35],
+              "transmissionLoss": [35, 40, 45, 50, 55, 58, 60, 62],
+              "regeneratedNoise": [15, 12, 10, 8, 6, 5, 4, 3],
+              "octaveBands": [63, 125, 250, 500, 1000, 2000, 4000, 8000]
+            }
+          },
+          "installationRequirements": {
+            "minimumStraightLength": {
+              "upstream": 5,
+              "downstream": 10
+            },
+            "supportRequirements": [
+              {
+                "location": "inlet",
+                "loadCapacity": 200,
+                "supportType": "stand"
+              },
+              {
+                "location": "outlet",
+                "loadCapacity": 200,
+                "supportType": "stand"
+              },
+              {
+                "location": "center",
+                "loadCapacity": 150,
+                "supportType": "hanger"
+              }
+            ],
+            "accessRequirements": [
+              {
+                "purpose": "maintenance",
+                "minimumClearance": 24,
+                "frequency": "monthly"
+              }
+            ],
+            "clearanceRequirements": [
+              {
+                "direction": "top",
+                "minimumDistance": 18,
+                "reason": "Baffle removal access"
+              },
+              {
+                "direction": "bottom",
+                "minimumDistance": 12,
+                "reason": "Drainage access"
+              }
+            ],
+            "specialTools": ["baffle removal tool", "acoustic measurement kit"]
+          },
+          "validationRules": [
+            {
+              "ruleId": "VR005",
+              "description": "Acoustic performance check",
+              "severity": "warning",
+              "condition": {
+                "parameter": "insertion_loss",
+                "operator": "<",
+                "value": 20
+              },
+              "message": "Insertion loss may be insufficient for noise requirements"
+            }
+          ],
+          "compatibilityMatrix": {
+            "compatibleWith": ["straight_duct", "transition_gradual"],
+            "incompatibleWith": ["sharp_elbow", "abrupt_transition"],
+            "requiresSpecialHandling": ["high_velocity_duct"],
+            "interactionEffects": [
+              {
+                "adjacentFittingType": "elbow_90",
+                "distance": 8,
+                "effect": "increase",
+                "magnitude": 1.20,
+                "description": "Turbulence from upstream elbow affects acoustic performance"
+              }
+            ]
+          },
+          "manufacturer": "IAC Acoustics",
+          "model": "PB-4824-60",
+          "certifications": ["AHRI_260", "ASTM_E477", "ISO_7235"],
+          "lastUpdated": "2025-01-26T00:00:00Z"
+        }
+      },
+      "exhaust_hoods": {
+        "laboratory_fume_hood": {
+          "id": "spec_exhaust_lab_fume",
+          "version": "1.0",
+          "category": "specialty",
+          "complexity": "complex",
+          "performanceClass": "precision",
+          "description": "Laboratory fume hood with variable air volume control",
+          "calculationMethod": "cfd_derived",
+          "flowCharacteristics": {
+            "nominalFlow": {"minimum": 400, "maximum": 1200, "optimal": 800, "units": "cfm"},
+            "operatingRange": {"minimum": 200, "maximum": 1500, "optimal": 800, "units": "cfm"},
+            "turndownRatio": 6,
+            "flowPattern": "converging",
+            "velocityProfile": {
+              "uniformityIndex": 0.75,
+              "peakVelocityRatio": 1.40,
+              "boundaryLayerThickness": 2.0,
+              "flowSeparationRisk": "high"
+            },
+            "turbulenceFactors": {
+              "turbulenceIntensity": 20,
+              "mixingFactor": 0.9,
+              "pressureRecoveryFactor": 0.2,
+              "downstreamDevelopmentLength": 15
+            }
+          },
+          "pressureLossProfile": {
+            "calculationMethod": "cfd_derived",
+            "kFactorData": {
+              "baseKFactor": 2.5,
+              "parameterDependencies": [
+                {
+                  "parameter": "face_velocity",
+                  "relationship": "polynomial",
+                  "coefficients": [2.5, 0.8, 0.15],
+                  "validRange": [80, 150],
+                  "description": "Face velocity in FPM"
+                },
+                {
+                  "parameter": "sash_opening",
+                  "relationship": "exponential",
+                  "coefficients": [1.0, -0.5],
+                  "validRange": [0.2, 1.0],
+                  "description": "Sash opening ratio"
+                }
+              ],
+              "reynoldsCorrection": {
+                "enabled": false,
+                "method": "custom",
+                "coefficients": [],
+                "validRange": [0, 0]
+              },
+              "geometryCorrections": [
+                {
+                  "parameter": "hood_depth",
+                  "correctionFactor": 0.95,
+                  "applicableRange": [24, 36],
+                  "description": "Hood depth correction"
+                }
+              ]
+            },
+            "performanceCurves": [
+              {
+                "parameter": "sash_position",
+                "units": "percent_open",
+                "dataPoints": [
+                  {"x": 20, "y": 1.8, "uncertainty": 0.15},
+                  {"x": 40, "y": 2.2, "uncertainty": 0.12},
+                  {"x": 60, "y": 2.8, "uncertainty": 0.10},
+                  {"x": 80, "y": 3.6, "uncertainty": 0.12},
+                  {"x": 100, "y": 4.8, "uncertainty": 0.18}
+                ],
+                "interpolationMethod": "cubic",
+                "extrapolationAllowed": false
+              }
+            ],
+            "correctionFactors": {
+              "temperatureCorrection": true,
+              "densityCorrection": true,
+              "viscosityCorrection": false,
+              "roughnessCorrection": false,
+              "installationCorrection": true
+            },
+            "uncertaintyBounds": {
+              "lowerBound": 15,
+              "upperBound": 25,
+              "confidenceLevel": 85,
+              "basisOfUncertainty": "CFD modeling and laboratory testing"
+            }
+          },
+          "physicalProperties": {
+            "dimensions": {
+              "length": 72,
+              "width": 30,
+              "height": 84,
+              "inletDiameter": 0,
+              "outletDiameter": 14,
+              "connectionType": "flanged"
+            },
+            "materials": [
+              {
+                "material": "stainless_steel",
+                "thickness": 0.125,
+                "roughness": 0.0002,
+                "corrosionResistance": "high",
+                "temperatureRating": [32, 300]
+              }
+            ],
+            "weight": 450,
+            "thermalProperties": {
+              "thermalConductivity": 9.4,
+              "heatCapacity": 0.12,
+              "thermalExpansion": 0.0000096,
+              "insulationRequired": false
+            },
+            "acousticProperties": {
+              "insertionLoss": [8, 12, 16, 20, 24, 26, 28, 30],
+              "transmissionLoss": [25, 30, 35, 40, 45, 48, 50, 52],
+              "regeneratedNoise": [35, 32, 28, 25, 22, 20, 18, 16],
+              "octaveBands": [63, 125, 250, 500, 1000, 2000, 4000, 8000]
+            }
+          },
+          "installationRequirements": {
+            "minimumStraightLength": {
+              "upstream": 0,
+              "downstream": 10
+            },
+            "supportRequirements": [
+              {
+                "location": "base",
+                "loadCapacity": 600,
+                "supportType": "stand"
+              }
+            ],
+            "accessRequirements": [
+              {
+                "purpose": "maintenance",
+                "minimumClearance": 36,
+                "frequency": "weekly"
+              },
+              {
+                "purpose": "inspection",
+                "minimumClearance": 18,
+                "frequency": "daily"
+              }
+            ],
+            "clearanceRequirements": [
+              {
+                "direction": "front",
+                "minimumDistance": 48,
+                "reason": "User workspace"
+              },
+              {
+                "direction": "top",
+                "minimumDistance": 24,
+                "reason": "Sash operation"
+              }
+            ],
+            "specialTools": ["face velocity meter", "smoke visualization kit", "containment test kit"]
+          },
+          "validationRules": [
+            {
+              "ruleId": "VR006",
+              "description": "Face velocity compliance",
+              "severity": "error",
+              "condition": {
+                "parameter": "face_velocity",
+                "operator": "<",
+                "value": 100
+              },
+              "message": "Face velocity below minimum safety requirement"
+            },
+            {
+              "ruleId": "VR007",
+              "description": "Containment performance",
+              "severity": "error",
+              "condition": {
+                "parameter": "containment_efficiency",
+                "operator": "<",
+                "value": 99.95
+              },
+              "message": "Containment efficiency below safety standard"
+            }
+          ],
+          "compatibilityMatrix": {
+            "compatibleWith": ["straight_duct", "exhaust_fan"],
+            "incompatibleWith": ["return_air_system"],
+            "requiresSpecialHandling": ["fire_damper", "emergency_shutoff"],
+            "interactionEffects": []
+          },
+          "manufacturer": "Labconco",
+          "model": "Protector XStream-6",
+          "certifications": ["ASHRAE_110", "SEFA_1", "UL_1805"],
+          "lastUpdated": "2025-01-26T00:00:00Z"
+        }
+      }
+    }
+  }
+}

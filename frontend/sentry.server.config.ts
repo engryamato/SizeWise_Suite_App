@@ -21,12 +21,9 @@ Sentry.init({
 
   integrations: [
     // Send console.log, console.error, and console.warn calls as logs to Sentry
-    Sentry.consoleLoggingIntegration({ 
-      levels: ["log", "error", "warn"] 
+    Sentry.consoleLoggingIntegration({
+      levels: ["log", "error", "warn"]
     }),
-
-    // Node.js specific integrations
-    Sentry.browserProfilingIntegration(),
   ],
 
   // Environment configuration

@@ -1,7 +1,6 @@
 # Page snapshot
 
 ```yaml
-- alert
 - main:
   - img
   - text: Online SW
@@ -15,10 +14,10 @@
     - img
   - text: or continue with email
   - img
-  - textbox "Email address": admin@sizewise.com
+  - textbox "Email address"
   - text: Email address*
   - img
-  - textbox "Password": SizeWise2024!6EAF4610705941
+  - textbox "Password"
   - text: Password*
   - button "Show password":
     - img
@@ -26,7 +25,7 @@
   - switch "Remember me"
   - text: Remember me
   - button "Forgot password?"
-  - button "Sign in to SizeWise": Sign In
+  - button "Sign in to SizeWise" [disabled]: Sign In
   - img
   - text: Super Administrator Access
   - paragraph: Use super admin credentials for full system access
@@ -34,4 +33,20 @@
     - text: Don't have an account?
     - button "Create one here"
   - paragraph: © 2024 SizeWise Suite. All rights reserved.
+  - text: "FPS: 0 Q: 0.3 +"
+- heading "Sentry Test Panel" [level=3]
+- paragraph: Development mode only
+- button "Test Error Reporting"
+- button "Test Calculation Trace"
+- button "Test Validation Trace"
+- button "Test API Trace"
+- button "Test User Interaction"
+- button "Test Logging"
+- button "Test Breadcrumbs"
+- button "Test Transaction"
+- paragraph: Check Sentry dashboard for captured events
+- alert
+- button
+- button "21st logo":
+  - img "21st logo"
 ```

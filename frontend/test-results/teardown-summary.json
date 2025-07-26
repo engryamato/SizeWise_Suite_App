@@ -1,0 +1,20 @@
+{
+  "timestamp": "2025-07-26T13:54:29.498Z",
+  "environment": {
+    "nodeVersion": "v23.11.0",
+    "platform": "darwin",
+    "arch": "arm64"
+  },
+  "testRun": {
+    "configFile": "playwright.config.ts",
+    "testDir": "../e2e",
+    "workers": "auto",
+    "retries": 0
+  },
+  "cleanup": {
+    "mockServerStopped": true,
+    "databaseCleaned": true,
+    "storageCleaned": true,
+    "artifactsCleaned": true
+  }
+}

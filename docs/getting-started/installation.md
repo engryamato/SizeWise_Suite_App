@@ -40,7 +40,7 @@ For developers or users who want to run SizeWise Suite locally:
 ### Prerequisites
 
 - **Python 3.9+** with pip
-- **Node.js 16+** with npm
+- **Node.js 18+** with npm
 - **Git** for version control
 
 ### Installation Steps

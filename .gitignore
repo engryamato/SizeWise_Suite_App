@@ -132,3 +132,21 @@ precache-manifest.*.js
 # Temporary folders
 tmp/
 temp/
+
+# Debug files and screenshots
+debug-*.png
+debug-*.js
+*-debug.png
+real-*.png
+dashboard-after-login.png
+*-after-submit.png
+*-before-submit.png
+*-final-*.png
+*-login-page.png
+
+# Test artifacts and reports
+frontend/playwright-report/
+frontend/test-results/
+frontend/e2e/debug-*.spec.ts
+test-results/
+playwright-report/

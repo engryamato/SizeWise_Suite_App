@@ -1,6 +1,6 @@
 # 🧮 Logic & Validators – Engineering Calculations and Rules
 
-_See docs/README.md for documentation map and update rules._
+_See [docs/README.md](../../README.md) for documentation map and update rules._
 
 _Last updated: 2025-07-13_
 

@@ -1,6 +1,6 @@
 # 🎨 Canvas Drawing – Interactive Layout & Drawing Behavior
 
-_See docs/README.md for the documentation map and update rules._
+_See [docs/README.md](../../README.md) for the documentation map and update rules._
 
 _Last updated: 2025-07-13_
 
@@ -95,4 +95,4 @@ It’s designed to be user-friendly for both beginners and professionals, suppor
 ---
 
 *This document is your master reference for canvas interaction and drawing behavior.  
-For sidebar fields, calculation rules, or export logic, see the linked markdowns in README.md!*
+For sidebar fields, calculation rules, or export logic, see the linked markdowns in [README.md](../../README.md)!*

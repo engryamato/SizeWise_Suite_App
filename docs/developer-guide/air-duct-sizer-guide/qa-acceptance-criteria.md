@@ -1,6 +1,6 @@
 # ✅ QA Acceptance Criteria & Test Scenarios
 
-_See docs/README.md for documentation map and update rules._
+_See [docs/README.md](../../README.md) for documentation map and update rules._
 
 _Last updated: 2025-07-13_
 

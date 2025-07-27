@@ -1,6 +1,6 @@
 # 🏗️ Air Duct Sizer – Product Overview & Vision
 
-_See docs/README.md for documentation map and update rules._
+_See [docs/README.md](../../README.md) for documentation map and update rules._
 
 _Last updated: 2025-07-13_
 
@@ -100,4 +100,4 @@ _All warnings and auto-sizing recommendations reference these standards (in “E
 
 ---
 
-*This document is your master reference for what the Air Duct Sizer is, who it’s for, what it can/can’t do, and how to keep the boundaries clear as you add new features. For everything else, see the docs listed in README.md!*
+*This document is your master reference for what the Air Duct Sizer is, who it’s for, what it can/can’t do, and how to keep the boundaries clear as you add new features. For everything else, see the docs listed in [README.md](../../README.md)!*

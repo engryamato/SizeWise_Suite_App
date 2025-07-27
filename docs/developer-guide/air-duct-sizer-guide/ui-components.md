@@ -1,6 +1,6 @@
 # 🖥️ UI Components – Panels, Properties, and Controls
 
-_See docs/README.md for documentation map and update rules._
+_See [docs/README.md](../../README.md) for documentation map and update rules._
 
 _Last updated: 2025-07-13_
 
@@ -120,4 +120,4 @@ You’ll find onboarding wizards, project/room/segment sidebars, tooltips, acces
 ---
 
 *This document is your single source of truth for all UI components, property panels, tooltips, and accessibility requirements.  
-See linked markdowns in README.md for further details!*
+See linked markdowns in [README.md](../../README.md) for further details!*

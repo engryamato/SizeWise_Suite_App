@@ -92,9 +92,18 @@ def create_app(config_name='development'):
                 'calculations': '/api/calculations',
                 'validation': '/api/validation',
                 'exports': '/api/exports',
-                'health': '/api/health'
+                'health': '/api/health',
+                'sentry-debug': '/api/sentry-debug'
             }
         })
+
+    # Sentry verification endpoint
+    @app.route('/api/sentry-debug')
+    def sentry_debug():
+        """Sentry verification endpoint - triggers an error for testing."""
+        logger.info("Sentry debug endpoint accessed")
+        1/0  # raises an error
+        return jsonify({'message': 'This should not be reached'})  # pragma: no cover
     
     # Error handlers
     @app.errorhandler(400)

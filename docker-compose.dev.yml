@@ -1,0 +1,130 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: sizewise-postgres-dev
+    environment:
+      POSTGRES_DB: sizewise_dev
+      POSTGRES_USER: sizewise
+      POSTGRES_PASSWORD: sizewise_dev_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./docker/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sizewise -d sizewise_dev"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - sizewise-network
+
+  # Redis for caching (optional)
+  redis:
+    image: redis:7-alpine
+    container_name: sizewise-redis-dev
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - sizewise-network
+
+  # Backend API
+  backend:
+    build:
+      context: .
+      dockerfile: docker/backend/Dockerfile
+      target: dev
+    container_name: sizewise-backend-dev
+    environment:
+      - FLASK_ENV=development
+      - FLASK_DEBUG=true
+      - DATABASE_URL=postgresql://sizewise:sizewise_dev_password@postgres:5432/sizewise_dev
+      - REDIS_URL=redis://redis:6379/0
+      - SECRET_KEY=dev-secret-key-change-in-production
+      - SENTRY_DSN=${SENTRY_DSN}
+      - SENTRY_ENVIRONMENT=development
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./backend:/app/backend
+      - ./core:/app/core
+      - ./data:/app/data
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - sizewise-network
+    restart: unless-stopped
+
+  # Authentication Server
+  auth-server:
+    build:
+      context: .
+      dockerfile: docker/auth-server/Dockerfile
+      target: dev
+    container_name: sizewise-auth-dev
+    environment:
+      - FLASK_ENV=development
+      - DATABASE_URL=postgresql://sizewise:sizewise_dev_password@postgres:5432/sizewise_auth_dev
+      - SECRET_KEY=auth-secret-key-change-in-production
+      - JWT_SECRET_KEY=jwt-secret-key-change-in-production
+      - SENTRY_DSN=${SENTRY_DSN}
+      - SENTRY_ENVIRONMENT=development
+    ports:
+      - "5001:5001"
+    volumes:
+      - ./auth-server:/app
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - sizewise-network
+    restart: unless-stopped
+
+  # Frontend (Next.js)
+  frontend:
+    build:
+      context: .
+      dockerfile: docker/frontend/Dockerfile
+      target: dev
+    container_name: sizewise-frontend-dev
+    environment:
+      - NODE_ENV=development
+      - NEXT_PUBLIC_API_URL=http://localhost:5000/api
+      - NEXT_PUBLIC_AUTH_URL=http://localhost:5001/api
+      - NEXT_PUBLIC_APP_ENV=development
+      - NEXT_PUBLIC_ENABLE_DEBUG=true
+      - SENTRY_DSN=${SENTRY_DSN}
+      - SENTRY_ENVIRONMENT=development
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+      - /app/.next
+    depends_on:
+      - backend
+      - auth-server
+    networks:
+      - sizewise-network
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  redis_data:
+
+networks:
+  sizewise-network:
+    driver: bridge

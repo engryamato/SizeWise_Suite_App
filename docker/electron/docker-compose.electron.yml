@@ -1,0 +1,85 @@
+# Docker Compose for Electron Desktop App Development
+# This configuration runs backend services in containers while allowing
+# Electron to access them for offline-first functionality
+
+version: '3.8'
+
+services:
+  # Local SQLite Database for Electron
+  # Note: Electron will use local SQLite, but this provides PostgreSQL for testing
+  postgres-electron:
+    image: postgres:15-alpine
+    container_name: sizewise-postgres-electron
+    environment:
+      POSTGRES_DB: sizewise_electron
+      POSTGRES_USER: sizewise
+      POSTGRES_PASSWORD: electron_dev_password
+    ports:
+      - "5433:5432"  # Different port to avoid conflicts
+    volumes:
+      - postgres_electron_data:/var/lib/postgresql/data
+    networks:
+      - sizewise-electron-network
+
+  # Backend API for Electron
+  backend-electron:
+    build:
+      context: .
+      dockerfile: docker/backend/Dockerfile
+      target: dev
+    container_name: sizewise-backend-electron
+    environment:
+      - FLASK_ENV=development
+      - FLASK_DEBUG=true
+      - DATABASE_URL=sqlite:///./data/sizewise_electron.db
+      - SECRET_KEY=electron-dev-secret-key
+      - SENTRY_DSN=${SENTRY_DSN}
+      - SENTRY_ENVIRONMENT=electron-development
+      - CORS_ORIGINS=http://localhost:3000,file://
+    ports:
+      - "5002:5000"  # Different port for Electron
+    volumes:
+      - ./backend:/app/backend
+      - ./core:/app/core
+      - ./data:/app/data
+      - ./electron/data:/app/electron-data  # Electron-specific data
+    networks:
+      - sizewise-electron-network
+    restart: unless-stopped
+
+  # Auth Server for Electron (local mode)
+  auth-server-electron:
+    build:
+      context: .
+      dockerfile: docker/auth-server/Dockerfile
+      target: dev
+    container_name: sizewise-auth-electron
+    environment:
+      - FLASK_ENV=development
+      - DATABASE_URL=sqlite:///./data/sizewise_auth_electron.db
+      - SECRET_KEY=electron-auth-secret-key
+      - JWT_SECRET_KEY=electron-jwt-secret-key
+      - SENTRY_DSN=${SENTRY_DSN}
+      - SENTRY_ENVIRONMENT=electron-development
+      - CORS_ORIGINS=http://localhost:3000,file://
+    ports:
+      - "5003:5001"  # Different port for Electron
+    volumes:
+      - ./auth-server:/app
+      - ./electron/auth-data:/app/electron-auth-data
+    networks:
+      - sizewise-electron-network
+    restart: unless-stopped
+
+volumes:
+  postgres_electron_data:
+
+networks:
+  sizewise-electron-network:
+    driver: bridge
+
+# Usage Instructions:
+# 1. Start containerized services: docker-compose -f docker/electron/docker-compose.electron.yml up
+# 2. Start Electron app: npm run electron:dev
+# 3. Electron will connect to backend on localhost:5002 and auth on localhost:5003
+# 4. Data persists in ./data and ./electron/data directories for offline access

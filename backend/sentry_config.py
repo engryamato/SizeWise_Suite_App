@@ -19,35 +19,36 @@ except (ImportError, Exception):
     HAS_SQLALCHEMY = False
     SqlalchemyIntegration = None
 
-# Sentry DSN - same as frontend for unified monitoring
+# Sentry DSN - updated to match provided configuration
 SENTRY_DSN = (
-    "https://805514204a48915f64a39c0f5e7544f9@o4509734387056640"
-    ".ingest.us.sentry.io/4509741504069632"
+    "https://5deb7c885560c5bed065966a8c341727@o4509734387056640"
+    ".ingest.us.sentry.io/4509741831028736"
 )
+
 
 def init_sentry(app=None, environment=None):
     """
     Initialize Sentry for the Flask backend application.
-    
+
     Args:
         app: Flask application instance (optional)
         environment: Environment name (development, staging, production)
     """
-    
+
     # Determine environment
     if environment is None:
         environment = os.getenv('FLASK_ENV', 'development')
-    
+
     # Only initialize Sentry if DSN is available and not in testing
     if not SENTRY_DSN or os.getenv('TESTING'):
         return
-    
+
     # Configure logging integration
     logging_integration = LoggingIntegration(
         level=None,  # Capture all log levels
         event_level=None  # Don't send logs as events by default
     )
-    
+
     # Configure Flask integration
     flask_integration = FlaskIntegration(
         transaction_style='endpoint'
@@ -61,28 +62,36 @@ def init_sentry(app=None, environment=None):
         sqlalchemy_integration = SqlalchemyIntegration()
         integrations.append(sqlalchemy_integration)
 
-    # Initialize Sentry
+    # Initialize Sentry with Flask-specific configuration
     sentry_sdk.init(
         dsn=SENTRY_DSN,
         environment=environment,
         integrations=integrations,
-        
-        # Performance monitoring
-        traces_sample_rate=1.0 if environment == 'development' else 0.1,
-        profiles_sample_rate=1.0 if environment == 'development' else 0.1,
-        
+
+        # Add data like request headers and IP for users
+        send_default_pii=True,
+
+        # Set traces_sample_rate to 1.0 to capture 100%
+        # of transactions for tracing.
+        traces_sample_rate=1.0,
+
+        # Set profile_session_sample_rate to 1.0 to profile 100%
+        # of profile sessions.
+        profile_session_sample_rate=1.0,
+
+        # Set profile_lifecycle to "trace" to automatically
+        # run the profiler on when there is an active transaction
+        profile_lifecycle="trace",
+
         # Error filtering
         before_send=filter_errors,
-        
+
         # Release tracking
         release=os.getenv('SENTRY_RELEASE', 'backend@dev'),
-        
-        # Additional options
-        attach_stacktrace=True,
-        send_default_pii=False,  # Don't send personally identifiable information
-        max_breadcrumbs=50,
 
         # Additional options
+        attach_stacktrace=True,
+        max_breadcrumbs=50,
         debug=environment == 'development'
     )
 

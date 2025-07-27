@@ -3,6 +3,8 @@
  * This file is automatically loaded by Next.js when the app starts
  */
 
+import * as Sentry from '@sentry/nextjs';
+
 export async function register() {
   if (process.env.NEXT_RUNTIME === 'nodejs') {
     // Server-side instrumentation
@@ -13,4 +15,12 @@ export async function register() {
     // Edge runtime instrumentation
     await import('./sentry.edge.config');
   }
+
+  // Client-side initialization
+  if (typeof window !== 'undefined') {
+    await import('./instrumentation-client');
+  }
 }
+
+// Export the onRequestError hook for Sentry error capture
+export const onRequestError = Sentry.captureRequestError;

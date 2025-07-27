@@ -46,8 +46,9 @@ Sentry.init({
     // Filter out expected server errors
     if (event.exception?.values?.[0]?.value?.includes('ECONNREFUSED')) {
       // Only send connection errors if they're not to the backend API during development
-      if (process.env.NODE_ENV === 'development' && 
-          event.exception.values[0].value.includes('localhost:5000')) {
+      if (process.env.NODE_ENV === 'development' &&
+          (event.exception.values[0].value.includes('localhost:5000') ||
+           event.exception.values[0].value.includes('localhost:5001'))) {
         return null;
       }
     }

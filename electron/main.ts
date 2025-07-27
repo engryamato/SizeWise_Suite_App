@@ -86,8 +86,8 @@ class ElectronApp {
    * Initialize Electron application
    */
   private initializeApp(): void {
-    // Initialize Sentry monitoring
-    initSentry();
+    // Initialize Sentry monitoring (temporarily disabled for testing)
+    // initSentry();
 
     // Handle app ready event
     app.whenReady().then(async () => {
@@ -95,10 +95,10 @@ class ElectronApp {
         await this.onAppReady();
       } catch (error) {
         console.error('Failed to initialize app:', error);
-        captureElectronError(error as Error, {
-          component: 'main',
-          operation: 'app_initialization'
-        });
+        // captureElectronError(error as Error, {
+        //   component: 'main',
+        //   operation: 'app_initialization'
+        // });
         this.handleStartupError(error);
       }
     });

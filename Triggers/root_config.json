@@ -1,0 +1,6 @@
+{
+    "name": "Triggers",
+    "provider_region": "azure-southeastasia",
+    "deployment_model": "LOCAL",
+    "environment": "testing"
+}

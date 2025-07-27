@@ -38,8 +38,8 @@ interface AuthStore extends AuthState {
   checkSubscriptionStatus: () => Promise<boolean>
 }
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api/v1'
-const AUTH_SERVER_URL = process.env.NEXT_PUBLIC_AUTH_SERVER_URL || 'http://localhost:5000'
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001/api/v1'
+const AUTH_SERVER_URL = process.env.NEXT_PUBLIC_AUTH_SERVER_URL || 'http://localhost:5002'
 
 // Initialize hybrid authentication manager
 const hybridAuthManager = new HybridAuthManager(AUTH_SERVER_URL)

@@ -68,7 +68,6 @@ def init_sentry(app=None, environment=None):
         
         # Performance monitoring
         traces_sample_rate=1.0 if environment == 'development' else 0.1,
-        profiles_sample_rate=1.0 if environment == 'development' else 0.1,
         
         # Error filtering
         before_send=filter_auth_errors,

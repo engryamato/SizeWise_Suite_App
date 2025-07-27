@@ -2,7 +2,7 @@
   "name": "sizewise-suite",
   "version": "0.1.0",
   "description": "A modern Next.js-based HVAC engineering and estimating platform with glassmorphism UI and 3D workspace",
-  "main": "frontend/next.config.js",
+  "main": "electron/main.ts",
   "scripts": {
     "dev": "cd frontend && npm run dev",
     "build": "cd frontend && npm run build",
@@ -19,6 +19,11 @@
     "type-check": "cd frontend && npm run type-check",
     "start:backend": "python3 run_backend.py",
     "start:dev": "concurrently \"npm run start:backend\" \"npm run dev\"",
+    "electron:build": "tsc electron/main.ts --outDir dist/electron --target es2020 --module commonjs --esModuleInterop --allowSyntheticDefaultImports --skipLibCheck --resolveJsonModule",
+    "electron:dev": "electron electron/main-simple.js",
+    "electron:dev-full": "npm run electron:build && electron dist/electron/main.js",
+    "electron:start": "concurrently \"npm run dev\" \"wait-on http://localhost:3000 && npm run electron:dev\"",
+    "desktop": "concurrently \"npm run start:backend\" \"npm run electron:start\"",
     "install:frontend": "cd frontend && npm install",
     "playwright:install": "cd frontend && npm run playwright:install",
     "docker:dev": "./scripts/docker-dev.sh start",
@@ -43,9 +48,12 @@
   "author": "SizeWise Suite Team",
   "license": "MIT",
   "devDependencies": {
-    "@types/node": "^20.0.0",
+    "@types/node": "^20.19.9",
     "concurrently": "^8.2.1",
-    "electron-is-dev": "^2.0.0"
+    "electron-is-dev": "^2.0.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.8.3",
+    "wait-on": "^7.2.0"
   },
   "dependencies": {
     "@sentry/electron": "^6.8.0",

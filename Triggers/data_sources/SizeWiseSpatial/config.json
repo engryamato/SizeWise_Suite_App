@@ -1,0 +1,10 @@
+{
+    "name": "SizeWiseSpatial",
+    "type": "mongodb-atlas",
+    "config": {
+        "clusterName": "SizeWiseSpatial",
+        "readPreference": "primary",
+        "wireProtocolEnabled": true
+    },
+    "version": 1
+}

@@ -54,72 +54,35 @@ Comprehensive estimating solution addressing labor/material takeoffs and automat
 
 ```
 ├── app/
-│   ├── assets/
+│   ├── api/
 │   ├── config/
-│   │   └── environment/
-│   ├── core/
-│   │   ├── calculations/
-│   │   ├── validators/
-│   │   ├── schemas/
-│   │   ├── registrars/
-│   │   └── i18n/
-│   ├── data/
-│   │   ├── seeds/
-│   │   ├── backups/
-│   │   └── examples/
-│   ├── docs/
-│   │   ├── architecture/
-│   │   ├── api/
-│   │   ├── guides/
-│   │   ├── i18n/
-│   │   └── tools/
-│   ├── hooks/
-│   ├── i18n/
-│   ├── plugins/
-│   ├── services/
-│   ├── simulations/
-│   ├── static/
-│   ├── templates/
-│   ├── tests/
-│   └── tools/
-│       ├── duct-sizer/
-│       ├── grease-sizer/
-│       ├── boiler-sizer/
-│       ├── engine-exhaust/
-│       └── estimating-app/
-│           ├── components/
-│           ├── calculations/
-│           ├── validators/
-│           ├── schemas/
-│           ├── ui/
-│           ├── data/
-│           ├── docs/
-│           ├── tests/
-│           └── exports/
+│   └── sentry-example-page/
+├── auth-server/
 ├── backend/
 ├── core/
-├── frontend/
-│   ├── app/
-│   │   ├── demo/
-│   │   │   └── page.tsx         # Components demo page
-│   │   ├── globals.css          # Global styles with keyframes
-│   │   ├── layout.tsx           # Root layout
-│   │   └── page.tsx             # Main page with demo
-│   ├── components/
-│   │   └── glassmorphism/
-│   │       ├── GlassEffect.tsx  # Base glass effect wrapper
-│   │       ├── GlassDock.tsx    # Icon dock component
-│   │       ├── GlassButton.tsx  # Glass button component
-│   │       ├── GlassCard.tsx    # Glass card component
-│   │       ├── GlassFilter.tsx  # SVG filter effects
-│   │       └── index.ts         # Component exports
-│   ├── next.config.js           # Next.js configuration
-│   ├── tailwind.config.js       # Tailwind configuration with custom animations
-│   └── package.json
+├── data/
+├── docker/
 ├── docs/
+├── electron/
+├── frontend/
+│   ├── app/                  # Next.js pages and layouts
+│   ├── components/
+│   ├── config/
+│   ├── hooks/
+│   ├── services/
+│   ├── shared/
+│   ├── stores/
+│   ├── tests/
+│   ├── types/
+│   ├── next.config.js
+│   └── tailwind.config.js
 ├── scripts/
-└── tests/
+├── tests/
+├── types/
+└── Triggers/
 ```
+
+The Next.js application lives inside **`frontend/app`**, which contains the primary pages and layouts.
 
 ## Technologies Used
 

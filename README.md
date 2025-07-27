@@ -276,7 +276,7 @@ make html
 
 ## License
 
-[License information to be added]
+Licensed under the MIT License. See [LICENSE](LICENSE) for details.
 
 ## Support
 

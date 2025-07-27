@@ -150,3 +150,6 @@ frontend/test-results/
 frontend/e2e/debug-*.spec.ts
 test-results/
 playwright-report/
+
+# Sentry Config File
+.env.sentry-build-plugin

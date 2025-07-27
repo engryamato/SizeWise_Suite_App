@@ -1,5 +1,5 @@
 /**
- * Sentry client-side configuration for SizeWise Suite
+ * Sentry client-side instrumentation for SizeWise Suite
  * This configuration is loaded on the browser/client side
  */
 
@@ -8,7 +8,7 @@ import * as Sentry from "@sentry/nextjs";
 // Initialize Sentry with error handling
 try {
   Sentry.init({
-  dsn: "https://7c66eaefa7b2dde6957e18ffb03bf28f@o4509734387056640.ingest.us.sentry.io/4509734389481472",
+  dsn: "https://805514204a48915f64a39c0f5e7544f9@o4509734387056640.ingest.us.sentry.io/4509741504069632",
 
   // Adjust this value in production, or use tracesSampler for greater control
   tracesSampleRate: process.env.NODE_ENV === 'production' ? 0.1 : 1.0,
@@ -16,14 +16,9 @@ try {
   // Setting this option to true will print useful information to the console while you're setting up Sentry.
   debug: process.env.NODE_ENV === 'development',
 
-
-
   // Handle transport errors gracefully
   beforeSendTransaction(event) {
-    // Reduce transaction noise in development
-    if (process.env.NODE_ENV === 'development') {
-      return null; // Skip transactions in development to reduce 403 errors
-    }
+    // Allow transactions in development for testing
     return event;
   },
 
@@ -97,8 +92,11 @@ try {
   transport: undefined, // Use default transport with error handling
   });
 
-  console.log('✅ Sentry initialized successfully');
+  console.log('✅ Sentry client initialized successfully');
 } catch (error) {
-  console.warn('⚠️ Sentry initialization failed (non-blocking):', error);
+  console.warn('⚠️ Sentry client initialization failed (non-blocking):', error);
   // Continue without Sentry - don't block the application
 }
+
+// Export router transition hook for navigation instrumentation
+export const onRouterTransitionStart = Sentry.captureRouterTransitionStart;

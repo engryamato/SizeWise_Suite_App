@@ -11,7 +11,7 @@ import { join } from 'path';
 import { readFileSync, existsSync } from 'fs';
 
 // Sentry DSN - same as frontend for unified monitoring
-const SENTRY_DSN = "https://7c66eaefa7b2dde6957e18ffb03bf28f@o4509734387056640.ingest.us.sentry.io/4509734389481472";
+const SENTRY_DSN = "https://805514204a48915f64a39c0f5e7544f9@o4509734387056640.ingest.us.sentry.io/4509741504069632";
 
 /**
  * Initialize Sentry for the Electron application

@@ -300,13 +300,20 @@ export const MultiFeatureGate: React.FC<MultiFeatureGateProps> = ({
   const feature4 = features[3] || '';
   const feature5 = features[4] || '';
 
+  // Always call hooks unconditionally, then filter results
   const state1 = useFeatureFlag(feature1);
-  const state2 = feature2 ? useFeatureFlag(feature2) : { enabled: true, loading: false, error: null };
-  const state3 = feature3 ? useFeatureFlag(feature3) : { enabled: true, loading: false, error: null };
-  const state4 = feature4 ? useFeatureFlag(feature4) : { enabled: true, loading: false, error: null };
-  const state5 = feature5 ? useFeatureFlag(feature5) : { enabled: true, loading: false, error: null };
+  const state2 = useFeatureFlag(feature2 || '');
+  const state3 = useFeatureFlag(feature3 || '');
+  const state4 = useFeatureFlag(feature4 || '');
+  const state5 = useFeatureFlag(feature5 || '');
 
-  const featureStates = [state1, state2, state3, state4, state5].slice(0, features.length);
+  // Apply default enabled state for empty features
+  const processedState2 = feature2 ? state2 : { enabled: true, loading: false, error: null };
+  const processedState3 = feature3 ? state3 : { enabled: true, loading: false, error: null };
+  const processedState4 = feature4 ? state4 : { enabled: true, loading: false, error: null };
+  const processedState5 = feature5 ? state5 : { enabled: true, loading: false, error: null };
+
+  const featureStates = [state1, processedState2, processedState3, processedState4, processedState5].slice(0, features.length);
 
   // Check if any features are still loading
   const isLoading = featureStates.some(state => state.loading);

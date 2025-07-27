@@ -75,6 +75,7 @@ jobs:
         working-directory: ./frontend
         env:
           NODE_ENV: production
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
         run: npm run build
 
       - name: Analyze bundle size

@@ -19,13 +19,13 @@ import { OfflineIndicator, useNetworkStatus } from './OfflineIndicator';
 import { TrialManagerCompact } from './TrialManager';
 import Particles from './Particles';
 import PerformanceMonitor from '../debug/PerformanceMonitor';
-import { 
-  BRAND_CONFIG, 
-  SOCIAL_PROVIDERS, 
-  AUTH_FEATURES, 
+import {
+  BRAND_CONFIG,
+  SOCIAL_PROVIDERS,
+  AUTH_FEATURES,
   AUTH_REDIRECTS,
   A11Y_CONFIG,
-  ERROR_MESSAGES 
+  ERROR_MESSAGES
 } from './config';
 import { cn } from '@/lib/utils';
 
@@ -70,6 +70,8 @@ export const LoginPage: React.FC<LoginPageProps> = ({
       router.push(redirectUrl);
     }
   }, [isAuthenticated, user, router, returnUrl]);
+
+
 
   // Handle social login
   const handleSocialLogin = async (provider: string) => {
@@ -248,6 +250,8 @@ export const LoginPage: React.FC<LoginPageProps> = ({
               )}
             </button>
           </form>
+
+
 
           {/* Super Admin Hint */}
           {showSuperAdminHint && (

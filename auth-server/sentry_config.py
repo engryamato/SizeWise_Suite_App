@@ -19,7 +19,10 @@ except (ImportError, Exception):
     SqlalchemyIntegration = None
 
 # Sentry DSN - same as frontend for unified monitoring
-SENTRY_DSN = "https://7c66eaefa7b2dde6957e18ffb03bf28f@o4509734387056640.ingest.us.sentry.io/4509734389481472"
+SENTRY_DSN = (
+    "https://805514204a48915f64a39c0f5e7544f9@o4509734387056640"
+    ".ingest.us.sentry.io/4509741504069632"
+)
 
 def init_sentry(app=None, environment=None):
     """

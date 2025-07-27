@@ -6,7 +6,7 @@ on:
   pull_request:
     branches: ["main"]
   schedule:
-    - cron: '0 2 * * 1' # Weekly on Monday at 2 AM
+    - cron: "0 2 * * 1" # Weekly on Monday at 2 AM
 
 jobs:
   security-scan:
@@ -14,40 +14,42 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
-          cache: 'npm'
+          node-version: "18"
+          cache: "npm"
           cache-dependency-path: frontend/package-lock.json
-          
+
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
-          cache: 'pip'
-          
+          python-version: "3.11"
+          cache: "pip"
+
       - name: Install dependencies
+        env:
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
         run: |
           cd frontend && npm ci
           python -m pip install --upgrade pip
           pip install -r requirements.txt
           pip install safety bandit semgrep
-          
+
       - name: Run npm audit
         working-directory: ./frontend
         run: npm audit --audit-level=moderate
         continue-on-error: true
-        
+
       - name: Run Python safety check
         run: safety check --json --output safety-report.json
         continue-on-error: true
-        
+
       - name: Run Bandit security linter
         run: bandit -r . -f json -o bandit-report.json
         continue-on-error: true
-        
+
       - name: Upload security reports
         uses: actions/upload-artifact@v4
         if: always()
@@ -63,37 +65,39 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
-          cache: 'npm'
+          node-version: "18"
+          cache: "npm"
           cache-dependency-path: frontend/package-lock.json
-          
+
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
-          cache: 'pip'
-          
+          python-version: "3.11"
+          cache: "pip"
+
       - name: Install dependencies
+        env:
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
         run: |
           cd frontend && npm ci
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-          
+
       - name: Run ESLint
         working-directory: ./frontend
         run: npm run lint -- --format=json --output-file=eslint-report.json
         continue-on-error: true
-        
+
       - name: Run Python linting
         run: |
           flake8 . --format=json --output-file=flake8-report.json
           mypy . --json-report mypy-report
         continue-on-error: true
-        
+
       - name: Upload quality reports
         uses: actions/upload-artifact@v4
         if: always()
@@ -110,50 +114,54 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@master
         with:
-          scan-type: 'fs'
-          scan-ref: '.'
-          format: 'sarif'
-          output: 'trivy-results.sarif'
-          
+          scan-type: "fs"
+          scan-ref: "."
+          format: "sarif"
+          output: "trivy-results.sarif"
+
       - name: Upload Trivy scan results to GitHub Security tab
         uses: github/codeql-action/upload-sarif@v3
         if: always()
         with:
-          sarif_file: 'trivy-results.sarif'
+          sarif_file: "trivy-results.sarif"
 
   build-test:
     name: Build & Deployment Test
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
-          cache: 'npm'
+          node-version: "18"
+          cache: "npm"
           cache-dependency-path: frontend/package-lock.json
-          
+
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
-          cache: 'pip'
-          
+          python-version: "3.11"
+          cache: "pip"
+
       - name: Install dependencies
+        env:
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
         run: |
           cd frontend && npm ci
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-          
+
       - name: Build frontend
         working-directory: ./frontend
+        env:
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
         run: npm run build
-        
+
       - name: Test backend startup
         run: |
           timeout 30s python run_backend.py || exit_code=$?
@@ -164,12 +172,12 @@ jobs:
             echo "Backend failed to start"
             exit 1
           fi
-          
+
       - name: Check build artifacts
         run: |
           ls -la frontend/.next/
           echo "Frontend build completed successfully"
-          
+
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
         with:

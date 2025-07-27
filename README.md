@@ -124,7 +124,7 @@ Comprehensive estimating solution addressing labor/material takeoffs and automat
 ## Technologies Used
 
 - **Next.js 15**: React framework with App Router
-- **React 18**: UI library
+ - **React 19**: UI library
 - **TypeScript**: Type safety
 - **Tailwind CSS**: Styling
 - **tailwindcss-animate**: Additional animation utilities

@@ -1,0 +1,4 @@
+{
+  "read": "%%user.custom_data.tier != null%%",
+  "write": "%%user.custom_data.tier == 'pro' || %%user.custom_data.tier == 'enterprise'%%"
+}

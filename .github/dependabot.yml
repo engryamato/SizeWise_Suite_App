@@ -1,0 +1,97 @@
+version: 2
+updates:
+  # Frontend dependencies (Next.js)
+  - package-ecosystem: "npm"
+    directory: "/frontend"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+    open-pull-requests-limit: 5
+    groups:
+      npm_and_yarn:
+        patterns:
+          - "*"
+    commit-message:
+      prefix: "build(deps)"
+      include: "scope"
+    reviewers:
+      - "engryamato"
+    assignees:
+      - "engryamato"
+
+  # Root Python dependencies
+  - package-ecosystem: "pip"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "10:00"
+    open-pull-requests-limit: 5
+    groups:
+      pip:
+        patterns:
+          - "*"
+    commit-message:
+      prefix: "build(deps)"
+      include: "scope"
+    reviewers:
+      - "engryamato"
+    assignees:
+      - "engryamato"
+
+  # Backend Python dependencies
+  - package-ecosystem: "pip"
+    directory: "/backend"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "11:00"
+    open-pull-requests-limit: 5
+    groups:
+      pip:
+        patterns:
+          - "*"
+    commit-message:
+      prefix: "build(deps)"
+      include: "scope"
+    reviewers:
+      - "engryamato"
+    assignees:
+      - "engryamato"
+
+  # Auth Server Python dependencies
+  - package-ecosystem: "pip"
+    directory: "/auth-server"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "12:00"
+    open-pull-requests-limit: 5
+    groups:
+      pip:
+        patterns:
+          - "*"
+    commit-message:
+      prefix: "build(deps)"
+      include: "scope"
+    reviewers:
+      - "engryamato"
+    assignees:
+      - "engryamato"
+
+  # GitHub Actions
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "13:00"
+    open-pull-requests-limit: 3
+    commit-message:
+      prefix: "ci"
+      include: "scope"
+    reviewers:
+      - "engryamato"
+    assignees:
+      - "engryamato"

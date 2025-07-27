@@ -39,7 +39,7 @@ After adding the secret, the next CI run should:
 - ✅ Successfully upload source maps to Sentry during builds
 - ✅ No longer show authentication errors in the build logs
 - ✅ Enable proper error tracking and performance monitoring
-- ✅ Allow testing the setup via `/sentry-example-page` route
+- ✅ Allow testing the setup via the example template in `app/templates/sentry-example-page`
 
 ## Current Sentry Configuration
 Your project already has Sentry properly configured:

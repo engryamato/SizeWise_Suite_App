@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import {
   Bell,
   ChevronDown,
@@ -16,6 +16,7 @@ import {
   Key,
   Menu,
 } from "lucide-react";
+import { useAuthStore } from '@/stores/auth-store';
 
 interface AppHeaderProps {
   user?: {
@@ -45,8 +46,23 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
   isMobile = false,
 }) => {
   const pathname = usePathname();
+  const router = useRouter();
+  const authStore = useAuthStore();
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
+
+  // Logout handler
+  const handleLogout = async () => {
+    try {
+      await authStore.logout();
+      // Redirect to login page after logout
+      router.push('/auth/login');
+    } catch (error) {
+      console.error('Logout error:', error);
+      // Even if logout fails, redirect to login
+      router.push('/auth/login');
+    }
+  };
 
   // Generate breadcrumbs based on current path
   const generateBreadcrumbs = (): BreadcrumbItem[] => {
@@ -243,7 +259,11 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
                 </Link>
                 
                 <div className="border-t border-neutral-200 dark:border-neutral-700 mt-2 pt-2">
-                  <button type="button" className="flex items-center w-full px-4 py-2 text-sm text-red-600 hover:bg-neutral-100 dark:hover:bg-neutral-700">
+                  <button
+                    type="button"
+                    onClick={handleLogout}
+                    className="flex items-center w-full px-4 py-2 text-sm text-red-600 hover:bg-neutral-100 dark:hover:bg-neutral-700"
+                  >
                     <LogOut size={16} className="mr-3" />
                     Sign Out
                   </button>

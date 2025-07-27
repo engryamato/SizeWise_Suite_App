@@ -21,6 +21,8 @@ import {
 import { Dock, DockItem } from './Dock';
 import { cn } from '@/lib/utils';
 import { useDeviceDetection } from '@/lib/hooks/useDeviceDetection';
+import { useAuthStore } from '@/stores/auth-store';
+import { useRouter } from 'next/navigation';
 
 interface NavigationItem {
   id: string;
@@ -274,6 +276,21 @@ export const CenteredNavigation: React.FC<CenteredNavigationProps> = ({
 }) => {
   const pathname = usePathname();
   const { capabilities } = useDeviceDetection();
+  const authStore = useAuthStore();
+  const router = useRouter();
+
+  // Logout handler
+  const handleLogout = async () => {
+    try {
+      await authStore.logout();
+      // Redirect to login page after logout
+      router.push('/auth/login');
+    } catch (error) {
+      console.error('Logout error:', error);
+      // Even if logout fails, redirect to login
+      router.push('/auth/login');
+    }
+  };
 
   const isActive = (item: NavigationItem) => {
     if (item.href === '/') {
@@ -282,8 +299,27 @@ export const CenteredNavigation: React.FC<CenteredNavigationProps> = ({
     return item.href ? pathname.startsWith(item.href) : false;
   };
 
+  // Create navigation items with dynamic logout handler
+  const navItemsWithLogout = MAIN_NAV_ITEMS.map(item => {
+    if (item.id === 'profile' && item.dropdown) {
+      return {
+        ...item,
+        dropdown: item.dropdown.map(dropdownItem => {
+          if (dropdownItem.id === 'logout') {
+            return {
+              ...dropdownItem,
+              onClick: handleLogout
+            };
+          }
+          return dropdownItem;
+        })
+      };
+    }
+    return item;
+  });
+
   // Filter navigation items based on device capabilities
-  const filteredNavItems = MAIN_NAV_ITEMS.filter(item => {
+  const filteredNavItems = navItemsWithLogout.filter(item => {
     // Hide tool items on mobile devices
     if (item.requiresLargeScreen && !capabilities.canAccessTools) return false;
     return true;

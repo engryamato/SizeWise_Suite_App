@@ -93,21 +93,34 @@ export class HybridAuthManager {
     error?: string;
   }> {
     // Check for super admin first (offline)
-    if (await this.isSuperAdminCredentials(email, password)) {
+    const isSuperAdmin = await this.isSuperAdminCredentials(email, password);
+
+    if (isSuperAdmin) {
+      console.log('✅ Super admin credentials detected, calling authManager.authenticateUser...');
       const superAdminResult = await this.authManager.authenticateUser(email, password);
+      console.log('🔍 AuthManager result:', superAdminResult);
+
       if (superAdminResult.success) {
+        console.log('✅ Super admin authentication successful');
+        const superAdminUser = {
+          id: 'super-admin',
+          email,
+          name: 'Super Administrator',
+          tier: 'super_admin' as const,
+          created_at: new Date().toISOString(),
+          is_super_admin: true,
+        };
+
+        // Cache user data locally
+        await this.cacheUserData(superAdminUser, superAdminResult.token!);
+
         return {
           success: true,
-          user: {
-            id: 'super-admin',
-            email,
-            name: 'Super Administrator',
-            tier: 'super_admin',
-            created_at: new Date().toISOString(),
-            is_super_admin: true,
-          },
+          user: superAdminUser,
           token: superAdminResult.token,
         };
+      } else {
+        console.log('❌ Super admin authentication failed:', superAdminResult.error);
       }
     }
 
@@ -346,7 +359,85 @@ export class HybridAuthManager {
     const SUPER_ADMIN_EMAIL = process.env.NEXT_PUBLIC_SUPER_ADMIN_EMAIL || 'admin@sizewise.com'
     const SUPER_ADMIN_PASSWORD = process.env.NEXT_PUBLIC_SUPER_ADMIN_PASSWORD || 'SizeWise2024!6EAF4610705941'
 
+    console.log('🔍 isSuperAdminCredentials check:', {
+      inputEmail: email,
+      inputPassword: password,
+      expectedEmail: SUPER_ADMIN_EMAIL,
+      expectedPassword: SUPER_ADMIN_PASSWORD,
+      emailMatch: email === SUPER_ADMIN_EMAIL,
+      passwordMatch: password === SUPER_ADMIN_PASSWORD
+    });
+
     return email === SUPER_ADMIN_EMAIL && password === SUPER_ADMIN_PASSWORD;
+  }
+
+  /**
+   * Logout user and clear all authentication data
+   */
+  async logout(): Promise<void> {
+    try {
+      // Get current token for server logout
+      const token = await this.getStoredToken();
+
+      // Try to logout from server if online
+      if (token) {
+        try {
+          await fetch(`${this.serverUrl}/api/auth/logout`, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json',
+            },
+          });
+        } catch (error) {
+          // Server logout failed, but continue with local cleanup
+          console.log('Server logout failed, continuing with local cleanup');
+        }
+      }
+
+      // Clear all local storage data
+      this.clearLocalStorage();
+
+      // Clear cached data
+      this.cachedTierStatus = null;
+
+      // Clear sync interval
+      if (this.syncInterval) {
+        clearInterval(this.syncInterval);
+        this.syncInterval = null;
+      }
+
+      // Use AuthenticationManager for session cleanup if available
+      if (this.authManager) {
+        await this.authManager.logout();
+      }
+
+    } catch (error) {
+      console.error('Logout error:', error);
+      // Even if there's an error, clear local data
+      this.clearLocalStorage();
+    }
+  }
+
+  /**
+   * Clear all authentication data from localStorage
+   */
+  private clearLocalStorage(): void {
+    // Clear user and authentication data
+    localStorage.removeItem('sizewise_user');
+    localStorage.removeItem('sizewise_token');
+    localStorage.removeItem('sizewise_tier_status');
+
+    // Clear any other SizeWise related data
+    const keysToRemove = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && key.startsWith('sizewise_')) {
+        keysToRemove.push(key);
+      }
+    }
+
+    keysToRemove.forEach(key => localStorage.removeItem(key));
   }
 
   /**

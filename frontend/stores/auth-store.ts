@@ -12,7 +12,7 @@ interface AuthStore extends AuthState {
   // Actions
   login: (email: string, password: string) => Promise<boolean>
   register: (email: string, password: string, name: string, company?: string) => Promise<boolean>
-  logout: () => void
+  logout: () => Promise<void>
   refreshToken: () => Promise<boolean>
   setUser: (user: User) => void
   setToken: (token: string) => void
@@ -139,6 +139,11 @@ export const useAuthStore = create<AuthStore>()(
               // Get tier status
               const tierStatus = await hybridAuthManager.getTierStatus()
 
+              // Set auth cookie for middleware
+              if (result.token) {
+                document.cookie = `auth-token=${result.token}; path=/; max-age=${7 * 24 * 60 * 60}; SameSite=Lax`;
+              }
+
               set({
                 user,
                 token: result.token,
@@ -215,13 +220,43 @@ export const useAuthStore = create<AuthStore>()(
           }
         },
 
-        logout: () => {
-          set({
-            user: null,
-            token: null,
-            isAuthenticated: false,
-            isLoading: false,
-          }, false, 'logout')
+        logout: async () => {
+          set({ isLoading: true }, false, 'logout:start')
+
+          try {
+            // Use HybridAuthManager for comprehensive logout
+            await hybridAuthManager.logout()
+
+            // Clear auth cookie
+            document.cookie = 'auth-token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax';
+
+            // Clear all auth state
+            set({
+              user: null,
+              token: null,
+              isAuthenticated: false,
+              isLoading: false,
+              tierStatus: null,
+              isOnline: false,
+              lastSync: null,
+            }, false, 'logout:success')
+
+          } catch (error) {
+            console.error('Logout error:', error)
+
+            // Even if logout fails, clear local state and cookie
+            document.cookie = 'auth-token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax';
+
+            set({
+              user: null,
+              token: null,
+              isAuthenticated: false,
+              isLoading: false,
+              tierStatus: null,
+              isOnline: false,
+              lastSync: null,
+            }, false, 'logout:force')
+          }
         },
 
         refreshToken: async () => {

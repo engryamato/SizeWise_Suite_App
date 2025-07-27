@@ -89,7 +89,7 @@ export const useAuthForm = (onSubmit?: FormSubmitHandler) => {
   const updateField = useCallback((field: keyof AuthFormData, value: any) => {
     setFormState(prev => {
       const newData = { ...prev.data, [field]: value };
-      
+
       // Clear field error when user starts typing
       const newErrors = { ...prev.errors };
       if (field !== 'rememberMe' && newErrors[field as keyof AuthFormErrors]) {
@@ -127,7 +127,7 @@ export const useAuthForm = (onSubmit?: FormSubmitHandler) => {
 
     // Validate form
     const validation = validateForm(formState.data);
-    
+
     if (!validation.isValid) {
       setFormState(prev => ({
         ...prev,
@@ -139,7 +139,7 @@ export const useAuthForm = (onSubmit?: FormSubmitHandler) => {
 
     // Submit form
     setFormState(prev => ({ ...prev, isSubmitting: true, errors: {} }));
-    
+
     try {
       if (onSubmit) {
         await onSubmit(formState.data);
@@ -241,8 +241,12 @@ export const useAuthentication = () => {
   }, []);
 
   // Logout handler
-  const logout = useCallback(() => {
-    authStore.logout();
+  const logout = useCallback(async () => {
+    try {
+      await authStore.logout();
+    } catch (error) {
+      console.error('Logout error:', error);
+    }
   }, [authStore]);
 
   return {

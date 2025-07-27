@@ -70,42 +70,42 @@ function AirDuctSizerV1Page() {
   // Hooks
   const toast = useToast();
 
-  // Demo data
-  const demoSegments: DuctSegment[] = [
-    {
-      id: 'demo-1',
-      start: new Vector3(0, 0, 0),
-      end: new Vector3(5, 0, 0),
-      width: 12,
-      height: 8,
-      type: 'supply',
-      material: 'galvanized_steel',
-    },
-    {
-      id: 'demo-2',
-      start: new Vector3(5, 0, 0),
-      end: new Vector3(5, 0, 5),
-      width: 10,
-      height: 6,
-      type: 'supply',
-      material: 'galvanized_steel',
-    },
-    {
-      id: 'demo-3',
-      start: new Vector3(0, 0, 0),
-      end: new Vector3(-3, 0, 0),
-      width: 14,
-      height: 10,
-      type: 'return',
-      material: 'galvanized_steel',
-    },
-  ];
-
-  // Initialize with demo data
+  // Initialize with demo data (only once on mount)
   useEffect(() => {
+    // Demo data - defined inside useEffect to avoid dependency issues
+    const demoSegments: DuctSegment[] = [
+      {
+        id: 'demo-1',
+        start: new Vector3(0, 0, 0),
+        end: new Vector3(5, 0, 0),
+        width: 12,
+        height: 8,
+        type: 'supply',
+        material: 'galvanized_steel',
+      },
+      {
+        id: 'demo-2',
+        start: new Vector3(5, 0, 0),
+        end: new Vector3(5, 0, 5),
+        width: 10,
+        height: 6,
+        type: 'supply',
+        material: 'galvanized_steel',
+      },
+      {
+        id: 'demo-3',
+        start: new Vector3(0, 0, 0),
+        end: new Vector3(-3, 0, 0),
+        width: 14,
+        height: 10,
+        type: 'return',
+        material: 'galvanized_steel',
+      },
+    ];
+
     setDuctSegments(demoSegments);
     toast.info('Demo Data Loaded', 'Sample duct segments have been loaded for demonstration.');
-  }, [demoSegments, toast]); // Include dependencies
+  }, [toast]); // Only depend on toast, not demoSegments
 
   // Monitor online status
   useEffect(() => {

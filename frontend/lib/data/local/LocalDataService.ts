@@ -27,15 +27,49 @@ export class LocalDataService implements DataService {
   async initialize(): Promise<void> {
     try {
       console.log('🔧 Initializing Local DataService...');
-      this.dbManager = await initializeBrowserDatabase();
+
+      // Initialize browser database with timeout
+      const dbInitPromise = initializeBrowserDatabase();
+      const timeoutPromise = new Promise<never>((_, reject) => {
+        setTimeout(() => {
+          reject(new Error('Database initialization timed out after 15 seconds'));
+        }, 15000);
+      });
+
+      this.dbManager = await Promise.race([dbInitPromise, timeoutPromise]);
+      console.log('✅ Browser database initialized');
+
       this.ready = true; // Set ready before initializing default data
-      await this.initializeDefaultData();
+
+      // Initialize default data with timeout
+      const defaultDataPromise = this.initializeDefaultData();
+      const defaultDataTimeoutPromise = new Promise<never>((_, reject) => {
+        setTimeout(() => {
+          reject(new Error('Default data initialization timed out after 10 seconds'));
+        }, 10000);
+      });
+
+      await Promise.race([defaultDataPromise, defaultDataTimeoutPromise]);
+      console.log('✅ Default data initialized');
+
       console.log('✅ Local DataService initialized successfully');
       this.emit('connection:online', { timestamp: new Date() });
     } catch (error) {
       console.error('❌ Failed to initialize Local DataService:', error);
       this.ready = false; // Reset ready state on error
-      throw error;
+
+      // Provide more specific error messages
+      if (error instanceof Error) {
+        if (error.message.includes('timeout')) {
+          throw new Error(`Database initialization failed: ${error.message}. Please try refreshing the page.`);
+        } else if (error.message.includes('IndexedDB')) {
+          throw new Error('Browser storage is not available. Please ensure you are using a supported browser with storage enabled.');
+        } else {
+          throw new Error(`Local DataService initialization failed: ${error.message}`);
+        }
+      }
+
+      throw new Error('Unknown error occurred during Local DataService initialization');
     }
   }
 

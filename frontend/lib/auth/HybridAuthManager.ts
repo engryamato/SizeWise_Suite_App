@@ -52,20 +52,35 @@ export class HybridAuthManager {
   }
 
   /**
-   * Initialize periodic sync with server
+   * Initialize periodic sync with server (non-blocking)
    */
   private initializeSync() {
-    // Sync every 5 minutes when online
+    // Only initialize sync if server URL is configured
+    if (!this.serverUrl) {
+      console.log('🔧 No auth server URL configured, skipping tier sync');
+      return;
+    }
+
+    // Sync every 5 minutes when online (non-blocking)
     this.syncInterval = setInterval(() => {
-      this.syncTierStatus();
+      this.syncTierStatus().catch(error => {
+        console.log('Tier sync failed (background):', error.message);
+      });
     }, 5 * 60 * 1000);
 
-    // Sync on window focus
+    // Sync on window focus (non-blocking)
     if (typeof window !== 'undefined') {
       window.addEventListener('focus', () => {
-        this.syncTierStatus();
+        this.syncTierStatus().catch(error => {
+          console.log('Tier sync failed (focus):', error.message);
+        });
       });
     }
+
+    // Initial sync (non-blocking, don't wait for result)
+    this.syncTierStatus().catch(error => {
+      console.log('Initial tier sync failed, using cached data:', error.message);
+    });
   }
 
   /**

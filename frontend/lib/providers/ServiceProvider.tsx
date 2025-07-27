@@ -93,29 +93,42 @@ export function ServiceProvider({
   };
 
   /**
-   * Initialize service container based on mode
+   * Initialize service container based on mode with timeout and retry logic
    */
   const initializeServices = useCallback(async () => {
     setLoading(true);
     setError(null);
 
     try {
-      // This would be replaced with actual service initialization
-      // based on the existing service layer architecture
-      const container = await createServiceContainer(mode, defaultConfig);
+      console.log('🔧 Starting service initialization...');
+
+      // Add timeout to prevent hanging initialization
+      const initializationPromise = createServiceContainer(mode, defaultConfig);
+      const timeoutPromise = new Promise<never>((_, reject) => {
+        setTimeout(() => {
+          reject(new Error('Service initialization timed out after 30 seconds. This may be due to network connectivity issues or database problems.'));
+        }, 30000); // 30 second timeout
+      });
+
+      const container = await Promise.race([initializationPromise, timeoutPromise]);
       setServiceContainer(container);
       setInitialized(true);
+      console.log('✅ Service initialization completed successfully');
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to initialize services';
       setError(errorMessage);
-      console.error('Service initialization failed:', err);
+      console.error('❌ Service initialization failed:', err);
 
-      // Log service initialization error to Sentry
-      logger.error('Service initialization failed', err as Error, {
-        component: 'ServiceProvider',
-        mode,
-        config: defaultConfig
-      });
+      // Log service initialization error to Sentry (non-blocking)
+      try {
+        logger.error('Service initialization failed', err as Error, {
+          component: 'ServiceProvider',
+          mode,
+          config: defaultConfig
+        });
+      } catch (sentryError) {
+        console.warn('Failed to log error to Sentry:', sentryError);
+      }
     } finally {
       setLoading(false);
     }
@@ -131,26 +144,46 @@ export function ServiceProvider({
   }, [services, initialized, initializeServices]);
 
   /**
-   * Create service container based on mode
+   * Create service container based on mode with enhanced error handling
    */
   async function createServiceContainer(
     mode: 'offline' | 'cloud',
     config: ServiceProviderConfig
   ): Promise<ServiceContainer> {
     if (mode === 'offline') {
-      // Initialize real offline services with SQLite database
       console.log('🔧 Creating offline service container...');
-      const offlineServices = await createEnhancedOfflineServiceContainer();
 
-      // Map to ServiceContainer interface
-      return {
-        projectService: offlineServices.projectService,
-        calculationService: offlineServices.calculationService,
-        validationService: offlineServices.validationService,
-        exportService: offlineServices.exportService,
-        tierService: offlineServices.tierService,
-        featureManager: offlineServices.featureManager
-      };
+      try {
+        // Initialize offline services with enhanced error handling
+        const offlineServices = await createEnhancedOfflineServiceContainer();
+
+        console.log('✅ Offline services created successfully');
+
+        // Map to ServiceContainer interface
+        return {
+          projectService: offlineServices.projectService,
+          calculationService: offlineServices.calculationService,
+          validationService: offlineServices.validationService,
+          exportService: offlineServices.exportService,
+          tierService: offlineServices.tierService,
+          featureManager: offlineServices.featureManager
+        };
+      } catch (error) {
+        console.error('❌ Failed to create offline service container:', error);
+
+        // Provide more specific error messages
+        if (error instanceof Error) {
+          if (error.message.includes('database')) {
+            throw new Error('Failed to initialize local database. Please try refreshing the page or clearing browser data.');
+          } else if (error.message.includes('IndexedDB')) {
+            throw new Error('Browser storage is not available. Please ensure you are using a supported browser with storage enabled.');
+          } else {
+            throw new Error(`Service initialization failed: ${error.message}`);
+          }
+        }
+
+        throw new Error('Unknown error occurred during service initialization. Please try again.');
+      }
     } else {
       // Cloud mode not implemented for Phase 1
       throw new Error('Cloud mode not available in Phase 1 offline desktop version');

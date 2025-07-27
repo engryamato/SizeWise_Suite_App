@@ -593,40 +593,69 @@ export class EnhancedSyncService {
 }
 
 /**
- * Create enhanced offline service container
+ * Create enhanced offline service container with robust error handling
  */
 export async function createEnhancedOfflineServiceContainer(): Promise<EnhancedOfflineServiceContainer> {
-  // Initialize DataService
-  const dataService = await createDataService('local');
-  await dataService.initialize();
+  try {
+    console.log('🔧 Initializing DataService...');
 
-  // Create services
-  const projectService = new EnhancedProjectService(dataService);
-  const userService = new EnhancedUserService(dataService);
-  const calculationService = new EnhancedCalculationService();
-  const validationService = new EnhancedValidationService();
-  const exportService = new EnhancedExportService(dataService);
-  const tierService = new EnhancedTierService(dataService);
-  const syncService = new EnhancedSyncService(dataService);
+    // Initialize DataService with timeout
+    const dataService = await createDataService('local');
 
-  // Create import/export services
-  const importService = createImportService();
-  const backupService = createBackupService();
+    // Add timeout for data service initialization
+    const initPromise = dataService.initialize();
+    const timeoutPromise = new Promise<never>((_, reject) => {
+      setTimeout(() => {
+        reject(new Error('DataService initialization timed out after 20 seconds'));
+      }, 20000);
+    });
 
-  // Create feature manager
-  const featureManager = createBrowserFeatureManager(dataService);
+    await Promise.race([initPromise, timeoutPromise]);
+    console.log('✅ DataService initialized successfully');
 
-  return {
-    dataService,
-    projectService,
-    userService,
-    calculationService,
-    validationService,
-    exportService,
-    tierService,
-    featureManager,
-    importService,
-    backupService,
-    syncService
-  };
+    console.log('🔧 Creating service instances...');
+
+    // Create services with error handling
+    const projectService = new EnhancedProjectService(dataService);
+    const userService = new EnhancedUserService(dataService);
+    const calculationService = new EnhancedCalculationService();
+    const validationService = new EnhancedValidationService();
+    const exportService = new EnhancedExportService(dataService);
+    const tierService = new EnhancedTierService(dataService);
+    const syncService = new EnhancedSyncService(dataService);
+
+    console.log('🔧 Creating auxiliary services...');
+
+    // Create import/export services
+    const importService = createImportService();
+    const backupService = createBackupService();
+
+    // Create feature manager
+    const featureManager = createBrowserFeatureManager(dataService);
+
+    console.log('✅ All services created successfully');
+
+    return {
+      dataService,
+      projectService,
+      userService,
+      calculationService,
+      validationService,
+      exportService,
+      tierService,
+      featureManager,
+      importService,
+      backupService,
+      syncService
+    };
+  } catch (error) {
+    console.error('❌ Failed to create enhanced offline service container:', error);
+
+    // Re-throw with more context
+    if (error instanceof Error) {
+      throw new Error(`Service container creation failed: ${error.message}`);
+    }
+
+    throw new Error('Unknown error occurred while creating service container');
+  }
 }

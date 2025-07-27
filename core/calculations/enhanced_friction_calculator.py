@@ -16,7 +16,7 @@ from enum import Enum
 from typing import Dict, List, Optional, Tuple, Union
 from dataclasses import dataclass
 
-from air_properties_calculator import AirPropertiesCalculator, AirConditions
+from .air_properties_calculator import AirPropertiesCalculator, AirConditions
 
 
 class FrictionMethod(Enum):

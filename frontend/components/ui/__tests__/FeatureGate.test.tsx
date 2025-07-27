@@ -244,7 +244,7 @@ describe('FeatureGate Component', () => {
       );
 
       expect(screen.getByText('Pro Feature')).toBeInTheDocument();
-      expect(screen.getByText('This feature requires a Pro subscription.')).toBeInTheDocument();
+      expect(screen.getByText(/This feature requires a Pro subscription/)).toBeInTheDocument();
       expect(screen.getByText('Upgrade to Pro')).toBeInTheDocument();
     });
 

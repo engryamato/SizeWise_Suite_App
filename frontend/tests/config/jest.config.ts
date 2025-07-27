@@ -11,21 +11,36 @@
 import type { Config } from '@jest/types';
 
 const config: Config.InitialOptions = {
+  // Root directory - set to frontend directory
+  rootDir: '../../',
+
   // Test environment
   testEnvironment: 'jsdom',
   
   // Root directories
-  roots: ['<rootDir>/src', '<rootDir>/tests'],
-  
+  roots: ['<rootDir>/app', '<rootDir>/components', '<rootDir>/lib', '<rootDir>/tests'],
+
   // Module paths
-  modulePaths: ['<rootDir>/src'],
+  modulePaths: ['<rootDir>/app', '<rootDir>/components', '<rootDir>/lib'],
   
   // Module name mapping
   moduleNameMapper: {
-    '^@/(.*)$': '<rootDir>/src/$1',
+    '^@/(.*)$': '<rootDir>/$1',
     '^@tests/(.*)$': '<rootDir>/tests/$1',
     '^@backend/(.*)$': '<rootDir>/../backend/$1',
-    '^@electron/(.*)$': '<rootDir>/../electron/$1'
+    '^@electron/(.*)$': '<rootDir>/../electron/$1',
+    '^../backend/(.*)$': '<rootDir>/__mocks__/backend/$1',
+    '^../../backend/(.*)$': '<rootDir>/__mocks__/backend/$1',
+    '^../../../../backend/(.*)$': '<rootDir>/__mocks__/backend/$1',
+    '^../../../electron/(.*)$': '<rootDir>/__mocks__/electron/$1',
+    '^@/stores/(.*)$': '<rootDir>/__mocks__/stores/$1',
+    '^@/lib/hooks/useFeatureFlag$': '<rootDir>/__mocks__/@/lib/hooks/useFeatureFlag.js',
+    'better-sqlite3': '<rootDir>/__mocks__/better-sqlite3.js',
+    'canvas': '<rootDir>/__mocks__/canvas.js',
+    'konva': '<rootDir>/__mocks__/konva.js',
+    '^uuid$': '<rootDir>/__mocks__/uuid.js',
+    'lucide-react': '<rootDir>/__mocks__/lucide-react.js',
+    '\\.(css|less|scss|sass)$': 'identity-obj-proxy'
   },
   
   // File extensions
@@ -47,23 +62,29 @@ const config: Config.InitialOptions = {
   
   // Transform ignore patterns
   transformIgnorePatterns: [
-    'node_modules/(?!(.*\\.mjs$|@testing-library|@jest))'
+    'node_modules/(?!(.*\\.mjs$|@testing-library|@jest|uuid|konva))'
   ],
   
-  // Test match patterns
+  // Test match patterns - only Jest tests, exclude Playwright
   testMatch: [
-    '<rootDir>/tests/**/*.test.(ts|tsx|js|jsx)',
-    '<rootDir>/tests/**/*.spec.(ts|tsx|js|jsx)',
-    '<rootDir>/src/**/__tests__/**/*.(ts|tsx|js|jsx)',
-    '<rootDir>/src/**/*.(test|spec).(ts|tsx|js|jsx)'
+    '<rootDir>/**/__tests__/**/*.test.(ts|tsx|js|jsx)',
+    '<rootDir>/**/tests/**/*.test.(ts|tsx|js|jsx)',
+    '<rootDir>/src/**/__tests__/**/*.test.(ts|tsx|js|jsx)',
+    '<rootDir>/src/**/*.test.(ts|tsx|js|jsx)',
+    '<rootDir>/lib/**/__tests__/**/*.test.(ts|tsx|js|jsx)',
+    '<rootDir>/lib/**/*.test.(ts|tsx|js|jsx)',
+    '<rootDir>/components/**/__tests__/**/*.test.(ts|tsx|js|jsx)',
+    '<rootDir>/components/**/*.test.(ts|tsx|js|jsx)'
   ],
   
   // Test ignore patterns
   testPathIgnorePatterns: [
-    '<rootDir>/node_modules/',
-    '<rootDir>/dist/',
-    '<rootDir>/build/',
-    '<rootDir>/tests/e2e/'
+    '/node_modules/',
+    '/dist/',
+    '/build/',
+    '/tests/e2e/',
+    '\\.spec\\.(ts|tsx)$',
+    'playwright\\.config\\.(ts|js)$'
   ],
   
   // Setup files
@@ -145,30 +166,17 @@ const config: Config.InitialOptions = {
   // Module directories
   moduleDirectories: ['node_modules', '<rootDir>/src'],
   
-  // Resolver
-  resolver: '<rootDir>/tests/config/jest.resolver.js',
+  // Resolver - commented out as file doesn't exist
+  // resolver: '<rootDir>/tests/config/jest.resolver.js',
   
-  // Watch plugins
-  watchPlugins: [
-    'jest-watch-typeahead/filename',
-    'jest-watch-typeahead/testname'
-  ],
+  // Watch plugins - commented out as packages not installed
+  // watchPlugins: [
+  //   'jest-watch-typeahead/filename',
+  //   'jest-watch-typeahead/testname'
+  // ],
   
-  // Reporters
-  reporters: [
-    'default',
-    ['jest-junit', {
-      outputDirectory: '<rootDir>/test-results',
-      outputName: 'junit.xml',
-      suiteName: 'SizeWise Suite Unit Tests'
-    }],
-    ['jest-html-reporters', {
-      publicPath: '<rootDir>/test-results',
-      filename: 'test-report.html',
-      expand: true,
-      hideIcon: false
-    }]
-  ],
+  // Reporters - simplified to default only
+  reporters: ['default'],
   
   // Test environment options
   testEnvironmentOptions: {

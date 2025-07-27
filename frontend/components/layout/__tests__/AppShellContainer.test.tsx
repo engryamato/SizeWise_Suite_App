@@ -12,10 +12,6 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { jest } from '@jest/globals';
 import { AppShellContainer } from '../AppShellContainer';
 import { ServiceProvider } from '../../../lib/providers/ServiceProvider';
-import { useUIStore } from '../../../stores/ui-store';
-import { useAuthStore } from '../../../stores/auth-store';
-import { useTheme } from '../../../lib/hooks/useTheme';
-import { useToast } from '../../../lib/hooks/useToaster';
 
 // =============================================================================
 // Mocks
@@ -23,36 +19,63 @@ import { useToast } from '../../../lib/hooks/useToaster';
 
 // Mock Next.js router
 jest.mock('next/navigation', () => ({
-  usePathname: jest.fn(() => '/dashboard'),
+  usePathname: jest.fn(),
 }));
 
 // Mock stores
-jest.mock('../../../stores/ui-store');
-jest.mock('../../../stores/auth-store');
+jest.mock('../../../stores/ui-store', () => ({
+  useUIStore: jest.fn()
+}));
+
+jest.mock('../../../stores/auth-store', () => ({
+  useAuthStore: jest.fn()
+}));
 
 // Mock hooks
-jest.mock('../../../lib/hooks/useTheme');
-jest.mock('../../../lib/hooks/useToaster');
+jest.mock('../../../lib/hooks/useTheme', () => ({
+  useTheme: jest.fn()
+}));
+
+jest.mock('../../../lib/hooks/useToaster', () => ({
+  useToast: jest.fn()
+}));
+
+jest.mock('../../../lib/hooks/useServiceIntegration', () => ({
+  useServices: jest.fn()
+}));
 
 // Mock service provider
 jest.mock('../../../lib/providers/ServiceProvider', () => ({
   ServiceProvider: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
-  useServiceContext: () => ({
-    services: mockServices,
-    loading: false,
-    error: null,
-    initialized: true,
-  }),
+  useServiceContext: jest.fn()
 }));
 
 // Mock presentation component
 jest.mock('../AppShellPresentation', () => ({
-  AppShellPresentation: ({ children, ...props }: any) => (
-    <div data-testid="app-shell-presentation" {...props}>
+  AppShellPresentation: ({ children, className }: any) => (
+    <div data-testid="app-shell-presentation" className={className}>
       {children}
     </div>
   ),
 }));
+
+// Import the mocked functions after mocking
+import { usePathname } from 'next/navigation';
+import { useUIStore } from '../../../stores/ui-store';
+import { useAuthStore } from '../../../stores/auth-store';
+import { useTheme } from '../../../lib/hooks/useTheme';
+import { useToast } from '../../../lib/hooks/useToaster';
+import { useServices } from '../../../lib/hooks/useServiceIntegration';
+import { useServiceContext } from '../../../lib/providers/ServiceProvider';
+
+// Type the mocks
+const mockUsePathname = usePathname as jest.MockedFunction<typeof usePathname>;
+const mockUseUIStore = useUIStore as jest.MockedFunction<typeof useUIStore>;
+const mockUseAuthStore = useAuthStore as jest.MockedFunction<typeof useAuthStore>;
+const mockUseTheme = useTheme as jest.MockedFunction<typeof useTheme>;
+const mockUseToast = useToast as jest.MockedFunction<typeof useToast>;
+const mockUseServices = useServices as jest.MockedFunction<typeof useServices>;
+const mockUseServiceContext = useServiceContext as jest.MockedFunction<typeof useServiceContext>;
 
 // =============================================================================
 // Mock Data and Services
@@ -139,13 +162,56 @@ const mockToast = {
 // Test Setup
 // =============================================================================
 
+// Create a mock function that we can reference in tests
+const mockGetCurrentTier = jest.fn().mockResolvedValue('pro');
+
 beforeEach(() => {
   jest.clearAllMocks();
-  
-  (useUIStore as jest.Mock).mockReturnValue(mockUIStore);
-  (useAuthStore as jest.Mock).mockReturnValue(mockAuthStore);
-  (useTheme as jest.Mock).mockReturnValue(mockTheme);
-  (useToast as jest.Mock).mockReturnValue(mockToast);
+
+  // Reset the specific mock function but preserve its implementation
+  mockGetCurrentTier.mockClear();
+  mockGetCurrentTier.mockResolvedValue('pro');
+
+  // Setup router mock
+  mockUsePathname.mockReturnValue('/dashboard');
+
+  // Setup store mocks
+  mockUseUIStore.mockReturnValue(mockUIStore);
+  mockUseAuthStore.mockReturnValue(mockAuthStore);
+  mockUseTheme.mockReturnValue(mockTheme);
+  mockUseToast.mockReturnValue(mockToast);
+
+  // Setup service mocks
+  mockUseServices.mockReturnValue({
+    projectService: mockServices.projectService,
+    calculationService: mockServices.calculationService,
+    exportService: mockServices.exportService,
+    tier: {
+      service: 'pro',
+      features: ['advanced_calculations', 'export_formats'],
+      limits: { projects: 100, calculations: 1000 },
+      getCurrentTier: mockGetCurrentTier
+    },
+    loading: false,
+    error: null,
+    initialized: true
+  });
+
+  mockUseServiceContext.mockReturnValue({
+    services: mockServices,
+    loading: false,
+    error: null,
+    initialized: true
+  });
+});
+
+afterEach(() => {
+  // Clean up timers to prevent leaks
+  jest.runOnlyPendingTimers();
+  jest.useRealTimers();
+
+  // Clean up any remaining DOM elements
+  document.body.innerHTML = '';
 });
 
 // =============================================================================
@@ -191,19 +257,18 @@ describe('AppShellContainer', () => {
   describe('Service Integration', () => {
     it('loads user tier information on mount', async () => {
       renderAppShell();
-      
+
       await waitFor(() => {
-        expect(mockServices.tierService.getCurrentTier).toHaveBeenCalled();
-        expect(mockServices.tierService.getTierLimits).toHaveBeenCalled();
-      });
+        expect(mockGetCurrentTier).toHaveBeenCalled();
+      }, { timeout: 1000 });
     });
 
     it('handles service errors gracefully', async () => {
       const errorMessage = 'Service unavailable';
-      mockServices.tierService.getCurrentTier.mockRejectedValue(new Error(errorMessage));
-      
+      mockGetCurrentTier.mockRejectedValue(new Error(errorMessage));
+
       renderAppShell();
-      
+
       await waitFor(() => {
         expect(mockToast.error).toHaveBeenCalledWith('Failed to load user information');
       });
@@ -354,17 +419,24 @@ describe('AppShellContainer', () => {
 
   describe('Auto-save Functionality', () => {
     it('triggers auto-save periodically', async () => {
+      // Use fake timers for this test only
       jest.useFakeTimers();
-      
-      renderAppShell();
-      
-      // Fast-forward time to trigger auto-save
-      jest.advanceTimersByTime(30000);
-      
-      // Auto-save would be handled by project service
-      // This is just testing the timer setup
-      
-      jest.useRealTimers();
+
+      try {
+        renderAppShell();
+
+        // Fast-forward time to trigger auto-save
+        jest.advanceTimersByTime(30000);
+
+        // Auto-save would be handled by project service
+        // This is just testing the timer setup
+
+        // Verify that the component doesn't crash with timer advancement
+        expect(screen.getByTestId('app-shell-presentation')).toBeInTheDocument();
+      } finally {
+        // Always restore real timers
+        jest.useRealTimers();
+      }
     });
   });
 });

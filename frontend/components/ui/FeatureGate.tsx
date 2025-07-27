@@ -292,32 +292,44 @@ export const MultiFeatureGate: React.FC<MultiFeatureGateProps> = ({
   fallback,
   className = ''
 }) => {
-  // Note: This is a simplified implementation. In a real scenario, you would need
-  // to handle multiple features differently, possibly with a custom hook
-  const firstFeature = features[0];
-  const { enabled, loading, error } = useFeatureFlag(firstFeature || '');
+  // For proper React hooks usage, we need to handle a fixed number of features
+  // This implementation supports up to 5 features - can be extended as needed
+  const feature1 = features[0] || '';
+  const feature2 = features[1] || '';
+  const feature3 = features[2] || '';
+  const feature4 = features[3] || '';
+  const feature5 = features[4] || '';
 
-  // For now, we'll just check the first feature as an example
-  const featureStates = [{ enabled, loading, error }];
-  
-  if (loading) {
+  const state1 = useFeatureFlag(feature1);
+  const state2 = feature2 ? useFeatureFlag(feature2) : { enabled: true, loading: false, error: null };
+  const state3 = feature3 ? useFeatureFlag(feature3) : { enabled: true, loading: false, error: null };
+  const state4 = feature4 ? useFeatureFlag(feature4) : { enabled: true, loading: false, error: null };
+  const state5 = feature5 ? useFeatureFlag(feature5) : { enabled: true, loading: false, error: null };
+
+  const featureStates = [state1, state2, state3, state4, state5].slice(0, features.length);
+
+  // Check if any features are still loading
+  const isLoading = featureStates.some(state => state.loading);
+  if (isLoading) {
     return <DefaultLoadingComponent className={className} />;
   }
-  
+
+  // Check for errors
   const errors = featureStates.filter(state => state.error).map(state => state.error);
   if (errors.length > 0) {
     return <DefaultErrorComponent error={errors.join(', ')} className={className} />;
   }
-  
+
+  // Determine if children should be rendered based on mode
   const enabledFeatures = featureStates.filter(state => state.enabled);
-  const shouldRender = mode === 'all' 
+  const shouldRender = mode === 'all'
     ? enabledFeatures.length === features.length
     : enabledFeatures.length > 0;
-  
+
   if (shouldRender) {
     return <div className={`multi-feature-gate-enabled ${className}`}>{children}</div>;
   }
-  
+
   return fallback ? <div className={`multi-feature-gate-fallback ${className}`}>{fallback}</div> : null;
 };
 

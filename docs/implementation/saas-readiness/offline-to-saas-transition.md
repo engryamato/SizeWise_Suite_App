@@ -1,6 +1,6 @@
 # Offline-to-SaaS Transition Architecture
 
-**Source Documents:** `docs/developer-guide/air-duct-sizer-offline-version/air-duct-sizer-offline-first.md` section 14, `docs/developer-guide/Key remarks.md`  
+**Source Documents:** `docs/developer-guide/SizeWise Offline First.md` section 14, `docs/developer-guide/Key remarks.md`
 **Purpose:** Complete SaaS transition roadmap enabling 70-80% code reuse and seamless user migration
 
 ---

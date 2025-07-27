@@ -1,7 +1,7 @@
 # Tier Boundaries Specification
 
 **Source Documents:**
-- `docs/developer-guide/air-duct-sizer-offline-version/air-duct-sizer-offline-first.md`
+- `docs/developer-guide/SizeWise Offline First.md`
 - `docs/developer-guide/Key remarks.md`
 - `docs/developer-guide/Tier and Feature Separation.md`
 

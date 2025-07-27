@@ -15,7 +15,7 @@
 - ✅ **Professional Exports**: High-resolution PDFs without watermarks
 - ✅ **Cloud Backup**: Never lose your work again
 - ✅ **Multi-Device Access**: Work from anywhere
-- ✅ **All HVAC Tools**: Boiler vents, grease ducts, equipment selection
+- ✅ **All HVAC Tools** *(future)*: Boiler vents, grease ducts, equipment selection (planned for later versions)
 
 **ROI Calculator:**
 - Save 2+ hours per week with unlimited projects

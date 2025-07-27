@@ -54,8 +54,8 @@ Script: "The Free Tier provides core HVAC functionality to capture market share 
 **Pro Tier Demonstration**
 ```
 Action: Switch to Pro Tier (demonstrate tier switching)
-Show:
-- Advanced HVAC tools (boiler vent, grease duct sizing)
+- Show:
+- Advanced HVAC tools *(planned)* (boiler vent, grease duct sizing)
 - Unlimited projects and enhanced templates
 - Full standards suite (SMACNA, ASHRAE)
 - Enhanced PDF processing and CAD tools

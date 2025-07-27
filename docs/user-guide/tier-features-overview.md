@@ -56,8 +56,8 @@
 - **Cloud Storage**: Automatic backup and sync across devices
 - **Multi-Device Access**: Work from desktop, laptop, or tablet
 
-### Enhanced HVAC Tools
-- **All HVAC Calculators**: Air ducts, boiler vents, grease ducts, general ventilation
+-### Enhanced HVAC Tools
+- **All HVAC Calculators** *(future)*: Air ducts today, with boiler vents, grease ducts, and general ventilation planned for later releases
 - **Equipment Selection**: Comprehensive equipment databases
 - **Advanced 3D Rendering**: High-quality 3D visualization with materials
 - **Full Standards Access**: Complete SMACNA, ASHRAE, and regional standards
@@ -77,7 +77,7 @@
 ### What's Included
 ✅ **Everything in Free tier**  
 ✅ Unlimited projects and segments  
-✅ All HVAC calculation tools  
+✅ All HVAC calculation tools *(current + planned)*
 ✅ High-resolution exports (no watermark)  
 ✅ Cloud storage and sync  
 ✅ Multi-device access  

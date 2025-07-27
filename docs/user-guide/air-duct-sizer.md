@@ -4,6 +4,8 @@ _Last updated: 2025-07-13_
 
 ---
 
+> **Release Note:** The first offline version of SizeWise Suite includes only the Air Duct Sizer. Additional calculators are planned for future updates.
+
 ## 1. Vision and Strategic Purpose
 
 The Air Duct Sizer is the centerpiece HVAC engineering tool within the SizeWise Suite, designed for both everyday field professionals and advanced consultants. Its mission is to replace static, error-prone spreadsheets and legacy “ductulator” calculators with an interactive, code-compliant platform that *actually models* real ductwork systems—start to finish.

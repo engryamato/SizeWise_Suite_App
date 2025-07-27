@@ -23,23 +23,22 @@ The SizeWise Suite Phase 1 implementation has been **successfully completed** on
 
 ### **💰 Revenue-Ready Three-Tier Business Model**
 
-#### **🆓 Free Tier - Market Entry**
 - **Core HVAC Functionality**: Air duct sizing with SMACNA compliance
+- **Initial Release Scope**: Version 1 ships with the Air Duct Sizer only; additional calculators will arrive in future updates.
 - **Basic Project Management**: Limited projects and segments
 - **Standards Access**: Essential SMACNA standards
 - **Target Market**: Individual engineers, students, small firms
 - **Business Value**: Lead generation and market penetration
 
-#### **💼 Pro Tier - Professional Market**
-- **Advanced HVAC Tools**: Boiler vent, grease duct, general ventilation, equipment selection
+- **Advanced HVAC Tools** *(planned)*: Boiler vent, grease duct, general ventilation, equipment selection
 - **Enhanced Project Management**: Unlimited projects, templates, enhanced metadata
 - **Full Standards Suite**: Complete SMACNA, ASHRAE standards with cloud updates
 - **Professional Features**: Enhanced PDF processing, full CAD tools, cloud sync
 - **Target Market**: Professional engineers, mid-size firms
 - **Business Value**: Primary revenue driver with recurring subscriptions
 
-#### **🏢 Enterprise Tier - Corporate Market**
-- **Complete HVAC Suite**: All professional features plus custom standards and templates
+-#### **🏢 Enterprise Tier - Corporate Market**
+- **Complete HVAC Suite** *(future roadmap)*: All professional features plus custom standards and templates
 - **Advanced Collaboration**: Team collaboration, advanced RBAC, real-time collaboration
 - **Enterprise Security**: SSO integration, comprehensive audit logs, compliance certifications
 - **Premium Support**: Priority phone support, custom training, SLA-based updates

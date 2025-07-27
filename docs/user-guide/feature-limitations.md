@@ -2,6 +2,8 @@
 
 **Understanding tier restrictions and how to work within them**
 
+> **Note:** The first offline release includes only the Air Duct Sizer module. Boiler vent, grease duct, and other calculators will be added later.
+
 ---
 
 ## 🆓 Free Tier Limitations

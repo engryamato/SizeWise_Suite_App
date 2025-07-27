@@ -6,6 +6,8 @@ Welcome to SizeWise Suite, a comprehensive modular HVAC engineering and estimati
 
 SizeWise Suite is an **offline-first**, **modular platform** that unifies duct sizing, vent design, and cost estimating in a single workspace. Built with modern web technologies, it provides:
 
+> **First Offline Release**: Version 1 ships with the **Air Duct Sizer** module only. Additional calculators will be introduced in future updates.
+
 - **Standards Compliance**: Full compliance with SMACNA, NFPA, and ASHRAE standards
 - **Offline-First Design**: Work anywhere, anytime without internet connectivity
 - **Bidirectional Unit Conversion**: Seamless Imperial/SI unit support
@@ -14,20 +16,20 @@ SizeWise Suite is an **offline-first**, **modular platform** that unifies duct s
 
 ## Core Modules
 
-### 🌬️ Air Duct Sizer
+### 🌬️ Air Duct Sizer *(Available Now)*
 Calculate optimal duct sizes for HVAC systems with SMACNA compliance checking, friction loss analysis, and velocity validation.
 
-### 🔥 Grease Duct Sizer *(Coming Soon)*
-Design grease exhaust systems with NFPA 96 compliance and fire safety considerations.
+### 🔥 Grease Duct Sizer *(Planned)*
+Design grease exhaust systems with NFPA 96 compliance and fire safety considerations. This module is scheduled for a future update.
 
-### 🚗 Engine Exhaust Sizer *(Coming Soon)*
-Size engine exhaust systems for parking garages and mechanical rooms.
+### 🚗 Engine Exhaust Sizer *(Planned)*
+Size engine exhaust systems for parking garages and mechanical rooms. This module will be introduced in a later release.
 
-### 🔥 Boiler Vent Sizer *(Coming Soon)*
-Calculate boiler vent requirements with code compliance checking.
+### 🔥 Boiler Vent Sizer *(Planned)*
+Calculate boiler vent requirements with code compliance checking. This module is part of our future roadmap.
 
-### 💰 Estimating App *(Coming Soon)*
-Generate accurate cost estimates for HVAC projects with material and labor calculations.
+### 💰 Estimating App *(Planned)*
+Generate accurate cost estimates for HVAC projects with material and labor calculations. Planned for a future release.
 
 ## Key Features
 

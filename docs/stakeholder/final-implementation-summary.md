@@ -92,12 +92,13 @@ The SizeWise Suite Phase 1 implementation has been **successfully completed** wi
 
 #### **Free Tier - Market Entry** (Lead Generation)
 - Core HVAC functionality with SMACNA compliance
+- **Initial Release Scope**: Version 1 includes only the Air Duct Sizer module. Additional calculators are planned for future updates.
 - Basic project management (3 projects, 10 segments each)
 - Essential standards access
 - Professional PDF import capabilities
 
 #### **Pro Tier - Primary Revenue** ($49-99/month)
-- Advanced HVAC tools (boiler vent, grease duct, general ventilation)
+- Advanced HVAC tools *(planned)* (boiler vent, grease duct, general ventilation)
 - Unlimited projects with enhanced templates
 - Complete standards suite (SMACNA, ASHRAE)
 - Cloud sync and enhanced PDF processing

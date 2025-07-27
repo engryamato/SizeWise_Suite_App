@@ -1,25 +1,30 @@
 # Multi-stage build for Next.js frontend
-FROM node:18-alpine AS base
+FROM --platform=linux/amd64 node:18-alpine AS base
 
 # Install dependencies only when needed
 FROM base AS deps
 RUN apk add --no-cache libc6-compat
 WORKDIR /app
 
-# Copy package files
-COPY frontend/package*.json ./
-RUN npm ci --only=production
+# Copy Docker-specific package files (excludes problematic dependencies)
+COPY frontend/package.docker.json ./package.json
+COPY frontend/package-lock.json* ./
+RUN npm install --production --no-optional --legacy-peer-deps
 
 # Development stage
 FROM base AS dev
 WORKDIR /app
-COPY frontend/package*.json ./
-RUN npm ci
+COPY frontend/package.docker.json ./package.json
+COPY frontend/package-lock.json* ./
+
+# Install dependencies with force to override peer dependency conflicts
+RUN npm cache clean --force
+RUN npm install --no-optional --legacy-peer-deps
 
 COPY frontend/ .
 EXPOSE 3000
-ENV PORT 3000
-ENV HOSTNAME "0.0.0.0"
+ENV PORT=3000 \
+  HOSTNAME="0.0.0.0"
 
 # Enable hot reloading for development
 CMD ["npm", "run", "dev"]
@@ -27,8 +32,9 @@ CMD ["npm", "run", "dev"]
 # Build stage
 FROM base AS builder
 WORKDIR /app
-COPY frontend/package*.json ./
-RUN npm ci
+COPY frontend/package.docker.json ./package.json
+COPY frontend/package-lock.json* ./
+RUN npm install --no-optional --legacy-peer-deps
 
 COPY frontend/ .
 

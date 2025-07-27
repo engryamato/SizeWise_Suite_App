@@ -48,7 +48,10 @@ def create_app(config_name='development'):
     init_sentry(app, environment=config_name)
 
     # Enable CORS for frontend communication
-    CORS(app, origins=['http://localhost:3000', 'http://127.0.0.1:3000'])
+    # Support both local development and containerized environments
+    default_origins = 'http://localhost:3000,http://127.0.0.1:3000'
+    cors_origins = os.getenv('CORS_ORIGINS', default_origins).split(',')
+    CORS(app, origins=cors_origins)
     
     # Configuration
     app.config['DEBUG'] = os.getenv('FLASK_DEBUG', 'True').lower() == 'true'

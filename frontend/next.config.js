@@ -57,10 +57,18 @@ const nextConfig = {
 
   // API proxy configuration for development
   async rewrites() {
+    // Support both local development and containerized environments
+    const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'
+    const authUrl = process.env.NEXT_PUBLIC_AUTH_URL || 'http://localhost:5001'
+
     return [
       {
+        source: '/api/auth/:path*',
+        destination: `${authUrl}/api/:path*`,
+      },
+      {
         source: '/api/:path*',
-        destination: 'http://localhost:5000/api/:path*',
+        destination: `${backendUrl}/api/:path*`,
       },
     ]
   },

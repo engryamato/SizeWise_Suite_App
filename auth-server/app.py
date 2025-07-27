@@ -37,7 +37,11 @@ app.config['JWT_REFRESH_TOKEN_EXPIRES'] = timedelta(days=30)
 # Initialize extensions
 db = SQLAlchemy(app)
 migrate = Migrate(app, db)
-CORS(app, origins=['http://localhost:3000', 'http://127.0.0.1:3000'])
+# Enable CORS for frontend communication
+# Support both local development and containerized environments
+default_origins = 'http://localhost:3000,http://127.0.0.1:3000'
+cors_origins = os.environ.get('CORS_ORIGINS', default_origins).split(',')
+CORS(app, origins=cors_origins)
 
 # =============================================================================
 # Database Models

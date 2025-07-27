@@ -20,7 +20,14 @@
     "start:backend": "python3 run_backend.py",
     "start:dev": "concurrently \"npm run start:backend\" \"npm run dev\"",
     "install:frontend": "cd frontend && npm install",
-    "playwright:install": "cd frontend && npm run playwright:install"
+    "playwright:install": "cd frontend && npm run playwright:install",
+    "docker:dev": "./scripts/docker-dev.sh start",
+    "docker:stop": "./scripts/docker-dev.sh stop",
+    "docker:restart": "./scripts/docker-dev.sh restart",
+    "docker:logs": "./scripts/docker-dev.sh logs",
+    "docker:status": "./scripts/docker-dev.sh status",
+    "docker:cleanup": "./scripts/docker-dev.sh cleanup",
+    "docker:test": "./scripts/docker-dev.sh test all"
   },
   "keywords": [
     "hvac",

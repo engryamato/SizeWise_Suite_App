@@ -1,4 +1,5 @@
 const { withSentryConfig } = require("@sentry/nextjs");
+const withPWA = require('next-pwa')({ dest: 'public' });
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
@@ -74,11 +75,12 @@ const nextConfig = {
   },
 }
 
-module.exports = withSentryConfig(
-  nextConfig,
-  {
-    // For all available options, see:
-    // https://www.npmjs.com/package/@sentry/webpack-plugin#options
+module.exports = withPWA(
+  withSentryConfig(
+    nextConfig,
+    {
+      // For all available options, see:
+      // https://www.npmjs.com/package/@sentry/webpack-plugin#options
 
     org: "sizewise",
     project: "javascript-nextjs",
@@ -105,6 +107,7 @@ module.exports = withSentryConfig(
     // See the following for more information:
     // https://docs.sentry.io/product/crons/
     // https://vercel.com/docs/cron-jobs
-    automaticVercelMonitors: true,
-  }
+      automaticVercelMonitors: true,
+    }
+  )
 );

@@ -153,3 +153,11 @@ playwright-report/
 
 # Sentry Config File
 .env.sentry-build-plugin
+
+# Database files
+*.db
+
+# Test result videos
+**/test-results/**/*.webm
+**/playwright-report/**/*.webm
+

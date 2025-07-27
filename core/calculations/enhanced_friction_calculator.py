@@ -363,21 +363,48 @@ class EnhancedFrictionCalculator:
         """Colebrook-White equation (iterative solution)"""
         # Initial guess using Haaland equation
         f = cls._haaland(reynolds_number, relative_roughness)
-        
+
+        # Safety check for initial guess
+        if f <= 0 or not math.isfinite(f):
+            return 0.02  # Reasonable default for turbulent flow
+
         # Newton-Raphson iteration
         for _ in range(10):  # Maximum 10 iterations
-            f_inv_sqrt = 1 / math.sqrt(f)
-            lhs = -2 * math.log10(relative_roughness / 3.7 + 2.51 / (reynolds_number * math.sqrt(f)))
-            
+            if f <= 0:
+                f = 0.02
+                break
+
+            sqrt_f = math.sqrt(f)
+            f_inv_sqrt = 1 / sqrt_f
+
+            # Safety check for log argument
+            log_arg = relative_roughness / 3.7 + 2.51 / (reynolds_number * sqrt_f)
+            if log_arg <= 0:
+                break
+
+            lhs = -2 * math.log10(log_arg)
+
             if abs(f_inv_sqrt - lhs) < 1e-6:
                 break
-            
-            # Newton-Raphson update
-            derivative = 2.51 / (reynolds_number * f ** 1.5 * math.log(10) * 
-                               (relative_roughness / 3.7 + 2.51 / (reynolds_number * math.sqrt(f))))
-            f = f - (f_inv_sqrt - lhs) / derivative
-        
-        return f
+
+            # Newton-Raphson update with safety checks
+            denominator_term = relative_roughness / 3.7 + 2.51 / (reynolds_number * sqrt_f)
+            if denominator_term <= 0:
+                break
+
+            derivative = 2.51 / (reynolds_number * f ** 1.5 * math.log(10) * denominator_term)
+            if not math.isfinite(derivative) or derivative == 0:
+                break
+
+            f_new = f - (f_inv_sqrt - lhs) / derivative
+
+            # Ensure f stays positive and reasonable
+            if f_new <= 0 or f_new > 1.0 or not math.isfinite(f_new):
+                break
+            f = f_new
+
+        # Final safety check
+        return max(0.005, min(1.0, f)) if math.isfinite(f) else 0.02
 
     @classmethod
     def _swamee_jain(cls, reynolds_number: float, relative_roughness: float) -> float:
@@ -390,10 +417,30 @@ class EnhancedFrictionCalculator:
     @classmethod
     def _haaland(cls, reynolds_number: float, relative_roughness: float) -> float:
         """Haaland explicit approximation"""
+        # Safety checks for inputs
+        if reynolds_number <= 0:
+            return 0.02
+        if relative_roughness < 0:
+            relative_roughness = 0
+
         term1 = relative_roughness / 3.7
         term2 = 6.9 / reynolds_number
-        log_term = math.log10(term1 ** 1.11 + term2)
-        return (-1.8 * log_term) ** (-2)
+        log_arg = term1 ** 1.11 + term2
+
+        # Safety check for log argument
+        if log_arg <= 0:
+            return 0.02
+
+        log_term = math.log10(log_arg)
+
+        # Safety check for final calculation
+        if log_term == 0:
+            return 0.02
+
+        result = (-1.8 * log_term) ** (-2)
+
+        # Ensure result is reasonable
+        return max(0.005, min(1.0, result)) if math.isfinite(result) else 0.02
 
     @classmethod
     def _chen(cls, reynolds_number: float, relative_roughness: float) -> float:

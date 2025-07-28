@@ -2,6 +2,20 @@
 
 Welcome to SizeWise Suite, a comprehensive modular HVAC engineering and estimating platform designed for mechanical engineers, estimators, QA professionals, and project managers.
 
+## 🔄 Pull Request & Review Process
+
+### 📋 PR Templates & Guidelines
+- **[Pull Request Template](../.github/pull_request_template.md)** - Comprehensive PR template with CI/CD integration
+- **[PR Review Guidelines](developer-guide/PR_REVIEW_GUIDELINES.md)** - Complete review standards and processes
+- **[Reviewer Assignment Guide](developer-guide/REVIEWER_ASSIGNMENT_GUIDE.md)** - Expert assignment criteria and escalation procedures
+- **[PR Review Checklist](developer-guide/PR_REVIEW_CHECKLIST.md)** - Legacy checklist (superseded by guidelines above)
+
+### 🔒 Quality Assurance
+- **Branch Protection:** Main branch protected with required status checks
+- **CI/CD Pipeline:** Automated testing across Node.js 18.x/20.x and Python 3.9/3.10/3.11
+- **Security Scanning:** npm audit, safety, bandit vulnerability checks
+- **Review Requirements:** Minimum 1 approval, all conversations resolved
+
 ## What is SizeWise Suite?
 
 SizeWise Suite is an **offline-first**, **modular platform** that unifies duct sizing, vent design, and cost estimating in a single workspace. Built with modern web technologies, it provides:

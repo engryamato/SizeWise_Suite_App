@@ -27,7 +27,12 @@ function generateSuperAdminCredentials() {
     console.log('-'.repeat(40));
     console.log(`Username: ${credentials.username}`);
     console.log(`Email:    ${credentials.email}`);
-    console.log(`Password: ${credentials.password}`);
+    if (process.argv.includes('--show-password')) {
+      console.log('⚠️  WARNING: Displaying password in clear text. Do not share or store this output.');
+      console.log(`Password: ${credentials.password}`);
+    } else {
+      console.log('Password: [HIDDEN] (run with --show-password to display)');
+    }
     console.log(`Login URL: ${credentials.loginUrl}`);
     
     console.log('\n👤 USER DETAILS:');

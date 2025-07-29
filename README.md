@@ -53,127 +53,121 @@ Comprehensive estimating solution addressing labor/material takeoffs and automat
 ## Project Structure
 
 ```
-├── app/
-│   ├── assets/
-│   ├── config/
-│   │   └── environment/
-│   ├── core/
-│   │   ├── calculations/
-│   │   ├── validators/
-│   │   ├── schemas/
-│   │   ├── registrars/
-│   │   └── i18n/
-│   ├── data/
-│   │   ├── seeds/
-│   │   ├── backups/
-│   │   └── examples/
-│   ├── docs/
-│   │   ├── architecture/
-│   │   ├── api/
-│   │   ├── guides/
-│   │   ├── i18n/
-│   │   └── tools/
-│   ├── hooks/
-│   ├── i18n/
-│   ├── plugins/
-│   ├── services/
-│   ├── simulations/
-│   ├── static/
-│   ├── templates/
-│   ├── tests/
-│   └── tools/
-│       ├── duct-sizer/
-│       ├── grease-sizer/
-│       ├── boiler-sizer/
-│       ├── engine-exhaust/
-│       └── estimating-app/
-│           ├── components/
-│           ├── calculations/
-│           ├── validators/
-│           ├── schemas/
-│           ├── ui/
-│           ├── data/
-│           ├── docs/
-│           ├── tests/
-│           └── exports/
-├── backend/
-├── core/
-├── frontend/
-│   ├── app/
-│   │   ├── demo/
-│   │   │   └── page.tsx         # Components demo page
-│   │   ├── globals.css          # Global styles with keyframes
-│   │   ├── layout.tsx           # Root layout
-│   │   └── page.tsx             # Main page with demo
-│   ├── components/
-│   │   └── glassmorphism/
-│   │       ├── GlassEffect.tsx  # Base glass effect wrapper
-│   │       ├── GlassDock.tsx    # Icon dock component
-│   │       ├── GlassButton.tsx  # Glass button component
-│   │       ├── GlassCard.tsx    # Glass card component
-│   │       ├── GlassFilter.tsx  # SVG filter effects
-│   │       └── index.ts         # Component exports
-│   ├── next.config.js           # Next.js configuration
-│   ├── tailwind.config.js       # Tailwind configuration with custom animations
-│   └── package.json
-├── docs/
-├── scripts/
-└── tests/
+SizeWise_Suite_App/
+├── app/                         # Next.js application directory
+│   ├── api/                     # API routes
+│   ├── components/              # React components
+│   │   ├── glassmorphism/       # Glass effect UI components
+│   │   ├── ui/                  # Shared UI components
+│   │   └── workspace/           # 3D workspace components
+│   ├── features/                # Feature-specific modules
+│   │   ├── air-duct-sizer/      # Air duct sizing module
+│   │   ├── dashboard/           # Dashboard module
+│   │   └── project-management/  # Project management
+│   ├── hooks/                   # Custom React hooks
+│   ├── lib/                     # Utility libraries
+│   ├── stores/                  # Zustand state stores
+│   ├── types/                   # TypeScript type definitions
+│   └── globals.css              # Global styles
+├── backend/                     # Python Flask backend
+│   ├── app/                     # Flask application
+│   │   ├── api/                 # API endpoints
+│   │   ├── models/              # Database models
+│   │   ├── services/            # Business logic
+│   │   └── utils/               # Utility functions
+│   ├── migrations/              # Database migrations
+│   ├── tests/                   # Backend tests
+│   └── requirements.txt         # Python dependencies
+├── auth-server/                 # Authentication microservice
+│   ├── app.py                   # Flask auth application
+│   ├── models/                  # Auth database models
+│   └── requirements.txt         # Auth dependencies
+├── docs/                        # Documentation
+│   ├── user-guide/              # User documentation
+│   ├── developer-guide/         # Developer documentation
+│   ├── operations/              # Operations and deployment
+│   ├── project-management/      # Project management docs
+│   └── reference/               # Reference materials
+├── public/                      # Static assets
+├── scripts/                     # Build and utility scripts
+├── tests/                       # E2E and integration tests
+├── docker-compose.yml           # Docker development setup
+├── package.json                 # Node.js dependencies
+└── README.md                    # This file
 ```
 
-## Technologies Used
+## Current Technology Stack
 
+### Frontend
 - **Next.js 15**: React framework with App Router
-- **React 18**: UI library
-- **TypeScript**: Type safety
-- **Tailwind CSS**: Styling
-- **tailwindcss-animate**: Additional animation utilities
+- **React 19**: Latest UI library with concurrent features
+- **TypeScript 5**: Enhanced type safety and developer experience
+- **Tailwind CSS 3**: Utility-first CSS framework
+- **Three.js**: 3D graphics and interactive workspace
+- **Zustand 4**: Lightweight state management
+
+### Backend
+- **Python 3.9+**: Backend runtime
+- **Flask 2.3**: Web framework for APIs
+- **SQLAlchemy**: Database ORM
+- **PostgreSQL**: Production database
+- **SQLite**: Development database
+
+### Development Tools
+- **Jest**: Unit testing framework
+- **Playwright**: End-to-end testing
+- **ESLint**: Code linting
+- **Prettier**: Code formatting
+- **Docker**: Containerization
 
 
 ## Getting Started
 
 ### Prerequisites
 
-- Python 3.8+
-- Node.js 16+
-- Modern web browser with PWA support
+- **Node.js 18+** and **npm 9+**
+- **Python 3.9+** with **pip**
+- **Git** for version control
+- **Docker** and **Docker Compose** (optional, for containerized development)
+- Modern web browser (Chrome 90+, Firefox 88+, Safari 14+)
 
-### Installation
+### Quick Start
 
-1. Clone the repository:
+1. **Clone the repository:**
    ```bash
-   git clone <repository-url>
-   cd sizewise-suite
+   git clone https://github.com/engryamato/SizeWise_Suite_App.git
+   cd SizeWise_Suite_App
    ```
 
-2. Set up Python environment:
+2. **Install all dependencies:**
    ```bash
-   python -m venv venv
-   source venv/bin/activate  # On Windows: venv\Scripts\activate
-   pip install -r requirements.txt
+   # Install all project dependencies
+   npm run install:all
    ```
 
-3. Install frontend dependencies:
+3. **Set up environment variables:**
    ```bash
-   npm run install:frontend
+   # Copy environment templates
+   cp .env.example .env.local
+   cp backend/.env.example backend/.env
+   cp auth-server/.env.example auth-server/.env
    ```
 
-4. Start the development server:
+4. **Start the development environment:**
    ```bash
-   # Start both backend and frontend
-   npm run start:dev
+   # Start all services (frontend, backend, auth server, database)
+   npm run dev:all
 
-   # Or start individually:
-   # Backend (in one terminal)
-   npm run start:backend
-
-   # Frontend (in another terminal)
-   npm run dev
+   # Or use Docker for isolated environment
+   npm run docker:dev
    ```
 
-5. Open your browser:
-   - Application: `http://localhost:3000` (Next.js frontend)
-   - Backend API: `http://localhost:5000` (Flask API)
+5. **Access the application:**
+   - **Frontend**: `http://localhost:3000`
+   - **Backend API**: `http://localhost:5000`
+   - **Auth Server**: `http://localhost:5001`
+
+For detailed setup instructions, see the [Developer Getting Started Guide](docs/developer-guide/getting-started.md).
 
 ## Glassmorphism Components (Next.js Frontend)
 
@@ -242,37 +236,52 @@ const icons = [
 npm test
 
 # Run specific test suites
-npm run test:unit
-npm run test:integration
-npm run test:e2e
+npm run test:unit          # Jest unit tests
+npm run test:e2e           # Playwright E2E tests
+npm run test:backend       # Python backend tests
 
-# Python backend tests
-python -m pytest tests/
+# Run tests with coverage
+npm run test:coverage
+
+# Backend tests specifically
+cd backend && python -m pytest tests/
 ```
 
 ## Documentation
 
-- User guides: `docs/user-guides/`
-- API reference: `docs/api-reference/`
-- Examples: `docs/examples/`
+The documentation is organized into several sections:
 
-Build documentation:
-```bash
-# User guides (MkDocs)
-mkdocs serve
+- **[User Guide](docs/user-guide/)**: End-user documentation and tutorials
+- **[Developer Guide](docs/developer-guide/)**: Development setup, API reference, and architecture
+- **[Operations](docs/operations/)**: Deployment, monitoring, and troubleshooting
+- **[Project Management](docs/project-management/)**: Project planning and management docs
+- **[Reference](docs/reference/)**: Standards, specifications, and reference materials
 
-# API reference (Sphinx)
-cd docs/api-reference
-make html
-```
+### Quick Documentation Links
+
+- **[Getting Started (Users)](docs/user-guide/getting-started.md)**: User installation and first steps
+- **[Getting Started (Developers)](docs/developer-guide/getting-started.md)**: Development environment setup
+- **[API Reference](docs/developer-guide/api-reference/)**: Complete API documentation
+- **[Contributing Guide](docs/developer-guide/contributing.md)**: How to contribute to the project
+- **[Troubleshooting](docs/operations/troubleshooting.md)**: Common issues and solutions
 
 ## Contributing
 
-1. Follow the established folder structure and naming conventions
-2. Maintain sorted lists for files, arrays, and exports
-3. Update all relevant references when making structural changes
-4. Run tests and ensure they pass before committing
-5. Update documentation for any public API changes
+We welcome contributions! Please see our [Contributing Guide](docs/developer-guide/contributing.md) for detailed information on:
+
+- Development workflow and branch strategy
+- Coding standards and conventions
+- Testing requirements
+- Pull request process
+- Community guidelines
+
+### Quick Contributing Steps
+
+1. Fork the repository and create a feature branch
+2. Follow our coding standards and conventions
+3. Add tests for new functionality
+4. Update documentation as needed
+5. Submit a pull request with a clear description
 
 ## License
 

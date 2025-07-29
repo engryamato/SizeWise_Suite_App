@@ -70,7 +70,7 @@ Generate accurate cost estimates for HVAC projects with material and labor calcu
 ## Quick Start
 
 1. **[Install SizeWise Suite](getting-started/installation.md)** on your device
-2. **[Follow the Quick Start Guide](getting-started/quick-start.md)** to perform your first calculation
+2. **[Follow the Quick Start Guide](developer-guide/post-migration-quick-start.md)** to perform your first calculation
 3. **[Explore the User Guide](user-guide/overview.md)** for detailed feature documentation
 
 ## Architecture Overview

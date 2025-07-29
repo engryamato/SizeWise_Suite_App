@@ -9,9 +9,8 @@ This documentation is organized by audience and purpose to help you find the inf
 ### 👥 [User Guide](user-guide/README.md)
 End-user documentation for using SizeWise Suite effectively:
 - **[Getting Started](user-guide/getting-started.md)** - Quick start guide for new users
-- **[Air Duct Sizer](user-guide/air-duct-sizer/)** - Complete user guide for the air duct sizing module
-- **[Features](user-guide/features/)** - Detailed feature documentation
-- **[Troubleshooting](user-guide/troubleshooting.md)** - Common issues and solutions
+- **[Complete User Guide](user-guide/comprehensive-user-guide.md)** - Comprehensive feature documentation and workflows
+- **[Troubleshooting](operations/troubleshooting.md)** - Common issues and solutions
 
 ### 👨‍💻 [Developer Guide](developer-guide/README.md)
 Technical documentation for developers and contributors:
@@ -23,10 +22,8 @@ Technical documentation for developers and contributors:
 
 ### 🚀 [Operations](operations/README.md)
 Deployment, monitoring, and maintenance documentation:
-- **[Deployment](operations/deployment/)** - Production deployment guides
-- **[Docker](operations/docker/)** - Docker setup and configuration
-- **[Monitoring](operations/monitoring.md)** - System monitoring and maintenance
-- **[Troubleshooting](operations/troubleshooting.md)** - Operations troubleshooting
+- **[Deployment Guide](operations/deployment.md)** - Production deployment across platforms
+- **[Troubleshooting](operations/troubleshooting.md)** - Diagnostic procedures and solutions
 
 ### 📋 [Project Management](project-management/README.md)
 Project processes and stakeholder materials:
@@ -44,18 +41,19 @@ Reference materials and standards:
 
 ### For New Users
 1. Start with [User Guide → Getting Started](user-guide/getting-started.md)
-2. Explore [Features Overview](user-guide/features/)
-3. Check [Troubleshooting](user-guide/troubleshooting.md) if you encounter issues
+2. Explore [Complete User Guide](user-guide/comprehensive-user-guide.md)
+3. Check [Troubleshooting](operations/troubleshooting.md) if you encounter issues
 
 ### For Developers
 1. Begin with [Developer Guide → Getting Started](developer-guide/getting-started.md)
-2. Review [Architecture Overview](developer-guide/architecture/overview.md)
+2. Review [Project Structure](developer-guide/architecture/project-structure.md)
 3. Read [Contributing Guidelines](developer-guide/contributing.md)
+4. Explore [API Reference](developer-guide/api-reference/README.md)
 
 ### For Operations Teams
-1. Start with [Operations → Deployment](operations/deployment/)
-2. Review [Docker Setup](operations/docker/)
-3. Set up [Monitoring](operations/monitoring.md)
+1. Start with [Deployment Guide](operations/deployment.md)
+2. Review [Troubleshooting Guide](operations/troubleshooting.md)
+3. Check [Operations Overview](operations/README.md)
 
 ## 📖 Documentation Standards
 
@@ -74,8 +72,8 @@ Found an error or want to improve the documentation? See our [Contributing Guide
 
 ## 📞 Getting Help
 
-- **User Questions**: Check the [User Guide](user-guide/) and [Troubleshooting](user-guide/troubleshooting.md)
-- **Technical Issues**: See [Developer Guide](developer-guide/) and [Operations](operations/)
+- **User Questions**: Check the [User Guide](user-guide/comprehensive-user-guide.md) and [Troubleshooting](operations/troubleshooting.md)
+- **Technical Issues**: See [Developer Guide](developer-guide/getting-started.md) and [Operations](operations/README.md)
 - **Feature Requests**: Review our [Contributing Guidelines](developer-guide/contributing.md)
 
 ---

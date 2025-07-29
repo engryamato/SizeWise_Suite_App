@@ -1,5 +1,7 @@
 # Deployment Guide
 
+**📍 Navigation:** [Documentation Home](../README.md) > [Operations](README.md) > Deployment
+
 This comprehensive guide covers deployment strategies, configurations, and best practices for SizeWise Suite across different environments and platforms.
 
 ## Deployment Overview

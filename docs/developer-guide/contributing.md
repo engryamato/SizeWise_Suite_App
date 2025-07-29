@@ -1,5 +1,7 @@
 # Contributing to SizeWise Suite
 
+**📍 Navigation:** [Documentation Home](../README.md) > [Developer Guide](README.md) > Contributing
+
 Thank you for your interest in contributing to SizeWise Suite! This guide will help you understand our development process, coding standards, and how to submit contributions effectively.
 
 ## Table of Contents

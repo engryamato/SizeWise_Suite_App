@@ -1,5 +1,7 @@
 # Troubleshooting Guide
 
+**📍 Navigation:** [Documentation Home](../README.md) > [Operations](README.md) > Troubleshooting
+
 This comprehensive troubleshooting guide covers common issues, diagnostic procedures, and solutions for SizeWise Suite across all platforms and deployment scenarios.
 
 ## Quick Diagnostics

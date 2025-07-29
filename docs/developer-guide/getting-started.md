@@ -1,5 +1,7 @@
 # Developer Getting Started Guide
 
+**📍 Navigation:** [Documentation Home](../README.md) > [Developer Guide](README.md) > Getting Started
+
 Welcome to SizeWise Suite development! This comprehensive guide will help you set up your development environment and start contributing to the project.
 
 ## Prerequisites
@@ -361,4 +363,11 @@ python app.py
 
 **Ready to start developing?** Run `npm run start:dev` and begin exploring the SizeWise Suite codebase!
 
-*For technical questions or development support, check our [Developer Resources](resources/) or create an issue on GitHub.*
+## 📚 Related Documentation
+
+- **[Contributing Guidelines](contributing.md)**: Development workflow and contribution process
+- **[Project Structure](architecture/project-structure.md)**: Understanding the codebase organization
+- **[API Reference](api-reference/README.md)**: Complete API documentation
+- **[Troubleshooting](../operations/troubleshooting.md)**: Common development issues and solutions
+
+**📍 Navigation:** [Documentation Home](../README.md) > [Developer Guide](README.md) > Getting Started

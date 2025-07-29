@@ -1,5 +1,7 @@
 # Getting Started with SizeWise Suite
 
+**📍 Navigation:** [Documentation Home](../README.md) > [User Guide](README.md) > Getting Started
+
 Welcome to SizeWise Suite! This guide will help you get up and running quickly with our comprehensive HVAC engineering and estimating platform.
 
 ## What is SizeWise Suite?
@@ -201,4 +203,10 @@ SizeWise Suite is a modern, standards-driven HVAC platform designed for:
 
 **Ready to start your first project?** Click "New Project" on the dashboard and begin exploring SizeWise Suite's powerful HVAC design capabilities!
 
-*For technical support or questions, visit our [Support Center](support.md) or check the [FAQ](faq.md).*
+## 📚 Related Documentation
+
+- **[Complete User Guide](comprehensive-user-guide.md)**: Detailed feature documentation and workflows
+- **[Troubleshooting](../operations/troubleshooting.md)**: Common issues and solutions
+- **[Developer Guide](../developer-guide/getting-started.md)**: For developers and contributors
+
+**📍 Navigation:** [Documentation Home](../README.md) > [User Guide](README.md) > Getting Started

@@ -1,5 +1,7 @@
 # SizeWise Suite - Complete User Guide
 
+**📍 Navigation:** [Documentation Home](../README.md) > [User Guide](README.md) > Complete User Guide
+
 Welcome to the comprehensive user guide for SizeWise Suite, the professional HVAC engineering and estimating platform. This guide covers everything you need to know to effectively use all features and modules.
 
 ## Table of Contents

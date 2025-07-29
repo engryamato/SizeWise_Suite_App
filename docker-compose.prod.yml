@@ -97,32 +97,32 @@ services:
         reservations:
           memory: 128M
 
-  # Frontend (Next.js) - Temporarily disabled for testing
-  # frontend:
-  #   build:
-  #     context: .
-  #     dockerfile: docker/frontend/Dockerfile
-  #     target: runner
-  #   container_name: sizewise-frontend-prod
-  #   environment:
-  #     - NODE_ENV=production
-  #     - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
-  #     - NEXT_PUBLIC_AUTH_URL=${NEXT_PUBLIC_AUTH_URL}
-  #     - SENTRY_DSN=${SENTRY_DSN}
-  #     - SENTRY_ENVIRONMENT=production
-  #     - SENTRY_RELEASE=${SENTRY_RELEASE}
-  #   depends_on:
-  #     - backend
-  #     - auth-server
-  #   networks:
-  #     - sizewise-network
-  #   restart: always
-  #   deploy:
-  #     resources:
-  #       limits:
-  #         memory: 256M
-  #       reservations:
-  #         memory: 128M
+  # Frontend (Next.js)
+  frontend:
+    build:
+      context: .
+      dockerfile: docker/frontend/Dockerfile
+      target: runner
+    container_name: sizewise-frontend-prod
+    environment:
+      - NODE_ENV=production
+      - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
+      - NEXT_PUBLIC_AUTH_URL=${NEXT_PUBLIC_AUTH_URL}
+      - SENTRY_DSN=${SENTRY_DSN}
+      - SENTRY_ENVIRONMENT=production
+      - SENTRY_RELEASE=${SENTRY_RELEASE}
+    depends_on:
+      - backend
+      - auth-server
+    networks:
+      - sizewise-network
+    restart: always
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+        reservations:
+          memory: 128M
 
   # Nginx Load Balancer
   nginx:
@@ -136,7 +136,7 @@ services:
       - ./docker/nginx/ssl:/etc/nginx/ssl
       - nginx_logs:/var/log/nginx
     depends_on:
-      # - frontend  # Temporarily disabled
+      - frontend
       - backend
       - auth-server
     networks:

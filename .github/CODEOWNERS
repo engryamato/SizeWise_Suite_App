@@ -1,0 +1,38 @@
+# SizeWise Suite Code Owners
+# These owners will be requested for review when someone opens a pull request.
+
+# Global ownership
+* @engryamato
+
+# Frontend specific
+/frontend/ @engryamato
+/frontend/app/ @engryamato
+/frontend/components/ @engryamato
+/frontend/lib/ @engryamato
+
+# Backend specific
+/backend/ @engryamato
+/core/ @engryamato
+/auth-server/ @engryamato
+
+# CI/CD and DevOps
+/.github/ @engryamato
+/scripts/ @engryamato
+/docker/ @engryamato
+docker-compose*.yml @engryamato
+
+# Documentation
+/docs/ @engryamato
+README.md @engryamato
+*.md @engryamato
+
+# Configuration files
+package.json @engryamato
+requirements.txt @engryamato
+/frontend/package.json @engryamato
+/backend/requirements.txt @engryamato
+/auth-server/requirements.txt @engryamato
+
+# Security and quality
+.github/workflows/security-and-quality.yml @engryamato
+.github/dependabot.yml @engryamato

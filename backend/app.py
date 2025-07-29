@@ -9,9 +9,11 @@ from flask import Flask, jsonify, request
 from flask_cors import CORS
 import os
 import sys
+import asyncio
 from dotenv import load_dotenv
 import structlog
 from .sentry_config import init_sentry
+from .config.mongodb_config import mongodb_config, init_mongodb_collections
 
 # Add parent directory to Python path for imports
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -61,19 +63,47 @@ def create_app(config_name='development'):
     from backend.api.calculations import calculations_bp
     from backend.api.validation import validation_bp
     from backend.api.exports import exports_bp
-    
+    from backend.api.mongodb_api import mongodb_bp
+
     app.register_blueprint(calculations_bp, url_prefix='/api/calculations')
     app.register_blueprint(validation_bp, url_prefix='/api/validation')
     app.register_blueprint(exports_bp, url_prefix='/api/exports')
+    app.register_blueprint(mongodb_bp, url_prefix='/api/mongodb')
     
+    # Initialize MongoDB on app startup
+    @app.before_first_request
+    def initialize_mongodb():
+        """Initialize MongoDB collections and indexes."""
+        try:
+            # Run async initialization in a new event loop
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            loop.run_until_complete(init_mongodb_collections())
+            loop.close()
+            logger.info("MongoDB initialized successfully")
+        except Exception as e:
+            logger.error("Failed to initialize MongoDB", error=str(e))
+
     # Health check endpoint
     @app.route('/api/health')
     def health_check():
         """Health check endpoint for monitoring."""
+        mongodb_status = "unknown"
+        try:
+            # Test MongoDB connection
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            mongodb_connected = loop.run_until_complete(mongodb_config.test_connection())
+            loop.close()
+            mongodb_status = "connected" if mongodb_connected else "disconnected"
+        except Exception:
+            mongodb_status = "error"
+
         return jsonify({
             'status': 'healthy',
             'service': 'SizeWise Suite Backend',
-            'version': '0.1.0'
+            'version': '0.1.0',
+            'mongodb_status': mongodb_status
         })
     
     # API info endpoint

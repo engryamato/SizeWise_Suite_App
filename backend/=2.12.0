@@ -1,0 +1,13 @@
+Requirement already satisfied: pydantic in c:\users\johnr\downloads\sizewise_suite_app\backend\venv\lib\site-packages (2.11.7)
+Requirement already satisfied: annotated-types>=0.6.0 in c:\users\johnr\downloads\sizewise_suite_app\backend\venv\lib\site-packages (from pydantic) (0.7.0)
+Collecting pydantic-core==2.33.2 (from pydantic)
+  Using cached pydantic_core-2.33.2-cp311-cp311-win_amd64.whl.metadata (6.9 kB)
+Requirement already satisfied: typing-extensions>=4.12.2 in c:\users\johnr\downloads\sizewise_suite_app\backend\venv\lib\site-packages (from pydantic) (4.14.1)
+Requirement already satisfied: typing-inspection>=0.4.0 in c:\users\johnr\downloads\sizewise_suite_app\backend\venv\lib\site-packages (from pydantic) (0.4.1)
+Using cached pydantic_core-2.33.2-cp311-cp311-win_amd64.whl (2.0 MB)
+Installing collected packages: pydantic-core
+  Attempting uninstall: pydantic-core
+    Found existing installation: pydantic_core 2.37.2
+    Uninstalling pydantic_core-2.37.2:
+      Successfully uninstalled pydantic_core-2.37.2
+Successfully installed pydantic-core-2.33.2

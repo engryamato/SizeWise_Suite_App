@@ -41,10 +41,15 @@ Comprehensive estimating solution addressing labor/material takeoffs and automat
 
 ## Technology Stack
 
-- **Frontend**: Next.js 15 with React 19, TypeScript, and glassmorphism UI
+- **Frontend**: Next.js 15 with React 18.3.1, TypeScript, and glassmorphism UI
 - **3D Graphics**: Three.js for interactive 3D workspace and visualization
 - **Styling**: Tailwind CSS with custom animations and glass effects
 - **Backend**: Python (Flask) for API, calculations, and export logic
+- **Database**: Multi-database architecture with offline-first design
+  - **Dexie/IndexedDB**: Frontend offline storage (✅ Validated)
+  - **SQLite**: Desktop application storage with encryption
+  - **PostgreSQL**: Enterprise cloud features and microservices
+  - **MongoDB**: Spatial data and complex geometries
 - **Documentation**: MkDocs (guides), Sphinx (API)
 - **State Management**: Zustand for client-side state management
 - **Testing**: Jest for unit tests, Playwright for E2E testing

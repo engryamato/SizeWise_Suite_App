@@ -141,6 +141,98 @@ export class SizeWiseDatabase extends Dexie {
   }
 
   // =============================================================================
+  // Database Health Check Methods
+  // =============================================================================
+
+  async testDatabaseConnection(): Promise<boolean> {
+    try {
+      await this.open();
+      return true;
+    } catch (error) {
+      console.error('Database connection failed:', error);
+      return false;
+    }
+  }
+
+  async validateDatabaseSchema(): Promise<{ valid: boolean; errors: string[] }> {
+    const errors: string[] = [];
+
+    try {
+      // Test each table exists and is accessible
+      const tables = ['projects', 'calculations', 'spatialData', 'syncOperations', 'cacheEntries', 'userPreferences'];
+
+      for (const tableName of tables) {
+        try {
+          const table = (this as any)[tableName];
+          if (!table) {
+            errors.push(`Table ${tableName} not found`);
+            continue;
+          }
+
+          // Test basic operations
+          await table.limit(1).toArray();
+        } catch (error) {
+          errors.push(`Table ${tableName} validation failed: ${error}`);
+        }
+      }
+
+      return { valid: errors.length === 0, errors };
+    } catch (error) {
+      errors.push(`Schema validation failed: ${error}`);
+      return { valid: false, errors };
+    }
+  }
+
+  async performBasicCRUDTest(): Promise<{ success: boolean; results: any; errors: string[] }> {
+    const errors: string[] = [];
+    const results: any = {};
+
+    try {
+      // Test project creation
+      const testProject: Omit<SizeWiseProject, 'id' | 'lastModified' | 'syncStatus' | 'version'> = {
+        uuid: `test-${Date.now()}`,
+        project_name: 'Test Project',
+        client: 'Test Client',
+        address: 'Test Address',
+        building_type: 'office',
+        rooms: [],
+        segments: [],
+        equipment: [],
+        settings: {},
+        metadata: {}
+      };
+
+      const projectId = await this.createProject(testProject);
+      results.projectCreated = { id: projectId, uuid: testProject.uuid };
+
+      // Test project retrieval
+      const retrievedProject = await this.projects.get(projectId);
+      results.projectRetrieved = retrievedProject ? true : false;
+
+      if (!retrievedProject) {
+        errors.push('Failed to retrieve created project');
+      }
+
+      // Test project update
+      if (retrievedProject) {
+        await this.projects.update(projectId, { client: 'Updated Test Client' });
+        const updatedProject = await this.projects.get(projectId);
+        results.projectUpdated = updatedProject?.client === 'Updated Test Client';
+      }
+
+      // Test project deletion
+      await this.projects.delete(projectId);
+      const deletedProject = await this.projects.get(projectId);
+      results.projectDeleted = !deletedProject;
+
+      return { success: errors.length === 0, results, errors };
+    } catch (error) {
+      errors.push(`CRUD test failed: ${error}`);
+      return { success: false, results, errors };
+    }
+  }
+
+  // =============================================================================
   // Project Operations
   // =============================================================================
 

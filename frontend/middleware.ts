@@ -25,6 +25,7 @@ const PUBLIC_ROUTES = [
   '/api/auth/verify',
   '/api/health',
   '/monitoring', // Sentry tunnel route - must be public
+  '/test-database', // Database testing page - public for validation
   '/_next',
   '/favicon.ico',
   '/manifest.json',

@@ -28,6 +28,7 @@
     "@sentry/nextjs": "^9.42.0",
     "@types/three": "^0.178.1",
     "clsx": "^2.0.0",
+    "dexie": "^4.0.11",
     "framer-motion": "^12.23.5",
     "html2canvas": "^1.4.1",
     "jspdf": "^3.0.1",

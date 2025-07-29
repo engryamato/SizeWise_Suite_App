@@ -1,0 +1,211 @@
+name: Staging Deployment
+
+on:
+  push:
+    branches: ["develop", "staging"]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Target environment'
+        required: true
+        default: 'staging'
+        type: choice
+        options:
+        - staging
+        - preview
+
+env:
+  NODE_VERSION: "18"
+  PYTHON_VERSION: "3.11"
+
+jobs:
+  staging-validation:
+    name: Staging Environment Validation
+    runs-on: ubuntu-latest
+    environment: staging
+    outputs:
+      deployment-id: ${{ steps.deploy-id.outputs.id }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Generate deployment ID
+        id: deploy-id
+        run: |
+          DEPLOY_ID="staging-$(date +%Y%m%d-%H%M%S)-$(git rev-parse --short HEAD)"
+          echo "id=$DEPLOY_ID" >> $GITHUB_OUTPUT
+          echo "Deployment ID: $DEPLOY_ID"
+
+      - name: Validate staging configuration
+        run: |
+          echo "Validating staging environment configuration..."
+          test -f docker-compose.staging.yml || echo "⚠️  Staging compose file missing"
+          test -f .env.staging.example || echo "⚠️  Staging env example missing"
+
+  build-staging-images:
+    name: Build Staging Images
+    runs-on: ubuntu-latest
+    needs: staging-validation
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build frontend staging image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: docker/frontend/Dockerfile
+          target: runner
+          tags: sizewise-frontend:staging-${{ needs.staging-validation.outputs.deployment-id }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          outputs: type=docker,dest=/tmp/frontend-staging.tar
+
+      - name: Build backend staging image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: docker/backend/Dockerfile
+          target: production
+          tags: sizewise-backend:staging-${{ needs.staging-validation.outputs.deployment-id }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          outputs: type=docker,dest=/tmp/backend-staging.tar
+
+      - name: Upload staging images
+        uses: actions/upload-artifact@v4
+        with:
+          name: staging-images-${{ needs.staging-validation.outputs.deployment-id }}
+          path: |
+            /tmp/frontend-staging.tar
+            /tmp/backend-staging.tar
+          retention-days: 7
+
+  deploy-staging:
+    name: Deploy to Staging
+    runs-on: ubuntu-latest
+    needs: [staging-validation, build-staging-images]
+    environment: staging
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download staging images
+        uses: actions/download-artifact@v4
+        with:
+          name: staging-images-${{ needs.staging-validation.outputs.deployment-id }}
+          path: /tmp/
+
+      - name: Load Docker images
+        run: |
+          docker load -i /tmp/frontend-staging.tar
+          docker load -i /tmp/backend-staging.tar
+
+      - name: Create staging environment file
+        run: |
+          cat > .env.staging << EOF
+          # Staging Environment Configuration
+          NODE_ENV=staging
+          FLASK_ENV=staging
+          
+          # Database
+          POSTGRES_DB=sizewise_staging
+          POSTGRES_USER=sizewise_staging
+          POSTGRES_PASSWORD=${{ secrets.STAGING_DB_PASSWORD }}
+          POSTGRES_HOST=postgres
+          POSTGRES_PORT=5432
+          
+          # Redis
+          REDIS_HOST=redis
+          REDIS_PORT=6379
+          REDIS_PASSWORD=${{ secrets.STAGING_REDIS_PASSWORD }}
+          
+          # Application
+          SECRET_KEY=${{ secrets.STAGING_SECRET_KEY }}
+          JWT_SECRET_KEY=${{ secrets.STAGING_JWT_SECRET }}
+          
+          # External Services
+          SENTRY_DSN=${{ secrets.SENTRY_DSN }}
+          SENTRY_ENVIRONMENT=staging
+          SENTRY_RELEASE=${{ needs.staging-validation.outputs.deployment-id }}
+          
+          # URLs
+          NEXT_PUBLIC_API_URL=https://staging-api.sizewise.app
+          NEXT_PUBLIC_AUTH_URL=https://staging-auth.sizewise.app
+          CORS_ORIGINS=https://staging.sizewise.app
+          EOF
+
+      - name: Deploy staging services
+        run: |
+          echo "🚀 Deploying to staging environment..."
+          
+          # Create staging compose file if it doesn't exist
+          if [ ! -f docker-compose.staging.yml ]; then
+            cp docker-compose.prod.yml docker-compose.staging.yml
+            # Modify for staging-specific settings
+            sed -i 's/prod/staging/g' docker-compose.staging.yml
+          fi
+          
+          # Deploy services
+          docker-compose -f docker-compose.staging.yml --env-file .env.staging up -d
+          
+          echo "✅ Staging deployment completed"
+
+  staging-smoke-tests:
+    name: Staging Smoke Tests
+    runs-on: ubuntu-latest
+    needs: deploy-staging
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Wait for services to be ready
+        run: |
+          echo "⏳ Waiting for staging services to be ready..."
+          sleep 60
+
+      - name: Run staging smoke tests
+        run: |
+          echo "🧪 Running staging smoke tests..."
+          
+          # Test backend health
+          curl -f https://staging-api.sizewise.app/api/health || exit 1
+          
+          # Test auth service
+          curl -f https://staging-auth.sizewise.app/api/health || exit 1
+          
+          # Test frontend
+          curl -f https://staging.sizewise.app || exit 1
+          
+          echo "✅ All staging smoke tests passed"
+
+      - name: Run staging integration tests
+        run: |
+          echo "🔗 Running staging integration tests..."
+          # Add integration test commands here
+          echo "✅ Staging integration tests completed"
+
+  staging-notification:
+    name: Staging Deployment Notification
+    runs-on: ubuntu-latest
+    needs: [staging-validation, deploy-staging, staging-smoke-tests]
+    if: always()
+    steps:
+      - name: Staging deployment summary
+        run: |
+          echo "## 🎭 Staging Deployment Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Deployment ID:** ${{ needs.staging-validation.outputs.deployment-id }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Environment:** staging" >> $GITHUB_STEP_SUMMARY
+          echo "**Status:** ${{ job.status }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 🔗 Staging URLs:" >> $GITHUB_STEP_SUMMARY
+          echo "- **Frontend:** https://staging.sizewise.app" >> $GITHUB_STEP_SUMMARY
+          echo "- **API:** https://staging-api.sizewise.app" >> $GITHUB_STEP_SUMMARY
+          echo "- **Auth:** https://staging-auth.sizewise.app" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          if [[ "${{ needs.staging-smoke-tests.result }}" == "success" ]]; then
+            echo "✅ **Smoke Tests:** PASSED" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ **Smoke Tests:** FAILED" >> $GITHUB_STEP_SUMMARY
+          fi

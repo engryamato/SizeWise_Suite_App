@@ -51,7 +51,10 @@ describe('FeatureManager', () => {
     jest.clearAllMocks();
     mockDbManager = new DatabaseManager({ filePath: ':memory:' }) as jest.Mocked<DatabaseManager>;
     featureManager = new FeatureManager(mockDbManager);
-    
+
+    // Clear all caches to ensure clean state between tests
+    featureManager.clearCache();
+
     // Mock user repository
     mockUserRepository = require('../../repositories/local/LocalUserRepository').LocalUserRepository.mock.instances[0];
   });
@@ -60,6 +63,34 @@ describe('FeatureManager', () => {
     describe('Free Tier Features', () => {
       beforeEach(() => {
         mockUserRepository.getCurrentUser.mockResolvedValue(mockUsers.free);
+
+        // Ensure SecureFeatureValidator mock is properly set up
+        const { SecureFeatureValidator } = require('../../security/SecureFeatureValidator');
+        const mockValidatorClass = SecureFeatureValidator as jest.MockedClass<typeof SecureFeatureValidator>;
+        if (mockValidatorClass.mock.instances.length > 0) {
+          const mockValidator = mockValidatorClass.mock.instances[0] as jest.Mocked<InstanceType<typeof SecureFeatureValidator>>;
+
+          // Mock implementation that respects tier boundaries
+          mockValidator.validateFeature.mockImplementation(async (featureName, context) => {
+            // Define tier requirements
+            const proFeatures = ['boiler_vent_sizer', 'unlimited_projects', 'cloud_sync', 'high_res_pdf_export'];
+            const enterpriseFeatures = ['custom_templates', 'bim_export', 'sso_integration', 'advanced_rbac'];
+
+            if ((proFeatures.includes(featureName) || enterpriseFeatures.includes(featureName)) && context.userTier === 'free') {
+              return {
+                valid: false,
+                enabled: false,
+                error: 'Insufficient tier access'
+              };
+            }
+
+            return {
+              valid: true,
+              enabled: true,
+              error: undefined
+            };
+          });
+        }
       });
 
       test('should allow access to free tier features', async () => {
@@ -111,6 +142,33 @@ describe('FeatureManager', () => {
     describe('Pro Tier Features', () => {
       beforeEach(() => {
         mockUserRepository.getCurrentUser.mockResolvedValue(mockUsers.pro);
+
+        // Ensure SecureFeatureValidator mock is properly set up
+        const { SecureFeatureValidator } = require('../../security/SecureFeatureValidator');
+        const mockValidatorClass = SecureFeatureValidator as jest.MockedClass<typeof SecureFeatureValidator>;
+        if (mockValidatorClass.mock.instances.length > 0) {
+          const mockValidator = mockValidatorClass.mock.instances[0] as jest.Mocked<InstanceType<typeof SecureFeatureValidator>>;
+
+          // Mock implementation that respects tier boundaries
+          mockValidator.validateFeature.mockImplementation(async (featureName, context) => {
+            // Define tier requirements for enterprise features
+            const enterpriseFeatures = ['custom_templates', 'bim_export', 'sso_integration', 'advanced_rbac'];
+
+            if (enterpriseFeatures.includes(featureName) && context.userTier !== 'enterprise' && context.userTier !== 'super_admin') {
+              return {
+                valid: false,
+                enabled: false,
+                error: 'Insufficient tier access'
+              };
+            }
+
+            return {
+              valid: true,
+              enabled: true,
+              error: undefined
+            };
+          });
+        }
       });
 
       test('should allow access to free and pro tier features', async () => {
@@ -316,7 +374,7 @@ describe('FeatureManager', () => {
         enabled: true
       });
       
-      const result = await featureManager.isEnabled('air_duct_sizer', mockUsers.pro.id);
+      const result = await featureManager.isEnabled('test_security_feature', mockUsers.pro.id);
       
       expect(mockValidator.validateFeature).toHaveBeenCalled();
       expect(result.enabled).toBe(true);
@@ -324,17 +382,24 @@ describe('FeatureManager', () => {
 
     test('should respect security validation failures', async () => {
       mockUserRepository.getCurrentUser.mockResolvedValue(mockUsers.pro);
-      
-      // Mock SecureFeatureValidator to return security failure
-      const mockValidator = require('../../security/SecureFeatureValidator').SecureFeatureValidator.mock.instances[0];
+
+      // Access the mock instance that was created when FeatureManager was instantiated
+      const { SecureFeatureValidator } = require('../../security/SecureFeatureValidator');
+      const mockValidatorClass = SecureFeatureValidator as jest.MockedClass<typeof SecureFeatureValidator>;
+
+      // Get the instance that was created in the FeatureManager constructor
+      expect(mockValidatorClass.mock.instances.length).toBeGreaterThan(0);
+      const mockValidator = mockValidatorClass.mock.instances[0] as jest.Mocked<InstanceType<typeof SecureFeatureValidator>>;
+
+      // Mock the validateFeature method to return security failure
       mockValidator.validateFeature.mockResolvedValue({
         valid: false,
         enabled: false,
         error: 'Security validation failed'
       });
-      
-      const result = await featureManager.isEnabled('air_duct_sizer', mockUsers.pro.id);
-      
+
+      const result = await featureManager.isEnabled('custom_templates', mockUsers.pro.id);
+
       expect(result.enabled).toBe(false);
       expect(result.reason).toContain('Security validation failed');
     });

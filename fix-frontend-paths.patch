@@ -1,0 +1,30 @@
+# Fix Frontend Directory Paths in CI/CD Workflows
+
+## Files to Update:
+1. .github/workflows/test.yml
+2. .github/workflows/deployment-ready.yml  
+3. .github/workflows/security-and-quality.yml
+
+## Changes Required:
+
+### test.yml
+- Line 31: Change `"./frontend 2"` to `"./frontend"`
+- Line 40: Change `"frontend 2/package-lock.json"` to `"frontend/package-lock.json"`
+- Line 76: Change `"frontend 2/coverage"` to `"frontend/coverage"`
+
+### deployment-ready.yml
+- Line 60: Change `cache-dependency-path: frontend/package-lock.json` (already correct)
+- Line 64: Change `working-directory: ./frontend` (already correct)
+
+### security-and-quality.yml  
+- Line 23: Change `cache-dependency-path: frontend/package-lock.json` (already correct)
+- Line 143: Change `cache-dependency-path: frontend/package-lock.json` (already correct)
+
+## Root Cause:
+The repository has both `frontend/` and `frontend 2/` directories, causing confusion in CI workflows.
+
+## Solution:
+1. Standardize on `frontend/` directory
+2. Update all workflow references
+3. Remove or rename `frontend 2/` directory
+4. Update package.json scripts to reference correct paths

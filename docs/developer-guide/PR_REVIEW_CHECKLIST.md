@@ -1,11 +1,22 @@
 # Pull Request Review Checklist
 
-*Version: 1.0*  
-*Last Updated: 2025-07-15*
+*Version: 2.0*
+*Last Updated: 2025-07-27*
+*Superseded by: [PR_REVIEW_GUIDELINES.md](./PR_REVIEW_GUIDELINES.md)*
+
+> **⚠️ NOTICE:** This checklist has been superseded by the comprehensive PR Review Guidelines.
+> Please use [PR_REVIEW_GUIDELINES.md](./PR_REVIEW_GUIDELINES.md) for all new reviews.
+> This file is maintained for reference and backward compatibility.
 
 ## 📋 Pre-Merge Checklist
 
 Use this checklist for every PR before merging to maintain code quality and prevent conflicts.
+
+### ✅ CI/CD Status Checks (Required)
+- [ ] **frontend-tests (18.x, 20.x)** - All Node.js tests pass
+- [ ] **backend-tests (3.9, 3.10, 3.11)** - All Python tests pass
+- [ ] **security-scan** - npm audit, safety, bandit checks pass
+- [ ] **test-summary** - Overall CI/CD validation complete
 
 ### ✅ Technical Requirements
 

@@ -6,10 +6,19 @@ on:
   pull_request:
     branches: ["main", "develop"]
   workflow_dispatch:
+    inputs:
+      skip_e2e:
+        description: "Skip E2E tests"
+        required: false
+        default: false
+        type: boolean
 
 env:
+  # Environment variables for consistent configuration
   NODE_VERSION: "18"
   PYTHON_VERSION: "3.11"
+  SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+  NODE_ENV: test
 
 jobs:
   # Quick smoke tests for fast feedback
@@ -34,7 +43,7 @@ jobs:
 
       - name: Install frontend dependencies
         working-directory: ./frontend
-        run: npm ci
+        run: npm ci --legacy-peer-deps
 
       - name: Install Python dependencies
         run: |
@@ -56,45 +65,71 @@ jobs:
           mypy . --ignore-missing-imports
 
   frontend-tests:
-    name: Frontend Unit Tests
+    name: Frontend Tests (Node.js ${{ matrix.node-version }})
     runs-on: ubuntu-latest
     needs: quick-checks
+    strategy:
+      matrix:
+        node-version: ["18.x", "20.x"]
+      fail-fast: false
     defaults:
       run:
-        working-directory: ./frontend
+        working-directory: "./frontend"
     steps:
       - uses: actions/checkout@v4
 
-      - name: Setup Node.js
+      - name: Setup Node.js ${{ matrix.node-version }}
         uses: actions/setup-node@v4
         with:
-          node-version: ${{ env.NODE_VERSION }}
+          node-version: ${{ matrix.node-version }}
           cache: "npm"
-          cache-dependency-path: frontend/package-lock.json
+          cache-dependency-path: "frontend/package-lock.json"
 
       - name: Install dependencies
-        run: npm ci
+        run: npm ci --legacy-peer-deps
 
-      - name: Run Jest tests
+      - name: Verify React version (should be 18.x)
+        run: |
+          REACT_VERSION=$(npm list react --depth=0 --json | jq -r '.dependencies.react.version')
+          echo "React version: $REACT_VERSION"
+          if [[ ! $REACT_VERSION =~ ^18\. ]]; then
+            echo "❌ Expected React 18.x, got $REACT_VERSION"
+            exit 1
+          fi
+          echo "✅ React version check passed"
+
+      - name: Type check
+        run: npm run type-check
+
+      - name: Lint check
+        run: npm run lint
+
+      - name: Next.js build validation
         env:
-          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          SENTRY_AUTH_TOKEN: ${{ env.SENTRY_AUTH_TOKEN }}
+        run: npm run build
+
+      - name: Run Jest tests with coverage
+        env:
+          SENTRY_AUTH_TOKEN: ${{ env.SENTRY_AUTH_TOKEN }}
         run: npm run test:coverage
 
       - name: Upload frontend coverage
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: frontend-coverage-quick
-          path: frontend/coverage
-          retention-days: 7
+          name: frontend-coverage-node${{ matrix.node-version }}
+          path: "frontend/coverage"
+          retention-days: 30
 
   backend-tests:
-    name: Backend Unit Tests
+    name: Backend Tests (Python ${{ matrix.python-version }})
     runs-on: ubuntu-latest
     needs: quick-checks
     strategy:
       matrix:
-        python-version: ["3.11"] # Only test primary version for quick CI
+        python-version: ["3.9", "3.10", "3.11"]
+      fail-fast: false
     steps:
       - uses: actions/checkout@v4
 
@@ -119,7 +154,27 @@ jobs:
             pip install -r auth-server/requirements.txt
           fi
 
-      - name: Run Python tests
+      - name: Install code quality tools
+        run: |
+          pip install black flake8 mypy
+
+      - name: Run Black formatting check
+        run: |
+          black --check --diff .
+        continue-on-error: true
+
+      - name: Run Flake8 linting
+        run: |
+          flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+          flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+        continue-on-error: true
+
+      - name: Run mypy type checking
+        run: |
+          mypy . --ignore-missing-imports --no-strict-optional
+        continue-on-error: true
+
+      - name: Run Python tests with coverage
         run: |
           python -m pytest --cov=. --cov-report=xml -v --tb=short
 
@@ -127,24 +182,73 @@ jobs:
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: backend-coverage-quick
+          name: backend-coverage-python${{ matrix.python-version }}
           path: coverage.xml
-          retention-days: 7
+          retention-days: 30
 
-  # Basic smoke test only - comprehensive integration tests run in comprehensive-testing.yml
-  smoke-test:
-    name: Basic Smoke Test
+  security-scan:
+    name: Security & Dependency Scan
     runs-on: ubuntu-latest
-    needs: [frontend-tests, backend-tests]
     steps:
       - uses: actions/checkout@v4
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: ${{ env.NODE_VERSION }}
+          node-version: "18.x"
           cache: "npm"
-          cache-dependency-path: frontend/package-lock.json
+          cache-dependency-path: "frontend/package-lock.json"
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: |
+          cd "frontend" && npm ci --legacy-peer-deps
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install safety bandit
+
+      - name: Run npm audit
+        working-directory: "./frontend"
+        run: npm audit --audit-level=moderate
+        continue-on-error: true
+
+      - name: Run Python safety check
+        run: safety check --json --output safety-report.json
+        continue-on-error: true
+
+      - name: Run Bandit security linter
+        run: bandit -r . -f json -o bandit-report.json
+        continue-on-error: true
+
+      - name: Upload security reports
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: security-reports
+          path: |
+            safety-report.json
+            bandit-report.json
+          retention-days: 30
+
+  e2e-tests:
+    name: E2E Tests (Playwright)
+    runs-on: ubuntu-latest
+    needs: [frontend-tests, backend-tests]
+    if: ${{ !inputs.skip_e2e }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "18.x"
+          cache: "npm"
+          cache-dependency-path: "frontend/package-lock.json"
 
       - name: Setup Python
         uses: actions/setup-python@v5
@@ -152,65 +256,129 @@ jobs:
           python-version: ${{ env.PYTHON_VERSION }}
           cache: "pip"
 
-      - name: Install dependencies
+      - name: Install frontend dependencies
+        working-directory: "./frontend"
+        run: npm ci --legacy-peer-deps
+
+      - name: Install Python dependencies
         run: |
-          cd frontend && npm ci
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
+      - name: Install Playwright browsers
+        working-directory: "./frontend"
+        run: npx playwright install --with-deps chromium
+
       - name: Build frontend
-        working-directory: ./frontend
+        working-directory: "./frontend"
+        env:
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
         run: npm run build
 
       - name: Test backend startup
         run: |
-          timeout 15s python run_backend.py || exit_code=$?
-          if [ $exit_code -eq 124 ]; then
-            echo "✅ Backend started successfully (timed out as expected)"
-            exit 0
-          else
-            echo "❌ Backend failed to start"
-            exit 1
-          fi
+          python run_backend.py &
+          sleep 10
+          # Wait for backend to be ready
+          for i in {1..30}; do
+            if curl -f http://localhost:5000/api/health; then
+              echo "✅ Backend is ready!"
+              break
+            fi
+            echo "⏳ Waiting for backend... ($i/30)"
+            sleep 2
+          done
 
-      - name: Check build artifacts
+      - name: Start frontend server
+        working-directory: "./frontend"
         run: |
-          ls -la frontend/.next/ || ls -la frontend/out/
-          echo "✅ Frontend build completed successfully"
+          npm run start &
+          sleep 15
+          # Verify frontend is ready
+          for i in {1..15}; do
+            if curl -f http://localhost:3000; then
+              echo "✅ Frontend is ready!"
+              break
+            fi
+            echo "⏳ Waiting for frontend... ($i/15)"
+            sleep 2
+          done
 
-  # Summary for quick CI
-  quick-ci-summary:
-    name: Quick CI Summary
+      - name: Run E2E tests
+        working-directory: "./frontend"
+        run: npm run test:e2e
+
+      - name: Upload E2E test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: e2e-test-results
+          path: |
+            "frontend/test-results/"
+            "frontend/playwright-report/"
+          retention-days: 30
+
+  test-summary:
+    name: Test Summary & Status Check
     runs-on: ubuntu-latest
-    needs: [quick-checks, frontend-tests, backend-tests, smoke-test]
+    needs:
+      [quick-checks, frontend-tests, backend-tests, security-scan, e2e-tests]
     if: always()
     steps:
-      - name: Generate summary
+      - name: Check test results
         run: |
-          echo "# 🚀 Quick CI Summary" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "## 📊 Results" >> $GITHUB_STEP_SUMMARY
-          echo "- **Quick Checks**: ${{ needs.quick-checks.result }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Frontend Tests**: ${{ needs.frontend-tests.result }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Backend Tests**: ${{ needs.backend-tests.result }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Smoke Test**: ${{ needs.smoke-test.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "## 🧪 Test Results Summary" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
 
-          if [[ "${{ needs.quick-checks.result }}" == "success" && \
-                "${{ needs.frontend-tests.result }}" == "success" && \
-                "${{ needs.backend-tests.result }}" == "success" && \
-                "${{ needs.smoke-test.result }}" == "success" ]]; then
-            echo "## ✅ Status: **PASSED**" >> $GITHUB_STEP_SUMMARY
-            echo "Quick CI checks completed successfully! 🎉" >> $GITHUB_STEP_SUMMARY
-            echo "" >> $GITHUB_STEP_SUMMARY
-            echo "💡 **Note**: For comprehensive testing including E2E, performance, and security tests, check the 'Comprehensive Testing Pipeline' workflow." >> $GITHUB_STEP_SUMMARY
+          # Quick checks
+          if [[ "${{ needs.quick-checks.result }}" == "success" ]]; then
+            echo "✅ **Quick Checks**: PASSED" >> $GITHUB_STEP_SUMMARY
           else
-            echo "## ❌ Status: **FAILED**" >> $GITHUB_STEP_SUMMARY
-            echo "Some quick CI checks failed. Please review the results above." >> $GITHUB_STEP_SUMMARY
+            echo "❌ **Quick Checks**: FAILED" >> $GITHUB_STEP_SUMMARY
           fi
 
-      - name: Check results
-        if: needs.quick-checks.result != 'success' || needs.frontend-tests.result != 'success' || needs.backend-tests.result != 'success' || needs.smoke-test.result != 'success'
-        run: |
-          echo "❌ Quick CI failed!"
-          exit 1
+          # Frontend tests
+          if [[ "${{ needs.frontend-tests.result }}" == "success" ]]; then
+            echo "✅ **Frontend Tests**: PASSED (Node.js 18.x, 20.x)" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ **Frontend Tests**: FAILED" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          # Backend tests
+          if [[ "${{ needs.backend-tests.result }}" == "success" ]]; then
+            echo "✅ **Backend Tests**: PASSED (Python 3.9, 3.10, 3.11)" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ **Backend Tests**: FAILED" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          # Security scan
+          if [[ "${{ needs.security-scan.result }}" == "success" ]]; then
+            echo "✅ **Security Scan**: PASSED" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "⚠️ **Security Scan**: ISSUES FOUND" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          # E2E tests
+          if [[ "${{ needs.e2e-tests.result }}" == "success" ]]; then
+            echo "✅ **E2E Tests**: PASSED" >> $GITHUB_STEP_SUMMARY
+          elif [[ "${{ needs.e2e-tests.result }}" == "skipped" ]]; then
+            echo "⏭️ **E2E Tests**: SKIPPED" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ **E2E Tests**: FAILED" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 📊 Coverage Reports Available:" >> $GITHUB_STEP_SUMMARY
+          echo "- Frontend coverage (Node.js 18.x, 20.x)" >> $GITHUB_STEP_SUMMARY
+          echo "- Backend coverage (Python 3.9, 3.10, 3.11)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          # Overall status
+          if [[ "${{ needs.quick-checks.result }}" == "success" && "${{ needs.frontend-tests.result }}" == "success" && "${{ needs.backend-tests.result }}" == "success" ]]; then
+            echo "**🎉 Overall Status: READY FOR REVIEW**" >> $GITHUB_STEP_SUMMARY
+            echo "💡 **Note**: For comprehensive testing including performance and security tests, check the 'Comprehensive Testing Pipeline' workflow." >> $GITHUB_STEP_SUMMARY
+            exit 0
+          else
+            echo "**❌ Overall Status: NEEDS ATTENTION**" >> $GITHUB_STEP_SUMMARY
+            exit 1
+          fi

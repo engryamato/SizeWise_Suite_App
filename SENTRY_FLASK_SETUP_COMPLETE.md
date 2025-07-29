@@ -22,7 +22,7 @@ sentry-sdk[flask]==2.33.2
 ### DSN Configuration
 The Sentry DSN has been updated to match your provided configuration:
 ```
-https://5deb7c885560c5bed065966a8c341727@o4509734387056640.ingest.us.sentry.io/4509741831028736
+<YOUR_SENTRY_DSN>
 ```
 
 ### Flask Integration

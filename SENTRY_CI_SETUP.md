@@ -16,8 +16,8 @@ This document outlines the completed Sentry authentication token setup for your 
 - Cleaned up conflicting root-level files
 
 ✅ **Configuration Verified**:
-- Auth token confirmed: `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`
-- DSN standardized: `https://7c66eaefa7b2dde6957e18ffb03bf28f@o4509734387056640.ingest.us.sentry.io/4509734389481472`
+- Auth token confirmed: `<YOUR_SENTRY_AUTH_TOKEN>`
+- DSN standardized: `<YOUR_SENTRY_DSN>`
 - Organization: `sizewise`
 - Project: `javascript-nextjs`
 
@@ -31,7 +31,7 @@ You still need to add the Sentry auth token as a GitHub repository secret:
 3. Click **New repository secret**
 4. Set the following:
    - **Name**: `SENTRY_AUTH_TOKEN`
-   - **Secret**: `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`
+   - **Secret**: `<YOUR_SENTRY_AUTH_TOKEN>`
 5. Click **Add secret**
 
 ### Expected Results

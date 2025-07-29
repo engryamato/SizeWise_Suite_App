@@ -1,0 +1,146 @@
+name: Docker Build & Security Scan
+
+on:
+  push:
+    branches: ["main", "security-patches-phase1"]
+  pull_request:
+    branches: ["main", "develop"]
+  schedule:
+    - cron: "0 3 * * 1" # Weekly on Monday at 3 AM
+  workflow_dispatch:
+    inputs:
+      push_to_registry:
+        description: 'Push images to registry'
+        required: false
+        default: false
+        type: boolean
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  docker-build:
+    name: Docker Build & Test
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+      security-events: write
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      
+      - name: Log in to Container Registry
+        if: github.event.inputs.push_to_registry == 'true' || github.ref == 'refs/heads/main'
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=sha,prefix={{branch}}-
+            type=raw,value=latest,enable={{is_default_branch}}
+      
+      - name: Build Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          platforms: linux/amd64,linux/arm64
+          push: false
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          outputs: type=docker,dest=/tmp/sizewise-image.tar
+      
+      - name: Load and test Docker image
+        run: |
+          docker load --input /tmp/sizewise-image.tar
+          
+          # Get the first tag from the metadata
+          IMAGE_TAG=$(echo "${{ steps.meta.outputs.tags }}" | head -n1)
+          echo "Testing image: $IMAGE_TAG"
+          
+          # Test that the image runs
+          docker run --rm -d --name sizewise-test -p 3000:3000 -p 5000:5000 "$IMAGE_TAG"
+          sleep 30
+          
+          # Test frontend health
+          if curl -f http://localhost:3000; then
+            echo "✅ Frontend is responding"
+          else
+            echo "❌ Frontend health check failed"
+            docker logs sizewise-test
+            exit 1
+          fi
+          
+          # Test backend health
+          if curl -f http://localhost:5000/api/health; then
+            echo "✅ Backend is responding"
+          else
+            echo "❌ Backend health check failed"
+            docker logs sizewise-test
+            exit 1
+          fi
+          
+          # Cleanup
+          docker stop sizewise-test
+      
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          input: /tmp/sizewise-image.tar
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+      
+      - name: Upload Trivy scan results
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: 'trivy-results.sarif'
+      
+      - name: Push Docker image
+        if: github.event.inputs.push_to_registry == 'true' || github.ref == 'refs/heads/main'
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      
+      - name: Generate summary
+        run: |
+          echo "# 🐳 Docker Build Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## 📦 Built Images" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          echo "${{ steps.meta.outputs.tags }}" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## 🔍 Security Scan" >> $GITHUB_STEP_SUMMARY
+          echo "- Trivy vulnerability scan completed" >> $GITHUB_STEP_SUMMARY
+          echo "- Results uploaded to Security tab" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          if [[ "${{ github.event.inputs.push_to_registry }}" == "true" || "${{ github.ref }}" == "refs/heads/main" ]]; then
+            echo "## 🚀 Registry Push" >> $GITHUB_STEP_SUMMARY
+            echo "✅ Images pushed to registry successfully" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "## 📋 Registry Push" >> $GITHUB_STEP_SUMMARY
+            echo "⏭️ Images not pushed (test build only)" >> $GITHUB_STEP_SUMMARY
+          fi

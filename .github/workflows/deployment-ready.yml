@@ -6,6 +6,13 @@ on:
     tags: ["v*"]
   pull_request:
     branches: ["main"]
+  workflow_dispatch:
+    inputs:
+      force_production_test:
+        description: "Force production-level testing"
+        required: false
+        default: false
+        type: boolean
 
 env:
   NODE_VERSION: "18"
@@ -38,12 +45,26 @@ jobs:
 
       - name: Validate project structure
         run: |
-          echo "Checking project structure..."
-          test -f frontend/package.json || (echo "Frontend package.json missing" && exit 1)
-          test -f requirements.txt || (echo "Root requirements.txt missing" && exit 1)
-          test -f backend/requirements.txt || (echo "Backend requirements.txt missing" && exit 1)
-          test -f auth-server/requirements.txt || (echo "Auth-server requirements.txt missing" && exit 1)
-          echo "Project structure validation passed"
+          echo "🔍 Checking project structure..."
+          test -f frontend/package.json || (echo "❌ Frontend package.json missing" && exit 1)
+          test -f requirements.txt || (echo "❌ Root requirements.txt missing" && exit 1)
+          test -f backend/requirements.txt || (echo "❌ Backend requirements.txt missing" && exit 1)
+          test -f auth-server/requirements.txt || (echo "❌ Auth-server requirements.txt missing" && exit 1)
+          test -f Dockerfile || (echo "❌ Dockerfile missing" && exit 1)
+          test -f docker-compose.yml || (echo "❌ docker-compose.yml missing" && exit 1)
+          echo "✅ Project structure validation passed"
+
+      - name: Validate Phase 4 Enterprise Features
+        if: github.ref == 'refs/heads/security-patches-phase1' || github.event.inputs.force_production_test == 'true'
+        run: |
+          echo "🔒 Validating Phase 4 Enterprise Security features..."
+          test -d backend/security || (echo "❌ Security framework missing" && exit 1)
+          test -d backend/compliance || (echo "❌ Compliance system missing" && exit 1)
+          test -d backend/enterprise || (echo "❌ Enterprise integration missing" && exit 1)
+          test -d backend/backup || (echo "❌ Backup system missing" && exit 1)
+          test -d backend/i18n || (echo "❌ Internationalization missing" && exit 1)
+          test -d backend/reporting || (echo "❌ Reporting system missing" && exit 1)
+          echo "✅ Phase 4 Enterprise features validated"
 
   frontend-production-build:
     name: Frontend Production Build
@@ -218,9 +239,18 @@ jobs:
           echo "**Release:** ${{ needs.pre-deployment-checks.outputs.is-release }}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### ✅ Completed Checks:" >> $GITHUB_STEP_SUMMARY
-          echo "- Frontend production build" >> $GITHUB_STEP_SUMMARY
-          echo "- Backend production tests" >> $GITHUB_STEP_SUMMARY
-          echo "- Integration tests" >> $GITHUB_STEP_SUMMARY
-          echo "- Security scans" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Project structure validation" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Frontend production build & bundle analysis" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Backend production tests (Python 3.11 & 3.12)" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Production integration tests" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Health checks & startup validation" >> $GITHUB_STEP_SUMMARY
+          if [[ "${{ github.ref }}" == "refs/heads/security-patches-phase1" ]]; then
+            echo "- ✅ Phase 4 Enterprise Security features validated" >> $GITHUB_STEP_SUMMARY
+          fi
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 🔗 Related Workflows:" >> $GITHUB_STEP_SUMMARY
+          echo "- Security & Quality Checks: Comprehensive security scanning" >> $GITHUB_STEP_SUMMARY
+          echo "- Docker Build: Container security & multi-platform builds" >> $GITHUB_STEP_SUMMARY
+          echo "- Comprehensive Testing: Full test suite including E2E & performance" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**Status: READY FOR DEPLOYMENT** 🚀" >> $GITHUB_STEP_SUMMARY

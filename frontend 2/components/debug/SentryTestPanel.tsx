@@ -448,7 +448,50 @@ export const SentryTestPanel: React.FC = () => {
     }
   };
 
-
+  // Test /api/sentry-example-api with robust JSON parse error handling
+  const testSentryExampleAPI = async () => {
+    updateTestState('sentryExampleAPI', { loading: true });
+    try {
+      const response = await fetch('/api/sentry-example-api');
+      let data = null;
+      let rawText = '';
+      try {
+        rawText = await response.text();
+        data = JSON.parse(rawText);
+        logger.info('Successfully parsed JSON from /api/sentry-example-api', { data });
+        updateTestState('sentryExampleAPI', {
+          loading: false,
+          lastResult: 'success',
+          lastExecuted: new Date()
+        });
+      } catch (jsonError) {
+        logger.error('Failed to parse JSON from /api/sentry-example-api', {
+          error: jsonError,
+          rawResponse: rawText
+        });
+        reportError(jsonError instanceof Error ? jsonError : new Error('Invalid JSON'), {
+          endpoint: '/api/sentry-example-api',
+          rawResponse: rawText
+        }, { test: 'sentryExampleAPI' });
+        updateTestState('sentryExampleAPI', {
+          loading: false,
+          lastResult: 'error',
+          lastExecuted: new Date()
+        });
+        return;
+      }
+    } catch (error) {
+      logger.error('Network or fetch error calling /api/sentry-example-api', { error });
+      reportError(error instanceof Error ? error : new Error('Unknown fetch error'), {
+        endpoint: '/api/sentry-example-api'
+      }, { test: 'sentryExampleAPI' });
+      updateTestState('sentryExampleAPI', {
+        loading: false,
+        lastResult: 'error',
+        lastExecuted: new Date()
+      });
+    }
+  };
 
   return (
     <>
@@ -576,6 +619,15 @@ export const SentryTestPanel: React.FC = () => {
                     testStates={testStates}
                   >
                     Test Transaction
+                  </TestButton>
+
+                  <TestButton
+                    testKey="sentryExampleAPI"
+                    onClick={testSentryExampleAPI}
+                    className="bg-gray-700 text-white hover:bg-gray-900"
+                    testStates={testStates}
+                  >
+                    Test /api/sentry-example-api (Robust JSON)
                   </TestButton>
                 </div>
 

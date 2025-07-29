@@ -2,11 +2,18 @@ name: Security & Quality Checks
 
 on:
   push:
-    branches: ["main"]
+    branches: ["main", "security-patches-phase1"]
   pull_request:
-    branches: ["main"]
+    branches: ["main", "develop"]
   schedule:
     - cron: "0 2 * * 1" # Weekly on Monday at 2 AM
+  workflow_dispatch:
+    inputs:
+      skip_build_test:
+        description: "Skip build test (already covered in other workflows)"
+        required: false
+        default: true
+        type: boolean
 
 jobs:
   security-scan:
@@ -132,6 +139,7 @@ jobs:
   build-test:
     name: Build & Deployment Test
     runs-on: ubuntu-latest
+    if: github.event.inputs.skip_build_test != 'true'
     steps:
       - uses: actions/checkout@v4
 
@@ -166,22 +174,22 @@ jobs:
         run: |
           timeout 30s python run_backend.py || exit_code=$?
           if [ $exit_code -eq 124 ]; then
-            echo "Backend started successfully (timed out as expected)"
+            echo "✅ Backend started successfully (timed out as expected)"
             exit 0
           else
-            echo "Backend failed to start"
+            echo "❌ Backend failed to start"
             exit 1
           fi
 
       - name: Check build artifacts
         run: |
-          ls -la frontend/.next/
-          echo "Frontend build completed successfully"
+          ls -la frontend/.next/ || ls -la frontend/out/
+          echo "✅ Frontend build completed successfully"
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: build-artifacts
+          name: security-build-artifacts
           path: |
             frontend/.next/
             frontend/out/

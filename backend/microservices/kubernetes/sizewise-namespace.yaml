@@ -1,0 +1,45 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: sizewise-suite
+  labels:
+    app: sizewise-suite
+    environment: production
+    version: v1.0.0
+  annotations:
+    description: "SizeWise Suite HVAC calculation microservices namespace"
+    contact: "sizewise-team@company.com"
+---
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: sizewise-resource-quota
+  namespace: sizewise-suite
+spec:
+  hard:
+    requests.cpu: "10"
+    requests.memory: 20Gi
+    limits.cpu: "20"
+    limits.memory: 40Gi
+    persistentvolumeclaims: "10"
+    services: "20"
+    secrets: "10"
+    configmaps: "10"
+---
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: sizewise-limit-range
+  namespace: sizewise-suite
+spec:
+  limits:
+  - default:
+      cpu: "1"
+      memory: "2Gi"
+    defaultRequest:
+      cpu: "100m"
+      memory: "256Mi"
+    type: Container
+  - default:
+      storage: "10Gi"
+    type: PersistentVolumeClaim

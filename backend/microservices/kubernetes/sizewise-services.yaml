@@ -1,0 +1,316 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: sizewise-api-service
+  namespace: sizewise-suite
+  labels:
+    app: sizewise-suite
+    component: api
+  annotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/port: "9090"
+    prometheus.io/path: "/metrics"
+spec:
+  type: ClusterIP
+  ports:
+  - port: 5000
+    targetPort: 5000
+    protocol: TCP
+    name: http
+  - port: 9090
+    targetPort: 9090
+    protocol: TCP
+    name: metrics
+  selector:
+    app: sizewise-suite
+    component: api
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: sizewise-calculation-service
+  namespace: sizewise-suite
+  labels:
+    app: sizewise-suite
+    component: calculation
+  annotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/port: "9090"
+    prometheus.io/path: "/metrics"
+spec:
+  type: ClusterIP
+  ports:
+  - port: 5001
+    targetPort: 5001
+    protocol: TCP
+    name: http
+  - port: 9090
+    targetPort: 9090
+    protocol: TCP
+    name: metrics
+  selector:
+    app: sizewise-suite
+    component: calculation
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: sizewise-frontend-service
+  namespace: sizewise-suite
+  labels:
+    app: sizewise-suite
+    component: frontend
+spec:
+  type: ClusterIP
+  ports:
+  - port: 3000
+    targetPort: 3000
+    protocol: TCP
+    name: http
+  selector:
+    app: sizewise-suite
+    component: frontend
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: nginx-ingress-service
+  namespace: sizewise-suite
+  labels:
+    app: sizewise-suite
+    component: ingress
+spec:
+  type: LoadBalancer
+  ports:
+  - port: 80
+    targetPort: 80
+    protocol: TCP
+    name: http
+  - port: 443
+    targetPort: 443
+    protocol: TCP
+    name: https
+  selector:
+    app: sizewise-suite
+    component: ingress
+  loadBalancerSourceRanges:
+  - 0.0.0.0/0
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres-service
+  namespace: sizewise-suite
+  labels:
+    app: sizewise-suite
+    component: database
+    database: postgres
+spec:
+  type: ClusterIP
+  ports:
+  - port: 5432
+    targetPort: 5432
+    protocol: TCP
+    name: postgres
+  selector:
+    app: sizewise-suite
+    component: database
+    database: postgres
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mongodb-service
+  namespace: sizewise-suite
+  labels:
+    app: sizewise-suite
+    component: database
+    database: mongodb
+spec:
+  type: ClusterIP
+  ports:
+  - port: 27017
+    targetPort: 27017
+    protocol: TCP
+    name: mongodb
+  selector:
+    app: sizewise-suite
+    component: database
+    database: mongodb
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis-cluster-service
+  namespace: sizewise-suite
+  labels:
+    app: sizewise-suite
+    component: cache
+    cache: redis
+spec:
+  type: ClusterIP
+  clusterIP: None  # Headless service for Redis cluster
+  ports:
+  - port: 6379
+    targetPort: 6379
+    protocol: TCP
+    name: redis
+  - port: 16379
+    targetPort: 16379
+    protocol: TCP
+    name: redis-cluster
+  selector:
+    app: sizewise-suite
+    component: cache
+    cache: redis
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: prometheus-service
+  namespace: sizewise-suite
+  labels:
+    app: sizewise-suite
+    component: monitoring
+    monitoring: prometheus
+spec:
+  type: ClusterIP
+  ports:
+  - port: 9090
+    targetPort: 9090
+    protocol: TCP
+    name: prometheus
+  selector:
+    app: sizewise-suite
+    component: monitoring
+    monitoring: prometheus
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: grafana-service
+  namespace: sizewise-suite
+  labels:
+    app: sizewise-suite
+    component: monitoring
+    monitoring: grafana
+spec:
+  type: ClusterIP
+  ports:
+  - port: 3000
+    targetPort: 3000
+    protocol: TCP
+    name: grafana
+  selector:
+    app: sizewise-suite
+    component: monitoring
+    monitoring: grafana
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: sizewise-ingress
+  namespace: sizewise-suite
+  labels:
+    app: sizewise-suite
+    component: ingress
+  annotations:
+    kubernetes.io/ingress.class: "nginx"
+    nginx.ingress.kubernetes.io/rewrite-target: /
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/proxy-body-size: "50m"
+    nginx.ingress.kubernetes.io/proxy-connect-timeout: "30"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "60"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "60"
+    nginx.ingress.kubernetes.io/rate-limit: "1000"
+    nginx.ingress.kubernetes.io/rate-limit-window: "1m"
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+spec:
+  tls:
+  - hosts:
+    - sizewise.company.com
+    - api.sizewise.company.com
+    secretName: sizewise-tls-certificate
+  rules:
+  - host: sizewise.company.com
+    http:
+      paths:
+      - path: /api
+        pathType: Prefix
+        backend:
+          service:
+            name: sizewise-api-service
+            port:
+              number: 5000
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: sizewise-frontend-service
+            port:
+              number: 3000
+  - host: api.sizewise.company.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: sizewise-api-service
+            port:
+              number: 5000
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: sizewise-network-policy
+  namespace: sizewise-suite
+  labels:
+    app: sizewise-suite
+spec:
+  podSelector:
+    matchLabels:
+      app: sizewise-suite
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          name: sizewise-suite
+    - namespaceSelector:
+        matchLabels:
+          name: ingress-nginx
+    ports:
+    - protocol: TCP
+      port: 5000
+    - protocol: TCP
+      port: 5001
+    - protocol: TCP
+      port: 3000
+    - protocol: TCP
+      port: 9090
+  egress:
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          name: sizewise-suite
+    ports:
+    - protocol: TCP
+      port: 5432
+    - protocol: TCP
+      port: 27017
+    - protocol: TCP
+      port: 6379
+  - to: []
+    ports:
+    - protocol: TCP
+      port: 53
+    - protocol: UDP
+      port: 53
+    - protocol: TCP
+      port: 443
+    - protocol: TCP
+      port: 80

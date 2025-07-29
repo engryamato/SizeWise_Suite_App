@@ -1,0 +1,410 @@
+{
+  "validation_timestamp": "2025-07-29T04:24:27.591840",
+  "total_score": 260,
+  "max_score": 335,
+  "percentage_score": 77.61,
+  "validation_status": "FAIL",
+  "duration_seconds": 11.409526,
+  "results": [
+    {
+      "component": "MetricsCollector",
+      "test_name": "Import and Initialization",
+      "passed": true,
+      "score": 10,
+      "max_score": 10,
+      "details": "MetricsCollector imported and initialized successfully",
+      "recommendations": [],
+      "timestamp": "2025-07-29T04:24:16.291819"
+    },
+    {
+      "component": "MetricsCollector",
+      "test_name": "Prometheus Metrics",
+      "passed": true,
+      "score": 15,
+      "max_score": 15,
+      "details": "Prometheus metrics available",
+      "recommendations": [],
+      "timestamp": "2025-07-29T04:24:16.291819"
+    },
+    {
+      "component": "MetricsCollector",
+      "test_name": "System Metrics Collection",
+      "passed": {
+        "cpu_usage_percent": 2.4,
+        "memory_usage_percent": 52.0,
+        "memory_usage_gb": 16.59270477294922,
+        "memory_available_gb": 15.34665298461914
+      },
+      "score": 15,
+      "max_score": 15,
+      "details": "System metrics collected",
+      "recommendations": [],
+      "timestamp": "2025-07-29T04:24:18.308709"
+    },
+    {
+      "component": "MetricsCollector",
+      "test_name": "Alert Rules",
+      "passed": true,
+      "score": 10,
+      "max_score": 10,
+      "details": "Alert rules configured: 8",
+      "recommendations": [],
+      "timestamp": "2025-07-29T04:24:18.308709"
+    },
+    {
+      "component": "ErrorTracker",
+      "test_name": "Import and Initialization",
+      "passed": true,
+      "score": 10,
+      "max_score": 10,
+      "details": "ErrorTracker imported and initialized successfully",
+      "recommendations": [],
+      "timestamp": "2025-07-29T04:24:18.310706"
+    },
+    {
+      "component": "ErrorTracker",
+      "test_name": "Error Capture",
+      "passed": true,
+      "score": 15,
+      "max_score": 15,
+      "details": "Error capture successful",
+      "recommendations": [],
+      "timestamp": "2025-07-29T04:24:18.310706"
+    },
+    {
+      "component": "ErrorTracker",
+      "test_name": "Error Grouping",
+      "passed": true,
+      "score": 15,
+      "max_score": 15,
+      "details": "Error grouping working",
+      "recommendations": [],
+      "timestamp": "2025-07-29T04:24:19.310691"
+    },
+    {
+      "component": "ErrorTracker",
+      "test_name": "Alert Thresholds",
+      "passed": true,
+      "score": 10,
+      "max_score": 10,
+      "details": "Alert thresholds configured: 3",
+      "recommendations": [],
+      "timestamp": "2025-07-29T04:24:19.310691"
+    },
+    {
+      "component": "PerformanceDashboard",
+      "test_name": "Import and Initialization",
+      "passed": true,
+      "score": 10,
+      "max_score": 10,
+      "details": "PerformanceDashboard imported and initialized successfully",
+      "recommendations": [],
+      "timestamp": "2025-07-29T04:24:19.312485"
+    },
+    {
+      "component": "PerformanceDashboard",
+      "test_name": "Widget Configuration",
+      "passed": true,
+      "score": 15,
+      "max_score": 15,
+      "details": "Dashboard widgets configured: 12",
+      "recommendations": [],
+      "timestamp": "2025-07-29T04:24:19.312485"
+    },
+    {
+      "component": "PerformanceDashboard",
+      "test_name": "Data Collection",
+      "passed": false,
+      "score": 0,
+      "max_score": 15,
+      "details": "Dashboard data collection not working",
+      "recommendations": [],
+      "timestamp": "2025-07-29T04:24:22.325504"
+    },
+    {
+      "component": "PerformanceDashboard",
+      "test_name": "Widget Data Retrieval",
+      "passed": true,
+      "score": 10,
+      "max_score": 10,
+      "details": "Widget data retrieval successful",
+      "recommendations": [],
+      "timestamp": "2025-07-29T04:24:22.325504"
+    },
+    {
+      "component": "HealthMonitor",
+      "test_name": "Import and Initialization",
+      "passed": true,
+      "score": 10,
+      "max_score": 10,
+      "details": "HealthMonitor imported and initialized successfully",
+      "recommendations": [],
+      "timestamp": "2025-07-29T04:24:22.573489"
+    },
+    {
+      "component": "HealthMonitor",
+      "test_name": "Health Check Configuration",
+      "passed": true,
+      "score": 15,
+      "max_score": 15,
+      "details": "Health checks configured: 9",
+      "recommendations": [],
+      "timestamp": "2025-07-29T04:24:22.573489"
+    },
+    {
+      "component": "HealthMonitor",
+      "test_name": "Health Check Execution",
+      "passed": true,
+      "score": 15,
+      "max_score": 15,
+      "details": "Health check execution working",
+      "recommendations": [],
+      "timestamp": "2025-07-29T04:24:27.578795"
+    },
+    {
+      "component": "HealthMonitor",
+      "test_name": "Health Status Evaluation",
+      "passed": true,
+      "score": 10,
+      "max_score": 10,
+      "details": "Health status evaluation working",
+      "recommendations": [],
+      "timestamp": "2025-07-29T04:24:27.578795"
+    },
+    {
+      "component": "Microservices",
+      "test_name": "Service Mesh Integration",
+      "passed": false,
+      "score": 0,
+      "max_score": 10,
+      "details": "Service mesh integration failed: No module named 'cryptography'",
+      "recommendations": [],
+      "timestamp": "2025-07-29T04:24:27.579834"
+    },
+    {
+      "component": "Microservices",
+      "test_name": "Cache Integration",
+      "passed": false,
+      "score": 0,
+      "max_score": 10,
+      "details": "Cache integration failed: No module named 'redis'",
+      "recommendations": [],
+      "timestamp": "2025-07-29T04:24:27.580813"
+    },
+    {
+      "component": "Microservices",
+      "test_name": "Load Balancer Integration",
+      "passed": false,
+      "score": 0,
+      "max_score": 10,
+      "details": "Load balancer integration failed: Load balancer manager not initialized",
+      "recommendations": [],
+      "timestamp": "2025-07-29T04:24:27.582808"
+    },
+    {
+      "component": "Kubernetes",
+      "test_name": "ConfigMap Configuration",
+      "passed": false,
+      "score": 0,
+      "max_score": 15,
+      "details": "Kubernetes ConfigMap not found",
+      "recommendations": [],
+      "timestamp": "2025-07-29T04:24:27.583809"
+    },
+    {
+      "component": "Alerts",
+      "test_name": "Alert Configuration",
+      "passed": true,
+      "score": 20,
+      "max_score": 20,
+      "details": "Alert systems configured",
+      "recommendations": [],
+      "timestamp": "2025-07-29T04:24:27.583809"
+    },
+    {
+      "component": "Performance",
+      "test_name": "Response Time",
+      "passed": true,
+      "score": 15,
+      "max_score": 15,
+      "details": "Monitoring response time: 6.0ms",
+      "recommendations": [],
+      "timestamp": "2025-07-29T04:24:27.589841"
+    },
+    {
+      "component": "DataRetention",
+      "test_name": "Retention Configuration",
+      "passed": true,
+      "score": 10,
+      "max_score": 10,
+      "details": "Data retention configured",
+      "recommendations": [],
+      "timestamp": "2025-07-29T04:24:27.589841"
+    },
+    {
+      "component": "Scalability",
+      "test_name": "Concurrent Operations",
+      "passed": false,
+      "score": 0,
+      "max_score": 15,
+      "details": "Scalability validation failed: module 'asyncio' has no attribute 'coroutine'",
+      "recommendations": [],
+      "timestamp": "2025-07-29T04:24:27.589841"
+    },
+    {
+      "component": "Production",
+      "test_name": "Error Handling",
+      "passed": true,
+      "score": 20,
+      "max_score": 20,
+      "details": "Error handling robust",
+      "recommendations": [],
+      "timestamp": "2025-07-29T04:24:27.591840"
+    },
+    {
+      "component": "Documentation",
+      "test_name": "Module Documentation",
+      "passed": true,
+      "score": 10,
+      "max_score": 10,
+      "details": "Documentation coverage: 4/4 modules",
+      "recommendations": [],
+      "timestamp": "2025-07-29T04:24:27.591840"
+    }
+  ],
+  "summary": {
+    "component_scores": {
+      "MetricsCollector": {
+        "score": 50,
+        "max_score": 50,
+        "tests": 4,
+        "percentage": 100.0
+      },
+      "ErrorTracker": {
+        "score": 50,
+        "max_score": 50,
+        "tests": 4,
+        "percentage": 100.0
+      },
+      "PerformanceDashboard": {
+        "score": 35,
+        "max_score": 50,
+        "tests": 4,
+        "percentage": 70.0
+      },
+      "HealthMonitor": {
+        "score": 50,
+        "max_score": 50,
+        "tests": 4,
+        "percentage": 100.0
+      },
+      "Microservices": {
+        "score": 0,
+        "max_score": 30,
+        "tests": 3,
+        "percentage": 0.0
+      },
+      "Kubernetes": {
+        "score": 0,
+        "max_score": 15,
+        "tests": 1,
+        "percentage": 0.0
+      },
+      "Alerts": {
+        "score": 20,
+        "max_score": 20,
+        "tests": 1,
+        "percentage": 100.0
+      },
+      "Performance": {
+        "score": 15,
+        "max_score": 15,
+        "tests": 1,
+        "percentage": 100.0
+      },
+      "DataRetention": {
+        "score": 10,
+        "max_score": 10,
+        "tests": 1,
+        "percentage": 100.0
+      },
+      "Scalability": {
+        "score": 0,
+        "max_score": 15,
+        "tests": 1,
+        "percentage": 0.0
+      },
+      "Production": {
+        "score": 20,
+        "max_score": 20,
+        "tests": 1,
+        "percentage": 100.0
+      },
+      "Documentation": {
+        "score": 10,
+        "max_score": 10,
+        "tests": 1,
+        "percentage": 100.0
+      }
+    },
+    "total_tests": 26,
+    "passed_tests": 20,
+    "failed_tests": 6,
+    "failed_test_details": [
+      {
+        "component": "PerformanceDashboard",
+        "test_name": "Data Collection",
+        "passed": false,
+        "score": 0,
+        "max_score": 15,
+        "details": "Dashboard data collection not working",
+        "recommendations": [],
+        "timestamp": "2025-07-29T04:24:22.325504"
+      },
+      {
+        "component": "Microservices",
+        "test_name": "Service Mesh Integration",
+        "passed": false,
+        "score": 0,
+        "max_score": 10,
+        "details": "Service mesh integration failed: No module named 'cryptography'",
+        "recommendations": [],
+        "timestamp": "2025-07-29T04:24:27.579834"
+      },
+      {
+        "component": "Microservices",
+        "test_name": "Cache Integration",
+        "passed": false,
+        "score": 0,
+        "max_score": 10,
+        "details": "Cache integration failed: No module named 'redis'",
+        "recommendations": [],
+        "timestamp": "2025-07-29T04:24:27.580813"
+      },
+      {
+        "component": "Microservices",
+        "test_name": "Load Balancer Integration",
+        "passed": false,
+        "score": 0,
+        "max_score": 10,
+        "details": "Load balancer integration failed: Load balancer manager not initialized",
+        "recommendations": [],
+        "timestamp": "2025-07-29T04:24:27.582808"
+      },
+      {
+        "component": "Kubernetes",
+        "test_name": "ConfigMap Configuration",
+        "passed": false,
+        "score": 0,
+        "max_score": 15,
+        "details": "Kubernetes ConfigMap not found",
+        "recommendations": [],
+        "timestamp": "2025-07-29T04:24:27.583809"
+      }
+    ],
+    "recommendations": [
+      "Address failed validation tests to improve monitoring reliability",
+      "Focus on Microservices component - multiple test failures detected"
+    ]
+  }
+}

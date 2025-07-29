@@ -12,6 +12,8 @@ SizeWise Suite is specifically crafted for:
 
 ## Core Features
 
+> **CI/CD Pipeline Status**: ✅ **FULLY CONFIGURED** - All critical fixes applied and tested
+
 - **Unified HVAC Toolchain**: One platform for duct sizing, vent design, and estimating
 - **Standards-Aligned Logic**: Integrated dynamic validation per SMACNA, NFPA, and ASHRAE
 - **Offline-First Design**: Reliable operation in remote or disconnected environments

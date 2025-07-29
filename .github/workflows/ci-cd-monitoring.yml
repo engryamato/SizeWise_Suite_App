@@ -1,0 +1,259 @@
+name: CI/CD Monitoring & Analytics
+
+on:
+  workflow_run:
+    workflows:
+      [
+        "Test Suite",
+        "Comprehensive Testing Pipeline",
+        "Security & Quality Checks",
+        "Docker Build & Security Scan",
+        "Performance Testing & Monitoring",
+      ]
+    types: [completed]
+  schedule:
+    - cron: "0 8 * * 1" # Weekly on Monday at 8 AM
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # Standardized environment variables across all workflows
+  NODE_VERSION: "18"
+  PYTHON_VERSION: "3.11"
+  SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+  NODE_ENV: test
+
+jobs:
+  workflow-analytics:
+    name: Workflow Performance Analytics
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: "pip"
+
+      - name: Install analytics dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install requests pandas matplotlib seaborn
+
+      - name: Collect workflow metrics
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          cat > collect_metrics.py << 'EOF'
+          import requests
+          import json
+          import pandas as pd
+          import matplotlib.pyplot as plt
+          import seaborn as sns
+          from datetime import datetime, timedelta
+          import os
+
+          # GitHub API setup
+          headers = {
+              'Authorization': f'token {os.environ["GITHUB_TOKEN"]}',
+              'Accept': 'application/vnd.github.v3+json'
+          }
+
+          repo = os.environ['GITHUB_REPOSITORY']
+          base_url = f'https://api.github.com/repos/{repo}'
+
+          # Collect workflow runs from last 30 days
+          since = (datetime.now() - timedelta(days=30)).isoformat()
+
+          workflows_url = f'{base_url}/actions/workflows'
+          workflows_response = requests.get(workflows_url, headers=headers)
+          workflows = workflows_response.json()['workflows']
+
+          all_runs = []
+
+          for workflow in workflows:
+              runs_url = f"{base_url}/actions/workflows/{workflow['id']}/runs"
+              params = {'created': f'>{since}', 'per_page': 100}
+              runs_response = requests.get(runs_url, headers=headers, params=params)
+              
+              if runs_response.status_code == 200:
+                  runs = runs_response.json()['workflow_runs']
+                  for run in runs:
+                      all_runs.append({
+                          'workflow_name': workflow['name'],
+                          'run_id': run['id'],
+                          'status': run['status'],
+                          'conclusion': run['conclusion'],
+                          'created_at': run['created_at'],
+                          'updated_at': run['updated_at'],
+                          'duration_minutes': self.calculate_duration(run) if run['status'] == 'completed' else None,
+                          'branch': run['head_branch'],
+                          'event': run['event']
+                      })
+
+          # Save raw data
+          with open('workflow_metrics.json', 'w') as f:
+              json.dump(all_runs, f, indent=2)
+
+          # Create analytics
+          df = pd.DataFrame(all_runs)
+
+          if not df.empty:
+              # Success rate by workflow
+              success_rates = df.groupby('workflow_name')['conclusion'].apply(
+                  lambda x: (x == 'success').sum() / len(x) * 100
+              ).round(2)
+              
+              # Average duration by workflow
+              avg_durations = df[df['status'] == 'completed'].groupby('workflow_name')['duration_minutes'].mean().round(2)
+              
+              # Create summary report
+              summary = {
+                  'total_runs': len(df),
+                  'success_rate_overall': (df['conclusion'] == 'success').sum() / len(df) * 100,
+                  'failure_rate_overall': (df['conclusion'] == 'failure').sum() / len(df) * 100,
+                  'success_rates_by_workflow': success_rates.to_dict(),
+                  'avg_durations_by_workflow': avg_durations.to_dict(),
+                  'most_frequent_failures': df[df['conclusion'] == 'failure']['workflow_name'].value_counts().head(5).to_dict()
+              }
+              
+              with open('ci_cd_summary.json', 'w') as f:
+                  json.dump(summary, f, indent=2)
+              
+              print("✅ Metrics collection completed")
+          else:
+              print("⚠️ No workflow runs found in the last 30 days")
+
+          def calculate_duration(self, run):
+              if run['created_at'] and run['updated_at']:
+                  created = datetime.fromisoformat(run['created_at'].replace('Z', '+00:00'))
+                  updated = datetime.fromisoformat(run['updated_at'].replace('Z', '+00:00'))
+                  return (updated - created).total_seconds() / 60
+              return None
+          EOF
+
+          python collect_metrics.py
+
+      - name: Generate CI/CD Dashboard
+        run: |
+          cat > generate_dashboard.py << 'EOF'
+          import json
+          import matplotlib.pyplot as plt
+          import seaborn as sns
+          import pandas as pd
+          from datetime import datetime
+
+          # Load data
+          try:
+              with open('ci_cd_summary.json', 'r') as f:
+                  summary = json.load(f)
+              
+              with open('workflow_metrics.json', 'r') as f:
+                  raw_data = json.load(f)
+          except FileNotFoundError:
+              print("No metrics data found")
+              exit(0)
+
+          # Set style
+          plt.style.use('seaborn-v0_8')
+          sns.set_palette("husl")
+
+          # Create dashboard
+          fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2, figsize=(16, 12))
+          fig.suptitle('SizeWise Suite CI/CD Performance Dashboard', fontsize=16, fontweight='bold')
+
+          # Success rates by workflow
+          workflows = list(summary['success_rates_by_workflow'].keys())
+          success_rates = list(summary['success_rates_by_workflow'].values())
+
+          ax1.bar(workflows, success_rates, color='green', alpha=0.7)
+          ax1.set_title('Success Rate by Workflow (%)')
+          ax1.set_ylabel('Success Rate (%)')
+          ax1.tick_params(axis='x', rotation=45)
+          ax1.set_ylim(0, 100)
+
+          # Average duration by workflow
+          durations = list(summary['avg_durations_by_workflow'].values())
+          ax2.bar(workflows, durations, color='blue', alpha=0.7)
+          ax2.set_title('Average Duration by Workflow (minutes)')
+          ax2.set_ylabel('Duration (minutes)')
+          ax2.tick_params(axis='x', rotation=45)
+
+          # Overall metrics pie chart
+          labels = ['Success', 'Failure', 'Other']
+          sizes = [
+              summary['success_rate_overall'],
+              summary['failure_rate_overall'],
+              100 - summary['success_rate_overall'] - summary['failure_rate_overall']
+          ]
+          colors = ['green', 'red', 'gray']
+          ax3.pie(sizes, labels=labels, colors=colors, autopct='%1.1f%%', startangle=90)
+          ax3.set_title('Overall CI/CD Success Rate')
+
+          # Most frequent failures
+          if summary['most_frequent_failures']:
+              failure_workflows = list(summary['most_frequent_failures'].keys())
+              failure_counts = list(summary['most_frequent_failures'].values())
+              ax4.bar(failure_workflows, failure_counts, color='red', alpha=0.7)
+              ax4.set_title('Most Frequent Workflow Failures')
+              ax4.set_ylabel('Failure Count')
+              ax4.tick_params(axis='x', rotation=45)
+          else:
+              ax4.text(0.5, 0.5, 'No failures in the last 30 days! 🎉', 
+                      ha='center', va='center', transform=ax4.transAxes, fontsize=14)
+              ax4.set_title('Workflow Failures')
+
+          plt.tight_layout()
+          plt.savefig('ci_cd_dashboard.png', dpi=300, bbox_inches='tight')
+          print("✅ Dashboard generated: ci_cd_dashboard.png")
+          EOF
+
+          python generate_dashboard.py
+
+      - name: Create performance summary
+        run: |
+          if [ -f ci_cd_summary.json ]; then
+            echo "## 📊 CI/CD Performance Summary" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            
+            # Extract key metrics
+            TOTAL_RUNS=$(jq -r '.total_runs' ci_cd_summary.json)
+            SUCCESS_RATE=$(jq -r '.success_rate_overall' ci_cd_summary.json)
+            FAILURE_RATE=$(jq -r '.failure_rate_overall' ci_cd_summary.json)
+            
+            echo "### 🎯 Key Metrics (Last 30 Days)" >> $GITHUB_STEP_SUMMARY
+            echo "- **Total Workflow Runs**: $TOTAL_RUNS" >> $GITHUB_STEP_SUMMARY
+            echo "- **Overall Success Rate**: ${SUCCESS_RATE}%" >> $GITHUB_STEP_SUMMARY
+            echo "- **Overall Failure Rate**: ${FAILURE_RATE}%" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            
+            echo "### 📈 Success Rates by Workflow" >> $GITHUB_STEP_SUMMARY
+            jq -r '.success_rates_by_workflow | to_entries[] | "- **\(.key)**: \(.value)%"' ci_cd_summary.json >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            
+            echo "### ⏱️ Average Duration by Workflow" >> $GITHUB_STEP_SUMMARY
+            jq -r '.avg_durations_by_workflow | to_entries[] | "- **\(.key)**: \(.value) minutes"' ci_cd_summary.json >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            
+            echo "📊 Detailed dashboard available in artifacts" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "⚠️ No CI/CD metrics available" >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Upload CI/CD analytics
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ci-cd-analytics
+          path: |
+            ci_cd_dashboard.png
+            ci_cd_summary.json
+            workflow_metrics.json
+          retention-days: 90

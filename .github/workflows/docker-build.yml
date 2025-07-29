@@ -10,12 +10,22 @@ on:
   workflow_dispatch:
     inputs:
       push_to_registry:
-        description: 'Push images to registry'
+        description: "Push images to registry"
         required: false
         default: false
         type: boolean
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 env:
+  # Standardized environment variables across all workflows
+  NODE_VERSION: "18"
+  PYTHON_VERSION: "3.11"
+  SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+  NODE_ENV: test
+  # Docker-specific environment variables
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}
 
@@ -27,14 +37,14 @@ jobs:
       contents: read
       packages: write
       security-events: write
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-      
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
-      
+
       - name: Log in to Container Registry
         if: github.event.inputs.push_to_registry == 'true' || github.ref == 'refs/heads/main'
         uses: docker/login-action@v3
@@ -42,7 +52,7 @@ jobs:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-      
+
       - name: Extract metadata
         id: meta
         uses: docker/metadata-action@v5
@@ -53,31 +63,40 @@ jobs:
             type=ref,event=pr
             type=sha,prefix={{branch}}-
             type=raw,value=latest,enable={{is_default_branch}}
-      
+
+      - name: Record build start time
+        run: echo "BUILD_START_TIME=$(date +%s)" >> $GITHUB_ENV
+
       - name: Build Docker image
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         with:
           context: .
           platforms: linux/amd64,linux/arm64
           push: false
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-from: |
+            type=gha
+            type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:buildcache
+          cache-to: |
+            type=gha,mode=max
+            type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:buildcache,mode=max
           outputs: type=docker,dest=/tmp/sizewise-image.tar
-      
+          build-args: |
+            BUILDKIT_INLINE_CACHE=1
+
       - name: Load and test Docker image
         run: |
           docker load --input /tmp/sizewise-image.tar
-          
+
           # Get the first tag from the metadata
           IMAGE_TAG=$(echo "${{ steps.meta.outputs.tags }}" | head -n1)
           echo "Testing image: $IMAGE_TAG"
-          
+
           # Test that the image runs
           docker run --rm -d --name sizewise-test -p 3000:3000 -p 5000:5000 "$IMAGE_TAG"
           sleep 30
-          
+
           # Test frontend health
           if curl -f http://localhost:3000; then
             echo "✅ Frontend is responding"
@@ -86,7 +105,7 @@ jobs:
             docker logs sizewise-test
             exit 1
           fi
-          
+
           # Test backend health
           if curl -f http://localhost:5000/api/health; then
             echo "✅ Backend is responding"
@@ -95,26 +114,68 @@ jobs:
             docker logs sizewise-test
             exit 1
           fi
-          
+
           # Cleanup
           docker stop sizewise-test
-      
+
+      - name: Calculate build time
+        run: |
+          BUILD_END_TIME=$(date +%s)
+          BUILD_DURATION=$((BUILD_END_TIME - BUILD_START_TIME))
+          BUILD_MINUTES=$((BUILD_DURATION / 60))
+          BUILD_SECONDS=$((BUILD_DURATION % 60))
+          echo "BUILD_DURATION_SECONDS=$BUILD_DURATION" >> $GITHUB_ENV
+          echo "BUILD_TIME_DISPLAY=${BUILD_MINUTES}m ${BUILD_SECONDS}s" >> $GITHUB_ENV
+          echo "🕐 Build completed in ${BUILD_MINUTES}m ${BUILD_SECONDS}s"
+
       - name: Run Trivy vulnerability scanner
-        uses: aquasecurity/trivy-action@master
+        uses: aquasecurity/trivy-action@0.30.0
         with:
           input: /tmp/sizewise-image.tar
-          format: 'sarif'
-          output: 'trivy-results.sarif'
-      
-      - name: Upload Trivy scan results
+          format: "sarif"
+          output: "trivy-results.sarif"
+          severity: "CRITICAL,HIGH,MEDIUM"
+
+      - name: Run Trivy secret scanner
+        uses: aquasecurity/trivy-action@0.30.0
+        with:
+          input: /tmp/sizewise-image.tar
+          scan-type: "secret"
+          format: "sarif"
+          output: "trivy-secrets.sarif"
+
+      - name: Run Trivy config scanner
+        uses: aquasecurity/trivy-action@0.30.0
+        with:
+          input: /tmp/sizewise-image.tar
+          scan-type: "config"
+          format: "sarif"
+          output: "trivy-config.sarif"
+
+      - name: Upload Trivy vulnerability scan results
         uses: github/codeql-action/upload-sarif@v3
         if: always()
         with:
-          sarif_file: 'trivy-results.sarif'
-      
+          sarif_file: "trivy-results.sarif"
+          category: "trivy-vulnerabilities"
+
+      - name: Upload Trivy secret scan results
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: "trivy-secrets.sarif"
+          category: "trivy-secrets"
+
+      - name: Upload Trivy config scan results
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: "trivy-config.sarif"
+          category: "trivy-config"
+
       - name: Push Docker image
         if: github.event.inputs.push_to_registry == 'true' || github.ref == 'refs/heads/main'
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         with:
           context: .
           platforms: linux/amd64,linux/arm64
@@ -123,10 +184,14 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
-      
+
       - name: Generate summary
         run: |
           echo "# 🐳 Docker Build Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## ⏱️ Build Performance" >> $GITHUB_STEP_SUMMARY
+          echo "- **Build Time**: $BUILD_TIME_DISPLAY" >> $GITHUB_STEP_SUMMARY
+          echo "- **Build Duration**: $BUILD_DURATION_SECONDS seconds" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "## 📦 Built Images" >> $GITHUB_STEP_SUMMARY
           echo '```' >> $GITHUB_STEP_SUMMARY
@@ -135,6 +200,8 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "## 🔍 Security Scan" >> $GITHUB_STEP_SUMMARY
           echo "- Trivy vulnerability scan completed" >> $GITHUB_STEP_SUMMARY
+          echo "- Trivy secret scan completed" >> $GITHUB_STEP_SUMMARY
+          echo "- Trivy config scan completed" >> $GITHUB_STEP_SUMMARY
           echo "- Results uploaded to Security tab" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           if [[ "${{ github.event.inputs.push_to_registry }}" == "true" || "${{ github.ref }}" == "refs/heads/main" ]]; then

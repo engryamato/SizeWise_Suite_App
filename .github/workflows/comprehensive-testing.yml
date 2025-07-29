@@ -22,8 +22,11 @@ on:
         type: boolean
 
 env:
+  # Standardized environment variables across all workflows
   NODE_VERSION: "18"
   PYTHON_VERSION: "3.11"
+  SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+  NODE_ENV: test
   POSTGRES_VERSION: "15"
   MONGODB_VERSION: "7.0"
   REDIS_VERSION: "7.0"
@@ -495,7 +498,7 @@ jobs:
           pip install safety bandit semgrep
 
       - name: Run Snyk security scan
-        uses: snyk/actions/node@master
+        uses: snyk/actions/node@0.4.0
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
         with:

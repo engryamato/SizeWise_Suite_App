@@ -24,11 +24,17 @@ jest.mock('next/navigation', () => ({
 
 // IndexedDB polyfill for JSDOM environment
 // This fixes "indexedDB is not defined" errors in feature flag tests
-const FDBFactory = require('fake-indexeddb/lib/FDBFactory')
-const FDBKeyRange = require('fake-indexeddb/lib/FDBKeyRange')
-
-global.indexedDB = new FDBFactory()
-global.IDBKeyRange = FDBKeyRange
+try {
+  const FDBFactory = require('fake-indexeddb/lib/FDBFactory')
+  const FDBKeyRange = require('fake-indexeddb/lib/FDBKeyRange')
+  global.indexedDB = new FDBFactory()
+  global.IDBKeyRange = FDBKeyRange
+} catch (error) {
+  // Fallback for newer versions of fake-indexeddb
+  const { FDBFactory, FDBKeyRange } = require('fake-indexeddb')
+  global.indexedDB = new FDBFactory()
+  global.IDBKeyRange = FDBKeyRange
+}
 
 // IntersectionObserver polyfill for JSDOM environment
 // This fixes "this.intersectionObserver.observe is not a function" errors

@@ -1,0 +1,211 @@
+# GitLeaks configuration for SizeWise Suite
+title = "SizeWise Suite GitLeaks Configuration"
+
+[extend]
+# Use the default gitleaks config as a base
+useDefault = true
+
+[[rules]]
+description = "AWS Access Key ID"
+id = "aws-access-key-id"
+regex = '''AKIA[0-9A-Z]{16}'''
+tags = ["key", "AWS"]
+
+[[rules]]
+description = "AWS Secret Access Key"
+id = "aws-secret-access-key"
+regex = '''[A-Za-z0-9/+=]{40}'''
+tags = ["key", "AWS"]
+
+[[rules]]
+description = "GitHub Personal Access Token"
+id = "github-pat"
+regex = '''ghp_[0-9a-zA-Z]{36}'''
+tags = ["key", "GitHub"]
+
+[[rules]]
+description = "GitHub OAuth Access Token"
+id = "github-oauth"
+regex = '''gho_[0-9a-zA-Z]{36}'''
+tags = ["key", "GitHub"]
+
+[[rules]]
+description = "GitHub App Token"
+id = "github-app-token"
+regex = '''(ghu|ghs)_[0-9a-zA-Z]{36}'''
+tags = ["key", "GitHub"]
+
+[[rules]]
+description = "Slack Token"
+id = "slack-access-token"
+regex = '''xox[baprs]-([0-9a-zA-Z]{10,48})?'''
+tags = ["key", "Slack"]
+
+[[rules]]
+description = "Stripe API Key"
+id = "stripe-api-key"
+regex = '''sk_live_[0-9a-zA-Z]{24}'''
+tags = ["key", "Stripe"]
+
+[[rules]]
+description = "Google API Key"
+id = "google-api-key"
+regex = '''AIza[0-9A-Za-z\\-_]{35}'''
+tags = ["key", "Google"]
+
+[[rules]]
+description = "Heroku API Key"
+id = "heroku-api-key"
+regex = '''[h|H][e|E][r|R][o|O][k|K][u|U].*[0-9A-F]{8}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{12}'''
+tags = ["key", "Heroku"]
+
+[[rules]]
+description = "MailChimp API Key"
+id = "mailchimp-api-key"
+regex = '''[0-9a-f]{32}-us[0-9]{1,2}'''
+tags = ["key", "Mailchimp"]
+
+[[rules]]
+description = "MailGun API Key"
+id = "mailgun-api-key"
+regex = '''key-[0-9a-zA-Z]{32}'''
+tags = ["key", "Mailgun"]
+
+[[rules]]
+description = "PayPal BraintreePayment Gateway"
+id = "paypal-braintree-access-token"
+regex = '''access_token\$production\$[0-9a-z]{16}\$[0-9a-f]{32}'''
+tags = ["key", "Paypal"]
+
+[[rules]]
+description = "Square OAuth Secret"
+id = "square-oauth-secret"
+regex = '''sq0csp-[ 0-9A-Za-z\\-_]{43}|sq0[a-z]{3}-[0-9A-Za-z\\-_]{22,43}'''
+tags = ["key", "square"]
+
+[[rules]]
+description = "Square Access Token"
+id = "square-access-token"
+regex = '''sqOatp-[0-9A-Za-z\\-_]{22}|EAAA[a-zA-Z0-9]{60}'''
+tags = ["key", "square"]
+
+[[rules]]
+description = "Twilio API Key"
+id = "twilio-api-key"
+regex = '''SK[0-9a-fA-F]{32}'''
+tags = ["key", "twilio"]
+
+[[rules]]
+description = "Dynatrace Token"
+id = "dynatrace-api-token"
+regex = '''dt0c01\.[0-9A-Za-z]{24}\.[0-9A-Za-z]{64}'''
+tags = ["key", "Dynatrace"]
+
+[[rules]]
+description = "Shopify shared secret"
+id = "shopify-shared-secret"
+regex = '''shpss_[a-fA-F0-9]{32}'''
+tags = ["key", "Shopify"]
+
+[[rules]]
+description = "Shopify access token"
+id = "shopify-access-token"
+regex = '''shpat_[a-fA-F0-9]{32}'''
+tags = ["key", "Shopify"]
+
+[[rules]]
+description = "Shopify custom app access token"
+id = "shopify-custom-access-token"
+regex = '''shpca_[a-fA-F0-9]{32}'''
+tags = ["key", "Shopify"]
+
+[[rules]]
+description = "Shopify private app access token"
+id = "shopify-private-app-access-token"
+regex = '''shppa_[a-fA-F0-9]{32}'''
+tags = ["key", "Shopify"]
+
+[[rules]]
+description = "PyPI upload token"
+id = "pypi-upload-token"
+regex = '''pypi-AgEIcHlwaS5vcmc[A-Za-z0-9\-_]{50,1000}'''
+tags = ["key", "pypi"]
+
+# Allowlist for common false positives
+[allowlist]
+description = "Allowlisted files"
+files = [
+    '''(.*?)(jpg|gif|doc|pdf|bin)$''',
+    '''.gitleaks.toml''',
+    '''package-lock.json''',
+    '''yarn.lock''',
+    '''pnpm-lock.yaml''',
+    '''go.sum''',
+    '''Cargo.lock''',
+    '''poetry.lock''',
+    '''Pipfile.lock''',
+    '''node_modules/.*''',
+    '''.git/.*''',
+    '''vendor/.*''',
+    '''dist/.*''',
+    '''build/.*''',
+    '''.next/.*''',
+    '''out/.*''',
+    '''coverage/.*''',
+    '''.nyc_output/.*''',
+    '''__pycache__/.*''',
+    '''.pytest_cache/.*''',
+    '''.mypy_cache/.*''',
+    '''.vscode/.*''',
+    '''.idea/.*'''
+]
+
+paths = [
+    '''(.*?)(jpg|gif|doc|pdf|bin)$''',
+    '''node_modules''',
+    '''.git''',
+    '''vendor''',
+    '''dist''',
+    '''build''',
+    '''.next''',
+    '''out''',
+    '''coverage''',
+    '''.nyc_output''',
+    '''__pycache__''',
+    '''.pytest_cache''',
+    '''.mypy_cache''',
+    '''.vscode''',
+    '''.idea'''
+]
+
+regexes = [
+    '''219-09-9999''',
+    '''078-05-1120''',
+    '''(9[0-9]{2}|666)-\d{2}-\d{4}''',
+    '''password\s*=\s*["']?(test|demo|example|sample)["']?''',
+    '''secret\s*=\s*["']?(test|demo|example|sample)["']?''',
+    '''key\s*=\s*["']?(test|demo|example|sample)["']?''',
+    '''token\s*=\s*["']?(test|demo|example|sample)["']?''',
+    '''api_key\s*=\s*["']?(test|demo|example|sample)["']?''',
+    '''access_token\s*=\s*["']?(test|demo|example|sample)["']?''',
+    '''client_secret\s*=\s*["']?(test|demo|example|sample)["']?''',
+    '''private_key\s*=\s*["']?(test|demo|example|sample)["']?''',
+    '''AKIA[0-9A-Z]{16}.*example''',
+    '''sk_test_[0-9a-zA-Z]{24}''',
+    '''pk_test_[0-9a-zA-Z]{24}''',
+    '''rk_test_[0-9a-zA-Z]{24}''',
+    '''sq0atp-[0-9A-Za-z\-_]{22}''',
+    '''sq0csp-[0-9A-Za-z\-_]{43}''',
+    '''access_token\$sandbox\$[0-9a-z]{16}\$[0-9a-f]{32}''',
+    '''amzn\.mws\.[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}''',
+    '''SK[0-9a-fA-F]{32}.*test''',
+    '''key-[0-9a-zA-Z]{32}.*test''',
+    '''[0-9a-f]{32}-us[0-9]{1,2}.*test''',
+    '''AIza[0-9A-Za-z\-_]{35}.*test''',
+    '''ya29\.[0-9A-Za-z\-_]+.*test''',
+    '''EAAA[a-zA-Z0-9]{60}.*test''',
+    '''EAACEdEose0cBA[0-9A-Za-z]+.*test''',
+    '''[f|F][a|A][c|C][e|E][b|B][o|O][o|O][k|K].*['|\"][0-9a-f]{32}['|\"].*test''',
+    '''[t|T][w|W][i|I][t|T][t|T][e|E][r|R].*['|\"][0-9a-zA-Z]{35,44}['|\"].*test''',
+    '''[g|G][i|I][t|T][h|H][u|U][b|B].*['|\"][0-9a-zA-Z]{35,40}['|\"].*test'''
+]

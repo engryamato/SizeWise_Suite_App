@@ -115,10 +115,10 @@ export class SizeWiseDatabase extends Dexie {
     });
 
     this.projects.hook('updating', (modifications, primKey, obj, trans) => {
-      modifications.lastModified = new Date();
-      modifications.version = (obj.version || 0) + 1;
+      (modifications as any).lastModified = new Date();
+      (modifications as any).version = (obj.version || 0) + 1;
       if (obj.syncStatus === 'synced') {
-        modifications.syncStatus = 'pending';
+        (modifications as any).syncStatus = 'pending';
       }
     });
 
@@ -133,9 +133,9 @@ export class SizeWiseDatabase extends Dexie {
     });
 
     this.spatialData.hook('updating', (modifications, primKey, obj, trans) => {
-      modifications.lastModified = new Date();
+      (modifications as any).lastModified = new Date();
       if (obj.syncStatus === 'synced') {
-        modifications.syncStatus = 'pending';
+        (modifications as any).syncStatus = 'pending';
       }
     });
   }
@@ -192,14 +192,14 @@ export class SizeWiseDatabase extends Dexie {
       const testProject: Omit<SizeWiseProject, 'id' | 'lastModified' | 'syncStatus' | 'version'> = {
         uuid: `test-${Date.now()}`,
         project_name: 'Test Project',
-        client: 'Test Client',
-        address: 'Test Address',
-        building_type: 'office',
+        contractor_name: 'Test Contractor',
+        project_location: 'Test Address',
+        codes: ['SMACNA'],
         rooms: [],
         segments: [],
         equipment: [],
-        settings: {},
-        metadata: {}
+        created_at: new Date().toISOString(),
+        last_modified: new Date().toISOString()
       };
 
       const projectId = await this.createProject(testProject);
@@ -215,9 +215,9 @@ export class SizeWiseDatabase extends Dexie {
 
       // Test project update
       if (retrievedProject) {
-        await this.projects.update(projectId, { client: 'Updated Test Client' });
+        await this.projects.update(projectId, { contractor_name: 'Updated Test Contractor' });
         const updatedProject = await this.projects.get(projectId);
-        results.projectUpdated = updatedProject?.client === 'Updated Test Client';
+        results.projectUpdated = updatedProject?.contractor_name === 'Updated Test Contractor';
       }
 
       // Test project deletion
@@ -306,18 +306,16 @@ export class SizeWiseDatabase extends Dexie {
     return await this.calculations
       .where('projectUuid')
       .equals(projectUuid)
-      .orderBy('timestamp')
       .reverse()
-      .toArray();
+      .sortBy('timestamp');
   }
 
   async getCalculationsByType(projectUuid: string, calculationType: string): Promise<SizeWiseCalculation[]> {
     return await this.calculations
       .where(['projectUuid', 'calculationType'])
       .equals([projectUuid, calculationType])
-      .orderBy('timestamp')
       .reverse()
-      .toArray();
+      .sortBy('timestamp');
   }
 
   // =============================================================================
@@ -342,8 +340,7 @@ export class SizeWiseDatabase extends Dexie {
     return await this.spatialData
       .where('projectUuid')
       .equals(projectUuid)
-      .orderBy('lastModified')
-      .toArray();
+      .sortBy('lastModified');
   }
 
   async getSpatialLayersByType(projectUuid: string, layerType: string): Promise<SpatialDataLayer[]> {
@@ -389,8 +386,7 @@ export class SizeWiseDatabase extends Dexie {
     return await this.syncOperations
       .where('status')
       .equals('pending')
-      .orderBy('timestamp')
-      .toArray();
+      .sortBy('timestamp');
   }
 
   async markSyncOperationCompleted(uuid: string): Promise<void> {
@@ -398,10 +394,10 @@ export class SizeWiseDatabase extends Dexie {
   }
 
   async markSyncOperationFailed(uuid: string, error: string): Promise<void> {
-    await this.syncOperations.where('uuid').equals(uuid).modify({
-      status: 'failed',
-      lastError: error,
-      retryCount: (obj: SyncOperation) => (obj.retryCount || 0) + 1
+    await this.syncOperations.where('uuid').equals(uuid).modify((obj: SyncOperation) => {
+      obj.status = 'failed';
+      obj.lastError = error;
+      obj.retryCount = (obj.retryCount || 0) + 1;
     });
   }
 

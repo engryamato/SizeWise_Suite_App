@@ -18,6 +18,7 @@ interface CalculationState {
   calculationHistory: CalculationHistory[];
   isCalculating: boolean;
   lastError: string | null;
+  materials: string[];
   
   // Calculation actions
   setCurrentCalculation: (calculation: CalculationResult | null) => void;
@@ -30,6 +31,9 @@ interface CalculationState {
   
   // Calculation methods
   performCalculation: (type: string, inputData: any) => Promise<CalculationResult>;
+  calculateArea: (length: number, width: number) => number;
+  calculateVelocity: (airflow: number, ductSize: { width: number; height: number }) => number;
+  calculateEquivalentDiameter: (width: number, height: number) => number;
 }
 
 export const useCalculationStore = create<CalculationState>((set, get) => ({
@@ -37,6 +41,7 @@ export const useCalculationStore = create<CalculationState>((set, get) => ({
   calculationHistory: [],
   isCalculating: false,
   lastError: null,
+  materials: ['Galvanized Steel', 'Aluminum', 'Stainless Steel', 'PVC', 'Fiberglass'],
   
   setCurrentCalculation: (calculation: CalculationResult | null) => {
     set({ currentCalculation: calculation });
@@ -68,14 +73,18 @@ export const useCalculationStore = create<CalculationState>((set, get) => ({
       await new Promise(resolve => setTimeout(resolve, 1000));
       
       const result: CalculationResult = {
-        ductSize: { width: 12, height: 8 },
-        velocity: 1200,
-        pressureDrop: 0.08,
-        reynoldsNumber: 85000,
-        frictionFactor: 0.018,
-        equivalentDiameter: 9.6,
-        isValid: true,
+        success: true,
+        input_data: inputData,
+        results: {
+          width: 12,
+          height: 8,
+          area: 12 * 8,
+          velocity: 1200,
+          pressure_loss: 0.08,
+          equivalent_diameter: 9.6
+        },
         warnings: [],
+        errors: [],
         metadata: {
           calculationType: type,
           timestamp: new Date(),
@@ -97,6 +106,26 @@ export const useCalculationStore = create<CalculationState>((set, get) => ({
       });
       throw error;
     }
+  },
+
+  calculateArea: (length: number, width: number): number => {
+    return length * width;
+  },
+
+  calculateVelocity: (airflow: number, ductSize: { width: number; height: number }): number => {
+    // Velocity = CFM / (Area in sq ft)
+    // Area = width * height / 144 (convert sq inches to sq feet)
+    const areaInSqFt = (ductSize.width * ductSize.height) / 144;
+    return areaInSqFt > 0 ? airflow / areaInSqFt : 0;
+  },
+
+  calculateEquivalentDiameter: (width: number, height: number): number => {
+    // Equivalent diameter for rectangular duct = 1.3 * (a * b)^0.625 / (a + b)^0.25
+    // where a and b are the duct dimensions
+    if (width <= 0 || height <= 0) return 0;
+    const numerator = Math.pow(width * height, 0.625);
+    const denominator = Math.pow(width + height, 0.25);
+    return 1.3 * (numerator / denominator);
   }
 }));
 

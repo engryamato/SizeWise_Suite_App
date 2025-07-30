@@ -1,6 +1,0 @@
-{
-  "airflow": 1000,
-  "duct_type": "round",
-  "friction_rate": 0.1,
-  "units": "imperial"
-}

@@ -4,61 +4,225 @@ interface User {
   id: string;
   email: string;
   name: string;
-  tier: 'free' | 'pro' | 'enterprise';
+  tier: 'free' | 'pro' | 'enterprise' | 'trial' | 'super_admin' | 'premium';
+  is_super_admin?: boolean;
+  permissions?: string[];
+  company?: string;
+  subscription_expires?: string;
+  created_at: string;
+  updated_at?: string;
+}
+
+interface TierStatus {
+  tier: 'free' | 'pro' | 'enterprise' | 'trial' | 'super_admin' | 'premium';
+  features: Record<string, boolean>;
+  usage: Record<string, number>;
+  limits: Record<string, number>;
+  trial_expires?: string;
 }
 
 interface AuthState {
   user: User | null;
   isAuthenticated: boolean;
   isLoading: boolean;
-  login: (email: string, password: string) => Promise<void>;
+  token: string | null;
+  isOnline: boolean;
+  lastSync: string | null;
+  tierStatus: TierStatus | null;
+  canEditComputationalProperties: boolean;
+  login: (email: string, password: string) => Promise<boolean>;
+  register: (email: string, password: string, name: string, company?: string) => Promise<boolean>;
   logout: () => void;
   setUser: (user: User) => void;
+  setToken: (token: string) => void;
+  syncWithServer: () => Promise<boolean>;
+  getTierStatus: () => Promise<TierStatus | null>;
+  canPerformAction: (action: string, context?: any) => Promise<boolean>;
 }
 
-export const useAuthStore = create<AuthState>((set) => ({
+export const useAuthStore = create<AuthState>((set, get) => ({
   user: null,
   isAuthenticated: false,
   isLoading: false,
-  
-  login: async (email: string, password: string) => {
+  token: null,
+  isOnline: true,
+  lastSync: null,
+  tierStatus: null,
+  canEditComputationalProperties: false,
+
+  login: async (email: string, password: string): Promise<boolean> => {
     set({ isLoading: true });
-    
+
     // Simple mock authentication for testing
     try {
       // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 1000));
-      
+
       const mockUser: User = {
         id: '1',
         email,
         name: 'Test User',
-        tier: 'pro'
+        tier: 'pro',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
       };
-      
-      set({ 
-        user: mockUser, 
-        isAuthenticated: true, 
-        isLoading: false 
+
+      const mockToken = 'mock-jwt-token-' + Date.now();
+      const mockTierStatus: TierStatus = {
+        tier: mockUser.tier,
+        features: { unlimited: mockUser.tier === 'enterprise' },
+        usage: { projects: 1 },
+        limits: { projects: mockUser.tier === 'free' ? 3 : 100 }
+      };
+
+      set({
+        user: mockUser,
+        isAuthenticated: true,
+        isLoading: false,
+        token: mockToken,
+        tierStatus: mockTierStatus,
+        lastSync: new Date().toISOString(),
+        canEditComputationalProperties: mockUser.tier === 'pro' || mockUser.tier === 'enterprise' || mockUser.tier === 'super_admin'
       });
+
+      return true;
     } catch (error) {
+      console.error('Login error:', error);
       set({ isLoading: false });
-      throw error;
+      return false;
     }
   },
-  
+
+  register: async (email: string, password: string, name: string, company?: string): Promise<boolean> => {
+    set({ isLoading: true });
+
+    try {
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
+      const mockUser: User = {
+        id: Date.now().toString(),
+        email,
+        name,
+        tier: 'free',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      };
+
+      const mockToken = 'mock-jwt-token-' + Date.now();
+      const mockTierStatus: TierStatus = {
+        tier: mockUser.tier,
+        features: { unlimited: mockUser.tier === 'enterprise' },
+        usage: { projects: 1 },
+        limits: { projects: mockUser.tier === 'free' ? 3 : 100 }
+      };
+
+      set({
+        user: mockUser,
+        isAuthenticated: true,
+        isLoading: false,
+        token: mockToken,
+        tierStatus: mockTierStatus,
+        lastSync: new Date().toISOString(),
+        canEditComputationalProperties: mockUser.tier === 'pro' || mockUser.tier === 'enterprise' || mockUser.tier === 'super_admin'
+      });
+
+      return true;
+    } catch (error) {
+      console.error('Registration error:', error);
+      set({ isLoading: false });
+      return false;
+    }
+  },
+
   logout: () => {
-    set({ 
-      user: null, 
-      isAuthenticated: false, 
-      isLoading: false 
+    set({
+      user: null,
+      isAuthenticated: false,
+      isLoading: false,
+      token: null,
+      tierStatus: null,
+      lastSync: null,
+      canEditComputationalProperties: false
     });
   },
   
   setUser: (user: User) => {
-    set({ 
-      user, 
-      isAuthenticated: true 
+    set({
+      user,
+      isAuthenticated: true
     });
+  },
+
+  setToken: (token: string) => {
+    set({ token });
+  },
+
+  syncWithServer: async (): Promise<boolean> => {
+    const { isOnline } = get();
+    if (!isOnline) return false;
+
+    try {
+      // Simulate server sync
+      await new Promise(resolve => setTimeout(resolve, 500));
+      set({ lastSync: new Date().toISOString() });
+      return true;
+    } catch (error) {
+      console.error('Sync error:', error);
+      return false;
+    }
+  },
+
+  getTierStatus: async (): Promise<TierStatus | null> => {
+    const { user, isAuthenticated } = get();
+    if (!isAuthenticated || !user) return null;
+
+    try {
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 200));
+
+      const tierStatus: TierStatus = {
+        tier: user.tier,
+        features: { unlimited: user.tier === 'enterprise' },
+        usage: { projects: 1 },
+        limits: { projects: user.tier === 'free' ? 3 : 100 }
+      };
+
+      set({ tierStatus });
+      return tierStatus;
+    } catch (error) {
+      console.error('Get tier status error:', error);
+      return null;
+    }
+  },
+
+  canPerformAction: async (action: string, context?: any) => {
+    const { user, tierStatus } = get();
+
+    if (!user || !tierStatus) {
+      return false;
+    }
+
+    // Basic tier-based action permissions
+    switch (action) {
+      case 'create_project':
+        return tierStatus.usage.projects < tierStatus.limits.projects;
+      case 'add_segment': {
+        // Check segment limits based on context
+        const segmentCount = context?.segments_count || 0;
+        let maxSegments = 10; // free tier
+        if (user.tier === 'pro') maxSegments = 100;
+        if (user.tier === 'enterprise') maxSegments = 1000;
+        return segmentCount < maxSegments;
+      }
+      case 'export_project':
+        return user.tier !== 'free';
+      case 'advanced_calculations':
+        return user.tier === 'pro' || user.tier === 'enterprise';
+      case 'collaboration':
+        return user.tier === 'enterprise';
+      default:
+        return true;
+    }
   }
 }));

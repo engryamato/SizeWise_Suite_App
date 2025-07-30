@@ -255,7 +255,7 @@ export const ProjectPropertiesManager: React.FC<ProjectPropertiesManagerProps> =
     
     // Update project store
     if (currentProject) {
-      updateProject({
+      updateProject(currentProject.id || '', {
         project_name: updatedInfo.name,
         project_location: updatedInfo.location,
         contractor_name: updatedInfo.clientName || updatedInfo.estimatorName,
@@ -278,7 +278,7 @@ export const ProjectPropertiesManager: React.FC<ProjectPropertiesManagerProps> =
     
     // Update project store
     if (currentProject) {
-      updateProject({ codes });
+      updateProject(currentProject.id || '', { codes });
     }
   };
 

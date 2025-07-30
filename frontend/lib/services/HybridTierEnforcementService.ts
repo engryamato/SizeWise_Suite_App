@@ -222,10 +222,10 @@ export class HybridTierEnforcementService {
         isTrialActive,
         trialDaysRemaining,
         features: {
-          maxProjects: tierStatus.features.max_projects,
-          maxSegments: tierStatus.features.max_segments_per_project,
-          highResExports: tierStatus.features.high_res_exports,
-          apiAccess: tierStatus.features.api_access,
+          maxProjects: tierStatus.limits.projects || 3,
+          maxSegments: tierStatus.limits.segments || 10,
+          highResExports: tierStatus.features.unlimited || false,
+          apiAccess: tierStatus.features.unlimited || false,
         },
       }
     }

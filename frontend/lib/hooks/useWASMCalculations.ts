@@ -92,7 +92,7 @@ export function useWASMCalculations(config: WASMCalculationsHookConfig = {}): WA
     errorRate: 0
   });
 
-  const trackingIntervalRef = useRef<NodeJS.Timeout>();
+  const trackingIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const errorCountRef = useRef(0);
   const totalCalculationsRef = useRef(0);
 
@@ -250,7 +250,7 @@ export function useWASMCalculations(config: WASMCalculationsHookConfig = {}): WA
         type: 'fallback',
         severity: 'medium',
         message: 'WASM not available. Consider enabling WASM for better performance.',
-        action: async () => await reinitialize()
+        action: async () => { await reinitialize(); }
       });
     }
 
@@ -278,7 +278,7 @@ export function useWASMCalculations(config: WASMCalculationsHookConfig = {}): WA
         type: 'performance',
         severity: 'high',
         message: 'High calculation frequency detected. WASM would provide significant performance benefits.',
-        action: async () => await reinitialize()
+        action: async () => { await reinitialize(); }
       });
     }
 

@@ -118,7 +118,7 @@ export const CanvasContainer: React.FC<CanvasContainerProps> = ({ width, height 
     if (selectionBox.visible && drawingState.tool === 'select') {
       const width = worldPos.x - selectionBox.x
       const height = worldPos.y - selectionBox.y
-      updateSelectionBox(width, height)
+      updateSelectionBox({ width, height })
     }
   }
 
@@ -172,7 +172,7 @@ export const CanvasContainer: React.FC<CanvasContainerProps> = ({ width, height 
     // If clicking on empty space, start selection box
     if (e.target === e.target.getStage()) {
       clearSelection()
-      showSelectionBox(worldPos.x, worldPos.y)
+      showSelectionBox({ x: worldPos.x, y: worldPos.y, width: 0, height: 0 })
       startDrawing(worldPos)
     }
   }
@@ -193,6 +193,7 @@ export const CanvasContainer: React.FC<CanvasContainerProps> = ({ width, height 
     // Equipment is placed immediately, no dragging
     const snappedPos = snapToGrid(worldPos)
     addEquipment({
+      equipment_id: `equipment_${Date.now()}`,
       type: 'AHU',
       airflow: 1000,
       x: snappedPos.x,
@@ -237,6 +238,7 @@ export const CanvasContainer: React.FC<CanvasContainerProps> = ({ width, height 
         
         if (roomWidth > 10 && roomHeight > 10) { // Minimum size check
           addRoom({
+            room_id: `room_${Date.now()}`,
             name: `Room ${(currentProject?.rooms.length || 0) + 1}`,
             dimensions: {
               length: roomWidth / 12, // Convert pixels to feet (assuming 12px = 1ft)
@@ -256,6 +258,7 @@ export const CanvasContainer: React.FC<CanvasContainerProps> = ({ width, height 
         
         if (distance > 20) { // Minimum length check
           addSegment({
+            segment_id: `segment_${Date.now()}`,
             type: 'straight',
             material: 'galvanized_steel',
             size: { width: 12, height: 8 }, // Default size
@@ -375,7 +378,7 @@ export const CanvasContainer: React.FC<CanvasContainerProps> = ({ width, height 
           {currentProject.plan_pdf && (
             <PlanBackground
               pdfData={currentProject.plan_pdf}
-              scale={planScale}
+              scale={planScale.pixelsPerMeter}
               offsetX={0}
               offsetY={0}
             />

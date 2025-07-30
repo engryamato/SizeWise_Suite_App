@@ -105,7 +105,9 @@ export const ProjectPanelContainer: React.FC<Omit<ProjectPanelProps, 'data' | 'u
       setValidationErrors({});
 
       // Update project in store
-      updateProject(updates);
+      if (currentProject?.id) {
+        updateProject(currentProject.id, updates);
+      }
 
       // Call external handler if provided
       onProjectUpdate?.(updates);

@@ -166,7 +166,7 @@ export interface User {
   id: string
   email: string
   name: string
-  tier: 'free' | 'pro' | 'enterprise' | 'super_admin'
+  tier: 'free' | 'pro' | 'enterprise' | 'super_admin' | 'trial' | 'premium'
   company?: string
   subscription_expires?: string
   created_at: string

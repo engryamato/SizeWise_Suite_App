@@ -71,7 +71,7 @@ const DockItem: React.FC<{
 }> = ({ item, size, variant, orientation }) => {
   const [isHovered, setIsHovered] = useState(false);
   const [showLabel, setShowLabel] = useState(false);
-  const timeoutRef = useRef<NodeJS.Timeout>();
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const sizeConfig = SIZE_CONFIGS[size];
   const variantStyle = VARIANT_STYLES[variant];

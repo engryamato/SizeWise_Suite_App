@@ -93,7 +93,7 @@ export const ScaleCalibrationPanel: React.FC<ScaleCalibrationPanelProps> = ({
       
       // Update both stores
       setPlanScale(newScale)
-      updateUIScale(newScale)
+      updateUIScale({ pixelsPerMeter: newScale })
       
       // Small delay for visual feedback
       await new Promise(resolve => setTimeout(resolve, 500))
@@ -223,7 +223,7 @@ export const ScaleCalibrationPanel: React.FC<ScaleCalibrationPanelProps> = ({
                 <strong>Preview Scale:</strong> {previewScale.toFixed(6)} ft/pixel
               </div>
               <div className="text-xs text-blue-600 mt-1">
-                Current scale: {planScale.toFixed(6)} ft/pixel
+                Current scale: {planScale.pixelsPerMeter.toFixed(6)} ft/pixel
               </div>
             </div>
           )}

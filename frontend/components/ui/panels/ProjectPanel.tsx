@@ -37,16 +37,17 @@ export const ProjectPanel: React.FC = () => {
   }
   
   const handleSave = () => {
-    updateProject(formData)
-    if (canEditComputationalProperties()) {
-      updateComputationalProperties(compProps)
+    if (currentProject?.id) {
+      updateProject(currentProject.id, formData)
+      if (canEditComputationalProperties) {
+        updateComputationalProperties(compProps)
+      }
+      setIsEditing(false)
+      addNotification({
+        type: 'success',
+        message: 'Project saved successfully'
+      })
     }
-    setIsEditing(false)
-    addNotification({
-      type: 'success',
-      message: 'Project saved successfully',
-      duration: 3000,
-    })
   }
   
   const handleCancel = () => {
@@ -195,7 +196,7 @@ export const ProjectPanel: React.FC = () => {
       <div>
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-medium text-gray-900">Computational Properties</h3>
-          {!canEditComputationalProperties() && (
+          {!canEditComputationalProperties && (
             <div className="flex items-center text-sm text-gray-500">
               <Lock size={14} className="mr-1" />
               Pro Only
@@ -208,7 +209,7 @@ export const ProjectPanel: React.FC = () => {
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Default Velocity (FPM)
             </label>
-            {isEditing && canEditComputationalProperties() ? (
+            {isEditing && canEditComputationalProperties ? (
               <input
                 type="number"
                 value={compProps.default_velocity}
@@ -220,7 +221,7 @@ export const ProjectPanel: React.FC = () => {
             ) : (
               <div className="flex items-center">
                 <p className="text-gray-900">{compProps.default_velocity}</p>
-                {!canEditComputationalProperties() && (
+                {!canEditComputationalProperties && (
                   <Lock size={14} className="ml-2 text-gray-400" />
                 )}
               </div>
@@ -231,7 +232,7 @@ export const ProjectPanel: React.FC = () => {
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Pressure Class
             </label>
-            {isEditing && canEditComputationalProperties() ? (
+            {isEditing && canEditComputationalProperties ? (
               <select
                 value={compProps.pressure_class}
                 onChange={(e) => setCompProps({ ...compProps, pressure_class: e.target.value })}
@@ -244,7 +245,7 @@ export const ProjectPanel: React.FC = () => {
             ) : (
               <div className="flex items-center">
                 <p className="text-gray-900">{compProps.pressure_class}</p>
-                {!canEditComputationalProperties() && (
+                {!canEditComputationalProperties && (
                   <Lock size={14} className="ml-2 text-gray-400" />
                 )}
               </div>
@@ -255,7 +256,7 @@ export const ProjectPanel: React.FC = () => {
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Altitude (ft)
             </label>
-            {isEditing && canEditComputationalProperties() ? (
+            {isEditing && canEditComputationalProperties ? (
               <input
                 type="number"
                 value={compProps.altitude}
@@ -267,7 +268,7 @@ export const ProjectPanel: React.FC = () => {
             ) : (
               <div className="flex items-center">
                 <p className="text-gray-900">{compProps.altitude}</p>
-                {!canEditComputationalProperties() && (
+                {!canEditComputationalProperties && (
                   <Lock size={14} className="ml-2 text-gray-400" />
                 )}
               </div>
@@ -278,7 +279,7 @@ export const ProjectPanel: React.FC = () => {
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Friction Rate (in. w.g./100ft)
             </label>
-            {isEditing && canEditComputationalProperties() ? (
+            {isEditing && canEditComputationalProperties ? (
               <input
                 type="number"
                 step="0.01"
@@ -291,7 +292,7 @@ export const ProjectPanel: React.FC = () => {
             ) : (
               <div className="flex items-center">
                 <p className="text-gray-900">{compProps.friction_rate}</p>
-                {!canEditComputationalProperties() && (
+                {!canEditComputationalProperties && (
                   <Lock size={14} className="ml-2 text-gray-400" />
                 )}
               </div>

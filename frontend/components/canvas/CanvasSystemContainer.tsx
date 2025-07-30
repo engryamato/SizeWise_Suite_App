@@ -230,11 +230,12 @@ export const CanvasSystemContainer: React.FC<CanvasContainerProps> = ({
     
     if (width < 10 || height < 10) return; // Minimum size check
 
-    const newRoom: Omit<Room, "room_id"> = {
+    const newRoom: Room = {
+      room_id: `room_${Date.now()}`,
       name: `Room ${rooms.length + 1}`,
       dimensions: {
-        length: width / planScale,
-        width: height / planScale,
+        length: width / planScale.pixelsPerMeter,
+        width: height / planScale.pixelsPerMeter,
         height: 10 // Default ceiling height
       },
       x: Math.min(start.x, end.x),
@@ -249,11 +250,12 @@ export const CanvasSystemContainer: React.FC<CanvasContainerProps> = ({
     
     if (length < 20) return; // Minimum length check
 
-    const newSegment: Omit<Segment, "segment_id"> = {
+    const newSegment: Segment = {
+      segment_id: `segment_${Date.now()}`,
       type: 'straight',
       material: 'Galvanized Steel',
       size: { width: 12, height: 8 }, // Default size
-      length: length / planScale,
+      length: length / planScale.pixelsPerMeter,
       points: [start.x, start.y, end.x, end.y],
       warnings: []
     };
@@ -262,7 +264,8 @@ export const CanvasSystemContainer: React.FC<CanvasContainerProps> = ({
   }, [planScale, addSegment]);
 
   const createEquipment = useCallback((point: { x: number; y: number }) => {
-    const newEquipment: Omit<Equipment, "equipment_id"> = {
+    const newEquipment: Equipment = {
+      equipment_id: `equipment_${Date.now()}`,
       type: 'Air Handler',
       airflow: 1000, // Default airflow
       x: point.x,

@@ -377,6 +377,7 @@ export const SimpleCanvas: React.FC<SimpleCanvasProps> = ({ width, height }) => 
           const roomWidth = height / 12
 
           addRoom({
+            room_id: `room_${Date.now()}`,
             name: `Room ${(currentProject?.rooms.length || 0) + 1}`,
             function: 'office',
             dimensions: {
@@ -395,6 +396,7 @@ export const SimpleCanvas: React.FC<SimpleCanvasProps> = ({ width, height }) => 
           const ductLength = Math.sqrt(width * width + height * height) / 12
 
           addSegment({
+            segment_id: `segment_${Date.now()}`,
             type: 'straight',
             material: 'galvanized_steel',
             size: { width: 12, height: 8 }, // Default rectangular size
@@ -407,6 +409,7 @@ export const SimpleCanvas: React.FC<SimpleCanvasProps> = ({ width, height }) => 
         break
       case 'equipment':
         addEquipment({
+          equipment_id: `equipment_${Date.now()}`,
           type: 'AHU',
           airflow: 1000,
           static_pressure: 1.0,

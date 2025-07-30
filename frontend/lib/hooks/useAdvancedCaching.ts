@@ -79,8 +79,8 @@ export function useAdvancedCaching(config: CachingHookConfig = {}): CachingHookR
   const [isReady, setIsReady] = useState(false);
   const [error, setError] = useState<Error | null>(null);
   
-  const metricsIntervalRef = useRef<NodeJS.Timeout>();
-  const cleanupIntervalRef = useRef<NodeJS.Timeout>();
+  const metricsIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const cleanupIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   // =============================================================================
   // Service Initialization

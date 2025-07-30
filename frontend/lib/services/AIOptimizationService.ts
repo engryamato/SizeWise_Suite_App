@@ -15,7 +15,29 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import * as ort from 'onnxruntime-web';
-import { HVACSystem, CalculationResult, OptimizationRecommendation } from '../types/hvac';
+import { CalculationResult } from '../../types/air-duct-sizer';
+
+// Mock types for AI optimization
+export interface HVACSystem {
+  id: string;
+  type: string;
+  efficiency?: number;
+  capacity?: number;
+  age?: number;
+  maintenance_schedule?: string[];
+}
+
+export interface OptimizationRecommendation {
+  id: string;
+  type: 'equipment_upgrade' | 'schedule_optimization' | 'maintenance' | 'control_strategy';
+  description: string;
+  priority: 'low' | 'medium' | 'high';
+  implementation_cost: number;
+  annual_savings: number;
+  payback_period: number;
+  confidence: number;
+  impact_areas: string[];
+}
 
 export interface AIOptimizationConfig {
   modelPath: string;
@@ -463,25 +485,27 @@ export class AIOptimizationService {
       recommendations.push({
         id: 'upgrade_hvac',
         type: 'equipment_upgrade',
-        title: 'Upgrade HVAC Equipment',
-        description: 'Replace aging equipment with high-efficiency units',
+        description: 'Upgrade HVAC Equipment - Replace aging equipment with high-efficiency units',
         priority: 'high',
-        estimated_savings: outputData[2] * 100,
         implementation_cost: outputData[3] * 10000,
-        payback_period: outputData[4] * 10
+        annual_savings: outputData[2] * 100,
+        payback_period: outputData[4] * 10,
+        confidence: 0.85,
+        impact_areas: ['energy_efficiency', 'cost_reduction']
       });
     }
     
     if (outputData[5] > 0.5) {
       recommendations.push({
         id: 'optimize_controls',
-        type: 'control_optimization',
-        title: 'Optimize Control Systems',
-        description: 'Implement smart controls and scheduling',
+        type: 'control_strategy',
+        description: 'Optimize Control Systems - Implement smart controls and scheduling',
         priority: 'medium',
-        estimated_savings: outputData[6] * 100,
         implementation_cost: outputData[7] * 5000,
-        payback_period: outputData[8] * 5
+        annual_savings: outputData[6] * 100,
+        payback_period: outputData[8] * 5,
+        confidence: 0.75,
+        impact_areas: ['energy_efficiency', 'comfort']
       });
     }
     
@@ -506,7 +530,7 @@ export class AIOptimizationService {
       estimated_cost: rec.implementation_cost,
       estimated_duration: rec.payback_period * 30, // Convert to days
       dependencies: index > 0 ? [recommendations[index - 1].id] : [],
-      expected_impact: rec.estimated_savings
+      expected_impact: rec.annual_savings
     }));
   }
 

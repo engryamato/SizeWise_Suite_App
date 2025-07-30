@@ -465,10 +465,11 @@ export const SentryTestPanel: React.FC = () => {
           lastExecuted: new Date()
         });
       } catch (jsonError) {
-        logger.error('Failed to parse JSON from /api/sentry-example-api', {
-          error: jsonError,
-          rawResponse: rawText
-        });
+        logger.error('Failed to parse JSON from /api/sentry-example-api',
+          jsonError instanceof Error ? jsonError : new Error(String(jsonError)),
+          {
+            rawResponse: rawText
+          });
         reportError(jsonError instanceof Error ? jsonError : new Error('Invalid JSON'), {
           endpoint: '/api/sentry-example-api',
           rawResponse: rawText
@@ -481,7 +482,8 @@ export const SentryTestPanel: React.FC = () => {
         return;
       }
     } catch (error) {
-      logger.error('Network or fetch error calling /api/sentry-example-api', { error });
+      logger.error('Network or fetch error calling /api/sentry-example-api',
+        error instanceof Error ? error : new Error(String(error)));
       reportError(error instanceof Error ? error : new Error('Unknown fetch error'), {
         endpoint: '/api/sentry-example-api'
       }, { test: 'sentryExampleAPI' });

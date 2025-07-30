@@ -145,7 +145,7 @@ export class EnhancedOfflineService extends EventEmitter {
     const startTime = performance.now();
     
     try {
-      await this.db.updateProject(uuid, updates);
+      await this.db.updateProject(uuid, updates as any);
       
       this.recordPerformanceMetric(startTime);
       this.invalidateCache('projects');

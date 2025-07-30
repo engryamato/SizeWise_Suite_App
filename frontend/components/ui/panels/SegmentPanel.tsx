@@ -34,7 +34,7 @@ export const SegmentPanel: React.FC<SegmentPanelProps> = ({ segment }) => {
         material: formData.material,
       }
       
-      debouncedCalculate(calculationInput, segment.segment_id)
+      debouncedCalculate.calculate('duct-sizing', calculationInput)
     }
   }, [formData, segment.segment_id, debouncedCalculate])
   
@@ -61,14 +61,18 @@ export const SegmentPanel: React.FC<SegmentPanelProps> = ({ segment }) => {
       ? (formData.size.width * formData.size.height) / 144 // Rectangular duct area in sq ft
       : 0
   
-  const velocity = formData.airflow && area > 0 ? calculateVelocity(formData.airflow, area) : 0
+  const velocity = formData.airflow && area > 0
+    ? formData.size.diameter
+      ? calculateVelocity(formData.airflow, { width: formData.size.diameter, height: formData.size.diameter }) // For round ducts, use diameter as both dimensions
+      : calculateVelocity(formData.airflow, { width: formData.size.width || 0, height: formData.size.height || 0 })
+    : 0
   
   const equivalentDiameter = (formData.size.width && formData.size.height) 
     ? calculateEquivalentDiameter(formData.size.width, formData.size.height)
     : formData.size.diameter || 0
   
   const segmentTypes = ['straight', 'elbow', 'branch', 'reducer', 'tee', 'transition']
-  const materialOptions = Object.keys(materials)
+  const materialOptions = materials
   
   return (
     <div className="p-4 space-y-6">
@@ -135,12 +139,12 @@ export const SegmentPanel: React.FC<SegmentPanelProps> = ({ segment }) => {
               >
                 {materialOptions.map((material) => (
                   <option key={material} value={material}>
-                    {materials[material]?.name || material}
+                    {material}
                   </option>
                 ))}
               </select>
             ) : (
-              <p className="text-gray-900">{materials[segment.material]?.name || segment.material}</p>
+              <p className="text-gray-900">{segment.material}</p>
             )}
           </div>
           

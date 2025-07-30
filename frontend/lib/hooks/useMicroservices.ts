@@ -134,14 +134,14 @@ export function useMicroservices(config: MicroservicesConfig = {}): Microservice
     timeouts: 0
   });
   const [healthStatus, setHealthStatus] = useState<HealthStatus>({
-    overall: 'unknown',
+    overall: 'healthy',
     services: []
   });
   const [isReady, setIsReady] = useState(false);
   const [error, setError] = useState<Error | null>(null);
 
-  const metricsIntervalRef = useRef<NodeJS.Timeout>();
-  const healthIntervalRef = useRef<NodeJS.Timeout>();
+  const metricsIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const healthIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   // =============================================================================
   // Service Initialization

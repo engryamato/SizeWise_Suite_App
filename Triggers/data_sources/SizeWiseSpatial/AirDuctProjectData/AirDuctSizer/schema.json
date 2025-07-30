@@ -1,0 +1,13 @@
+{
+  "title": "Air Duct Sizer Record",
+  "bsonType": "object",
+  "required": ["owner_id", "input", "result"],
+  "properties": {
+    "_id": { "bsonType": "objectId" },
+    "owner_id": { "bsonType": "objectId", "description": "Owner user id" },
+    "input": { "bsonType": "object", "description": "Input parameters" },
+    "result": { "bsonType": "object", "description": "Calculated results" },
+    "created_at": { "bsonType": "date" },
+    "updated_at": { "bsonType": "date" }
+  }
+}

@@ -2,6 +2,7 @@
 
 
 
+<<<<<<< Updated upstream
 <<<<<<<
  * Super Admin Credential Generator
 
@@ -24,6 +25,11 @@ const createSuperAdminUser = (credentials: any) => Promise.resolve(credentials);
 
 >>>>>>>
 
+=======
+ * Super Admin Credential Generator
+
+
+>>>>>>> Stashed changes
 
  * 
 
@@ -33,7 +39,11 @@ const createSuperAdminUser = (credentials: any) => Promise.resolve(credentials);
  * Script to generate and display super administrator credentials
 
 =======
+<<<<<<< Updated upstream
 async function generateSuperAdminCredentials() {
+=======
+function generateSuperAdminCredentials() {
+>>>>>>> Stashed changes
 
   console.log('\n🔐 SizeWise Suite - Super Administrator Setup');
 
@@ -51,7 +61,11 @@ async function generateSuperAdminCredentials() {
 
     // Create super admin user object
 
+<<<<<<< Updated upstream
     const superAdminUser = await createSuperAdminUser(credentials);
+=======
+    const superAdminUser = createSuperAdminUser();
+>>>>>>> Stashed changes
 
     
 
@@ -65,7 +79,21 @@ async function generateSuperAdminCredentials() {
 
     console.log(`Email:    ${credentials.email}`);
 
+<<<<<<< Updated upstream
     console.log(`Password: ${credentials.password}`);
+=======
+    if (process.argv.includes('--show-password')) {
+
+      console.log('⚠️  WARNING: Displaying password in clear text. Do not share or store this output.');
+
+      console.log(`Password: ${credentials.password}`);
+
+    } else {
+
+      console.log('Password: [HIDDEN] (run with --show-password to display)');
+
+    }
+>>>>>>> Stashed changes
 
     console.log(`Login URL: ${credentials.loginUrl}`);
 
@@ -91,7 +119,11 @@ async function generateSuperAdminCredentials() {
 
     console.log('-'.repeat(40));
 
+<<<<<<< Updated upstream
     superAdminUser.permissions?.forEach((permission: string, index: number) => {
+=======
+    superAdminUser.permissions?.forEach((permission, index) => {
+>>>>>>> Stashed changes
 
       console.log(`${index + 1}. ${permission}`);
 

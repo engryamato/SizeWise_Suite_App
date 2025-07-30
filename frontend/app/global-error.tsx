@@ -61,7 +61,7 @@ export default function GlobalError({ error, reset }: GlobalErrorProps) {
                 </h1>
                 
                 <p className="text-gray-600 mb-6">
-                  We've encountered an unexpected error. Our team has been notified and is working on a fix.
+                  We&apos;ve encountered an unexpected error. Our team has been notified and is working on a fix.
                 </p>
                 
                 <div className="space-y-3">

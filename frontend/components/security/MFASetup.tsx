@@ -180,7 +180,7 @@ export const MFASetup: React.FC<MFASetupProps> = ({ onComplete, onCancel }) => {
           <div>
             <h3 className="text-lg font-semibold mb-2">3. Manual Entry (Alternative)</h3>
             <p className="text-gray-600 text-sm mb-2">
-              If you can't scan the QR code, enter this secret manually:
+              If you can&apos;t scan the QR code, enter this secret manually:
             </p>
             <div className="p-3 bg-gray-100 rounded font-mono text-sm break-all">
               {mfaData.secret}

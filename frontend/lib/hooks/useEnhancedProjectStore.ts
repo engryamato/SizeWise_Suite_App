@@ -339,10 +339,7 @@ export function useProjectHistory() {
     historySize,
     canUndo,
     canRedo,
-    clearHistory: () => {
-      const store = useEnhancedProjectStore();
-      store.getState().clearHistory();
-    }
+    clearHistory: actions.clearHistory
   };
 }
 

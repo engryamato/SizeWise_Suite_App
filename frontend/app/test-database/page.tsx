@@ -172,7 +172,7 @@ export default function DatabaseTestPage() {
           details: {
             quota: estimate.quota,
             usage: estimate.usage,
-            usageDetails: estimate.usageDetails
+            usageDetails: (estimate as any).usageDetails || 'Not available'
           },
           duration
         });
@@ -204,46 +204,47 @@ export default function DatabaseTestPage() {
 
       // Test project creation
       const testProject = {
-        id: `test-project-${Date.now()}`,
-        name: 'Test HVAC Project',
-        description: 'Test project for offline validation',
-        organizationId: 'test-org',
-        createdAt: new Date(),
-        updatedAt: new Date(),
-        isActive: true,
-        settings: {
-          units: 'imperial',
-          defaultAirDensity: 0.075,
-          defaultRoughness: 0.0001
-        }
+        uuid: `test-project-uuid-${Date.now()}`,
+        project_name: 'Test HVAC Project',
+        user_name: 'Test User',
+        contractor_name: 'Test Contractor',
+        project_location: 'Test Location',
+        codes: ['SMACNA', 'ASHRAE'],
+        rooms: [],
+        segments: [],
+        equipment: [],
+        created_at: new Date().toISOString(),
+        last_modified: new Date().toISOString(),
+        lastModified: new Date(),
+        syncStatus: 'local' as const,
+        version: 1
       };
 
       // Create project
       await database.projects.add(testProject);
 
       // Read project
-      const retrievedProject = await database.projects.get(testProject.id);
+      const retrievedProject = await database.projects.get(testProject.uuid);
       if (!retrievedProject) {
         throw new Error('Project not found after creation');
       }
 
       // Update project
-      await database.projects.update(testProject.id, {
-        description: 'Updated test project description',
-        updatedAt: new Date()
+      await database.updateProject(testProject.uuid, {
+        project_name: 'Updated Test HVAC Project'
       });
 
       // Verify update
-      const updatedProject = await database.projects.get(testProject.id);
-      if (updatedProject?.description !== 'Updated test project description') {
+      const updatedProject = await database.getProject(testProject.uuid);
+      if (updatedProject?.project_name !== 'Updated Test HVAC Project') {
         throw new Error('Project update failed');
       }
 
       // Delete project
-      await database.projects.delete(testProject.id);
+      await database.deleteProject(testProject.uuid);
 
       // Verify deletion
-      const deletedProject = await database.projects.get(testProject.id);
+      const deletedProject = await database.getProject(testProject.uuid);
       if (deletedProject) {
         throw new Error('Project deletion failed');
       }
@@ -255,7 +256,7 @@ export default function DatabaseTestPage() {
         message: 'Offline project management test successful',
         details: {
           operations: ['create', 'read', 'update', 'delete'],
-          projectId: testProject.id,
+          projectId: testProject.uuid,
           testDuration: duration
         },
         duration
@@ -281,13 +282,13 @@ export default function DatabaseTestPage() {
 
       // Test sync operation creation
       const syncOperation = {
-        id: `sync-${Date.now()}`,
-        operation: 'CREATE_PROJECT',
-        entityType: 'project',
-        entityId: 'test-project-123',
+        uuid: `sync-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        operation: 'create' as const,
+        entityType: 'project' as const,
+        entityUuid: 'test-project-uuid-123',
         data: { name: 'Test Project', description: 'Test sync operation' },
-        status: 'pending',
-        createdAt: new Date(),
+        status: 'pending' as const,
+        timestamp: new Date(),
         retryCount: 0
       };
 
@@ -295,16 +296,13 @@ export default function DatabaseTestPage() {
       await database.syncOperations.add(syncOperation);
 
       // Retrieve sync operation
-      const retrievedSync = await database.syncOperations.get(syncOperation.id);
+      const retrievedSync = await database.syncOperations.where('uuid').equals(syncOperation.uuid).first();
       if (!retrievedSync) {
         throw new Error('Sync operation not found after creation');
       }
 
       // Update sync status
-      await database.syncOperations.update(syncOperation.id, {
-        status: 'completed',
-        completedAt: new Date()
-      });
+      await database.markSyncOperationCompleted(syncOperation.uuid);
 
       // Get all pending sync operations
       const pendingSyncs = await database.syncOperations
@@ -313,7 +311,7 @@ export default function DatabaseTestPage() {
         .toArray();
 
       // Clean up test sync operation
-      await database.syncOperations.delete(syncOperation.id);
+      await database.syncOperations.where('uuid').equals(syncOperation.uuid).delete();
 
       const duration = Date.now() - startTime;
 
@@ -321,7 +319,7 @@ export default function DatabaseTestPage() {
         status: 'success',
         message: 'Sync queue functionality test successful',
         details: {
-          syncOperationId: syncOperation.id,
+          syncOperationId: syncOperation.uuid,
           pendingSyncsCount: pendingSyncs.length,
           testDuration: duration
         },
@@ -349,69 +347,76 @@ export default function DatabaseTestPage() {
       // Test HVAC calculation with realistic parameters
       const hvacInputs = {
         airflow: 2000, // CFM
-        ductType: 'rectangular' as const,
-        frictionRate: 0.08, // inches w.g. per 100 feet
+        duct_type: 'rectangular' as const,
+        friction_rate: 0.08, // inches w.g. per 100 feet
         units: 'imperial' as const,
         material: 'galvanized_steel',
-        targetVelocity: 1200, // FPM
-        maxVelocity: 2500,
-        minVelocity: 600
+        target_velocity: 1200, // FPM
+        max_velocity: 2500,
+        min_velocity: 600
       };
 
       // Perform mock HVAC calculation (simplified for testing)
       const hvacResult = {
-        width: 14,
-        height: 10,
-        area: (14 * 10) / 144, // sq ft
-        velocity: hvacInputs.airflow / ((14 * 10) / 144),
-        pressureLoss: 0.08,
-        reynoldsNumber: 85000,
-        frictionFactor: 0.018,
-        equivalentDiameter: Math.sqrt((4 * 14 * 10) / Math.PI),
-        aspectRatio: 14 / 10,
-        isOptimal: true,
-        warnings: [],
-        recommendations: [],
-        standardsCompliance: {
+        success: true,
+        input_data: hvacInputs,
+        results: {
+          width: 14,
+          height: 10,
+          area: (14 * 10) / 144, // sq ft
+          velocity: hvacInputs.airflow / ((14 * 10) / 144),
+          pressure_loss: 0.08,
+          equivalent_diameter: Math.sqrt((4 * 14 * 10) / Math.PI),
+          hydraulic_diameter: Math.sqrt((4 * 14 * 10) / Math.PI),
+          aspect_ratio: 14 / 10
+        },
+        compliance: {
           smacna: true,
           ashrae: true,
           velocityCompliant: true
+        },
+        warnings: [],
+        errors: [],
+        metadata: {
+          reynoldsNumber: 85000,
+          frictionFactor: 0.018,
+          isOptimal: true
         }
       };
 
       // Store calculation in database
       const calculationRecord = {
-        id: `calc-${Date.now()}`,
-        projectId: 'test-project',
-        segmentId: 'test-segment',
+        uuid: `calc-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        projectUuid: 'test-project-uuid',
+        segmentUuid: 'test-segment-uuid',
         calculationType: 'duct_sizing',
         inputData: hvacInputs,
         result: hvacResult,
         timestamp: new Date(),
-        isValid: true
+        syncStatus: 'local' as const
       };
 
       await database.calculations.add(calculationRecord);
 
       // Retrieve and verify calculation
-      const retrievedCalc = await database.calculations.get(calculationRecord.id);
+      const retrievedCalc = await database.calculations.where('uuid').equals(calculationRecord.uuid).first();
       if (!retrievedCalc) {
         throw new Error('Calculation not found after storage');
       }
 
       // Verify calculation integrity
-      if (retrievedCalc.result.velocity !== hvacResult.velocity) {
+      if (retrievedCalc.result.results?.velocity !== hvacResult.results?.velocity) {
         throw new Error('Calculation data integrity compromised');
       }
 
       // Test calculation history retrieval
       const allCalculations = await database.calculations
-        .where('projectId')
-        .equals('test-project')
+        .where('projectUuid')
+        .equals('test-project-uuid')
         .toArray();
 
       // Clean up test calculation
-      await database.calculations.delete(calculationRecord.id);
+      await database.calculations.where('uuid').equals(calculationRecord.uuid).delete();
 
       const duration = Date.now() - startTime;
 
@@ -419,10 +424,10 @@ export default function DatabaseTestPage() {
         status: 'success',
         message: 'HVAC calculation integrity test successful',
         details: {
-          calculationId: calculationRecord.id,
+          calculationId: calculationRecord.uuid,
           inputAirflow: hvacInputs.airflow,
-          resultVelocity: hvacResult.velocity,
-          resultDimensions: `${hvacResult.width}" x ${hvacResult.height}"`,
+          resultVelocity: hvacResult.results.velocity,
+          resultDimensions: `${hvacResult.results.width}" x ${hvacResult.results.height}"`,
           calculationsInProject: allCalculations.length,
           testDuration: duration
         },
@@ -457,17 +462,19 @@ export default function DatabaseTestPage() {
       const bulkTestStart = performance.now();
       const testProjects = Array.from({ length: 100 }, (_, i) => ({
         uuid: `perf-test-${i}`,
-        name: `Performance Test Project ${i}`,
-        description: `Test project for performance validation`,
-        organizationId: 'perf-test-org',
-        createdAt: new Date(),
-        updatedAt: new Date(),
-        isActive: true,
-        settings: {
-          units: 'imperial',
-          defaultAirDensity: 0.075,
-          defaultRoughness: 0.0001
-        }
+        project_name: `Performance Test Project ${i}`,
+        user_name: 'Test User',
+        contractor_name: 'Test Contractor',
+        project_location: 'Test Location',
+        codes: ['SMACNA', 'ASHRAE'],
+        rooms: [],
+        segments: [],
+        equipment: [],
+        created_at: new Date().toISOString(),
+        last_modified: new Date().toISOString(),
+        lastModified: new Date(),
+        syncStatus: 'local' as const,
+        version: 1
       }));
 
       // Bulk insert
@@ -475,14 +482,14 @@ export default function DatabaseTestPage() {
 
       // Bulk query
       const retrievedProjects = await testDb.projects
-        .where('organizationId')
-        .equals('perf-test-org')
+        .where('user_name')
+        .equals('Test User')
         .toArray();
 
       // Bulk delete
       await testDb.projects
-        .where('organizationId')
-        .equals('perf-test-org')
+        .where('user_name')
+        .equals('Test User')
         .delete();
 
       const bulkTestTime = performance.now() - bulkTestStart;
@@ -654,7 +661,7 @@ export default function DatabaseTestPage() {
 
           {testResults.length === 0 && (
             <div className="text-center py-8 text-gray-500">
-              No tests run yet. Click "Run Database Tests" to begin validation.
+              No tests run yet. Click &quot;Run Database Tests&quot; to begin validation.
             </div>
           )}
         </div>

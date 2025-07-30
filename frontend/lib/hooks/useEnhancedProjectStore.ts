@@ -10,7 +10,7 @@
  * - Cross-store synchronization
  */
 
-import { useEffect, useState, useCallback, useMemo } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useEnhancedProjectStore as useEnhancedProjectStoreBase, EnhancedProjectState } from '../../stores/enhanced-project-store';
 import { advancedStateManager } from '../state/AdvancedStateManager';
 
@@ -167,8 +167,7 @@ export function useEnhancedProjectStore(): ProjectStoreHookReturn {
   }), [
     state.currentProject?.rooms.length,
     state.currentProject?.segments.length,
-    state.currentProject?.equipment.length,
-    state.currentProject?.segments
+    state.currentProject?.equipment.length
   ]);
 
   // Memoized actions

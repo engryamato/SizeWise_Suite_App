@@ -1,504 +1,2415 @@
 import { create } from 'zustand'
+
+
+
 import { devtools, persist } from 'zustand/middleware'
+
+
+
 import { User, AuthState, TierLimits } from '@/types/air-duct-sizer'
+
+
+
 import { HybridAuthManager, HybridUser, TierStatus } from '@/lib/auth/HybridAuthManager'
 
+
+
+
+
+
+
 interface AuthStore extends AuthState {
+
+
+
   // Hybrid authentication properties
+
+
+
+<<<<<<<
   tierStatus: TierStatus | null
+
+=======
+// Initialize hybrid authentication manager
+
+const hybridAuthManager = HybridAuthManager.getInstance()
+
+>>>>>>>
+
+
   isOnline: boolean
+
+
+
   lastSync: string | null
 
+
+
+
+
+
+
   // Actions
+
+
+
   login: (email: string, password: string) => Promise<boolean>
+
+
+
+<<<<<<<
   register: (email: string, password: string, name: string, company?: string) => Promise<boolean>
+
+=======
+          try {
+
+            // Use HybridAuthManager for authentication
+
+            const hybridUser = await hybridAuthManager.loginWithEmail(email, password)
+
+>>>>>>>
+
+
+<<<<<<<
   logout: () => Promise<void>
+
+=======
+            if (hybridUser) {
+
+              // Convert HybridUser to User format for compatibility
+
+              const user: User = {
+
+                id: hybridUser.id,
+
+                email: hybridUser.email || email,
+
+                name: hybridUser.displayName || email.split('@')[0],
+
+                tier: hybridUser.tier === 'enterprise' ? 'super_admin' : hybridUser.tier as 'free' | 'pro' | 'super_admin',
+
+                company: '',
+
+                created_at: hybridUser.createdAt.toISOString(),
+
+                updated_at: new Date().toISOString(),
+
+                is_super_admin: hybridUser.tier === 'enterprise', // Treat enterprise as super admin
+
+                permissions: hybridUser.tier === 'enterprise' ? [
+
+                  'admin:full_access',
+
+                  'admin:user_management',
+
+                  'admin:system_configuration',
+
+                  'admin:license_management',
+
+                  'admin:database_access',
+
+                  'admin:security_settings',
+
+                  'admin:audit_logs',
+
+                  'admin:emergency_access',
+
+                  'admin:super_admin_functions',
+
+                  'user:all_features',
+
+                  'user:unlimited_access',
+
+                  'user:export_without_watermark',
+
+                  'user:advanced_calculations',
+
+                  'user:simulation_access',
+
+                  'user:catalog_access',
+
+                  'user:computational_properties',
+
+                ] : undefined,
+
+              }
+
+>>>>>>>
+
+
+<<<<<<<
   refreshToken: () => Promise<boolean>
+
+=======
+              // Generate a mock token for compatibility
+
+              const token = `hybrid_token_${hybridUser.id}_${Date.now()}`
+
+
+
+              // Set token in cookie for middleware authentication
+
+              if (typeof document !== 'undefined') {
+
+                document.cookie = `auth-token=${token}; path=/; max-age=${24 * 60 * 60}; secure; samesite=strict`;
+
+              }
+
+>>>>>>>
+
+
   setUser: (user: User) => void
+
+
+
+<<<<<<<
   setToken: (token: string) => void
+
+=======
+              // Set auth cookie for middleware
+
+              if (token) {
+
+                document.cookie = `auth-token=${token}; path=/; max-age=${7 * 24 * 60 * 60}; SameSite=Lax`;
+
+              }
+
+>>>>>>>
+
+
+<<<<<<<
   setLoading: (loading: boolean) => void
 
-  // Hybrid authentication methods
-  getTierStatus: () => Promise<TierStatus>
-  canPerformAction: (action: string, context?: any) => Promise<boolean>
-  syncWithServer: () => Promise<boolean>
-
-  // Tier checking (legacy compatibility)
-  getTierLimits: () => TierLimits
-  canAddRoom: () => boolean
-  canAddSegment: () => boolean
-  canEditComputationalProperties: () => boolean
-  canExportWithoutWatermark: () => boolean
-  canUseSimulation: () => boolean
-  canUseCatalog: () => boolean
-
-  // Subscription management
-  upgradeToPro: () => Promise<boolean>
-  downgradeToFree: () => Promise<boolean>
-  checkSubscriptionStatus: () => Promise<boolean>
-}
-
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001/api/v1'
-const AUTH_SERVER_URL = process.env.NEXT_PUBLIC_AUTH_SERVER_URL || 'http://localhost:5002'
-
-// Initialize hybrid authentication manager
-const hybridAuthManager = new HybridAuthManager(AUTH_SERVER_URL)
-
-const getTierLimits = (tier: 'free' | 'pro' | 'enterprise' | 'super_admin'): TierLimits => {
-  if (tier === 'pro' || tier === 'enterprise' || tier === 'super_admin') {
-    return {
-      maxRooms: Infinity,
-      maxSegments: Infinity,
-      maxProjects: Infinity,
-      canEditComputationalProperties: true,
-      canExportWithoutWatermark: true,
-      canUseSimulation: true,
-      canUseCatalog: true,
-    }
-  }
-
-  // Free tier limits - aligned with business requirements
-  return {
-    maxRooms: 3,
-    maxSegments: 25,
-    maxProjects: 3, // Fixed: Free tier allows 3 projects, not 10
-    canEditComputationalProperties: false,
-    canExportWithoutWatermark: false,
-    canUseSimulation: false,
-    canUseCatalog: false,
-  }
-}
-
-export const useAuthStore = create<AuthStore>()(
-  devtools(
-    persist(
-      (set, get) => ({
-        // Initialize with Premium Pro tier user for testing
-        user: {
-          id: 'premium-pro-user',
-          email: 'demo@sizewise.com',
-          name: 'Demo User',
-          tier: 'pro',
-          company: 'SizeWise Engineering',
-          subscription_expires: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(), // 1 year from now
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        },
-        token: null,
-        isAuthenticated: false,
-        isLoading: false,
-
-        // Hybrid authentication state
-        tierStatus: null,
-        isOnline: typeof navigator !== 'undefined' ? navigator.onLine : true,
-        lastSync: null,
-
-        login: async (email, password) => {
-          set({ isLoading: true }, false, 'login:start')
-
-          try {
-            // Use HybridAuthManager for authentication
-            const result = await hybridAuthManager.login(email, password)
-
-            if (result.success && result.user && result.token) {
-              // Convert HybridUser to User format for compatibility
-              const user: User = {
-                id: result.user.id,
-                email: result.user.email,
-                name: result.user.name,
-                tier: result.user.tier as 'free' | 'pro' | 'super_admin',
-                company: '',
-                created_at: result.user.created_at,
-                updated_at: new Date().toISOString(),
-                is_super_admin: result.user.is_super_admin,
-                permissions: result.user.is_super_admin ? [
-                  'admin:full_access',
-                  'admin:user_management',
-                  'admin:system_configuration',
-                  'admin:license_management',
-                  'admin:database_access',
-                  'admin:security_settings',
-                  'admin:audit_logs',
-                  'admin:emergency_access',
-                  'admin:super_admin_functions',
-                  'user:all_features',
-                  'user:unlimited_access',
-                  'user:export_without_watermark',
-                  'user:advanced_calculations',
-                  'user:simulation_access',
-                  'user:catalog_access',
-                  'user:computational_properties',
-                ] : undefined,
-              }
-
-              // Set token in cookie for middleware authentication
-              if (typeof document !== 'undefined') {
-                document.cookie = `auth-token=${result.token}; path=/; max-age=${24 * 60 * 60}; secure; samesite=strict`;
-              }
-
-              // Get tier status
-              const tierStatus = await hybridAuthManager.getTierStatus()
-
-              // Set auth cookie for middleware
-              if (result.token) {
-                document.cookie = `auth-token=${result.token}; path=/; max-age=${7 * 24 * 60 * 60}; SameSite=Lax`;
-              }
-
+=======
               set({
+
                 user,
-                token: result.token,
+
+                token,
+
                 isAuthenticated: true,
+
                 isLoading: false,
+
                 tierStatus,
+
                 lastSync: new Date().toISOString(),
+
                 isOnline: true,
+
               }, false, 'login:success')
 
+>>>>>>>
+
+
+<<<<<<<
+
+
+=======
               console.log('✅ Hybrid authentication successful')
+
               return true
+
             } else {
-              throw new Error(result.error || 'Login failed')
+
+              throw new Error('Login failed - no user returned')
+
             }
+
           } catch (error) {
+
             console.error('Login error:', error)
+
             set({
+
               isLoading: false,
+
               isOnline: false
+
             }, false, 'login:error')
+
             return false
+
           }
+
         },
 
-        register: async (email, password, name, company) => {
-          set({ isLoading: true }, false, 'register:start')
+>>>>>>>
 
+
+  // Hybrid authentication methods
+
+
+
+<<<<<<<
+  getTierStatus: () => Promise<TierStatus>
+
+=======
           try {
-            // Use HybridAuthManager for registration
-            const result = await hybridAuthManager.register(email, password, name, company)
 
-            if (result.success && result.user && result.token) {
+            // Use HybridAuthManager for registration (mock by using login)
+
+            const hybridUser = await hybridAuthManager.loginWithEmail(email, password)
+
+>>>>>>>
+
+
+<<<<<<<
+  canPerformAction: (action: string, context?: any) => Promise<boolean>
+
+=======
+            if (hybridUser) {
+
               // Convert HybridUser to User format for compatibility
+
               const user: User = {
-                id: result.user.id,
-                email: result.user.email,
-                name: result.user.name,
-                tier: result.user.tier as 'free' | 'pro' | 'super_admin',
-                company: '',
-                created_at: result.user.created_at,
+
+                id: hybridUser.id,
+
+                email: hybridUser.email || email,
+
+                name: name || hybridUser.displayName || email.split('@')[0],
+
+                tier: hybridUser.tier === 'enterprise' ? 'super_admin' : hybridUser.tier as 'free' | 'pro' | 'super_admin',
+
+                company: company || '',
+
+                created_at: hybridUser.createdAt.toISOString(),
+
                 updated_at: new Date().toISOString(),
+
+                is_super_admin: hybridUser.tier === 'enterprise',
+
+                permissions: hybridUser.tier === 'enterprise' ? [
+
+                  'admin:full_access',
+
+                  'admin:user_management',
+
+                  'admin:system_configuration',
+
+                  'admin:license_management',
+
+                  'admin:database_access',
+
+                  'admin:security_settings',
+
+                  'admin:audit_logs',
+
+                  'admin:emergency_access',
+
+                  'admin:super_admin_functions',
+
+                  'user:all_features',
+
+                  'user:unlimited_access',
+
+                  'user:export_without_watermark',
+
+                  'user:advanced_calculations',
+
+                  'user:simulation_access',
+
+                  'user:catalog_access',
+
+                  'user:computational_properties',
+
+                ] : undefined,
+
               }
+
+>>>>>>>
+
+
+<<<<<<<
+  syncWithServer: () => Promise<boolean>
+
+=======
+              // Generate a mock token for compatibility
+
+              const token = `hybrid_token_${hybridUser.id}_${Date.now()}`
+
+
 
               // Set token in cookie for middleware authentication
+
               if (typeof document !== 'undefined') {
-                document.cookie = `auth-token=${result.token}; path=/; max-age=${24 * 60 * 60}; secure; samesite=strict`;
+
+                document.cookie = `auth-token=${token}; path=/; max-age=${24 * 60 * 60}; secure; samesite=strict`;
+
               }
 
-              // Get tier status
-              const tierStatus = await hybridAuthManager.getTierStatus()
+>>>>>>>
 
+
+
+
+
+
+<<<<<<<
+  // Tier checking (legacy compatibility)
+
+=======
               set({
+
                 user,
-                token: result.token,
+
+                token,
+
                 isAuthenticated: true,
+
                 isLoading: false,
+
                 tierStatus,
+
                 lastSync: new Date().toISOString(),
+
                 isOnline: true,
+
               }, false, 'register:success')
 
+>>>>>>>
+
+
+<<<<<<<
+  getTierLimits: () => TierLimits
+
+=======
               return true
+
             } else {
-              throw new Error(result.error || 'Registration failed')
+
+              throw new Error('Registration failed - no user returned')
+
             }
+
           } catch (error) {
+
             console.error('Registration error:', error)
+
             set({
+
               isLoading: false,
+
               isOnline: false
+
             }, false, 'register:error')
+
             return false
+
           }
+
         },
 
-        logout: async () => {
-          set({ isLoading: true }, false, 'logout:start')
+>>>>>>>
 
-          try {
-            // Use HybridAuthManager for comprehensive logout
-            await hybridAuthManager.logout()
 
-            // Clear auth cookie
-            document.cookie = 'auth-token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax';
+  canAddRoom: () => boolean
 
-            // Clear all auth state
-            set({
-              user: null,
-              token: null,
-              isAuthenticated: false,
-              isLoading: false,
-              tierStatus: null,
-              isOnline: false,
-              lastSync: null,
-            }, false, 'logout:success')
 
-          } catch (error) {
-            console.error('Logout error:', error)
 
-            // Even if logout fails, clear local state and cookie
-            document.cookie = 'auth-token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax';
+  canAddSegment: () => boolean
 
-            set({
-              user: null,
-              token: null,
-              isAuthenticated: false,
-              isLoading: false,
-              tierStatus: null,
-              isOnline: false,
-              lastSync: null,
-            }, false, 'logout:force')
-          }
-        },
 
-        refreshToken: async () => {
-          const { token } = get()
-          if (!token) return false
 
-          try {
-            const response = await fetch(`${API_BASE_URL}/auth/refresh`, {
-              method: 'POST',
-              headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json',
-              },
-            })
+  canEditComputationalProperties: () => boolean
 
-            if (!response.ok) {
-              throw new Error('Token refresh failed')
-            }
 
-            const data = await response.json()
-            
-            if (data.success) {
-              set({ token: data.token }, false, 'refreshToken:success')
-              return true
-            } else {
-              throw new Error('Token refresh failed')
-            }
-          } catch (error) {
-            console.error('Token refresh error:', error)
-            get().logout()
-            return false
-          }
-        },
 
-        setUser: (user) => {
-          set({ user }, false, 'setUser')
-        },
+  canExportWithoutWatermark: () => boolean
 
-        setToken: (token) => {
-          set({ token }, false, 'setToken')
-        },
 
-        setLoading: (loading) => {
-          set({ isLoading: loading }, false, 'setLoading')
-        },
 
+  canUseSimulation: () => boolean
+
+
+
+  canUseCatalog: () => boolean
+
+
+
+
+
+
+
+  // Subscription management
+
+
+
+  upgradeToPro: () => Promise<boolean>
+
+
+
+  downgradeToFree: () => Promise<boolean>
+
+
+
+  checkSubscriptionStatus: () => Promise<boolean>
+
+
+
+}
+
+
+
+
+
+
+
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001/api/v1'
+
+
+
+<<<<<<<
+const AUTH_SERVER_URL = process.env.NEXT_PUBLIC_AUTH_SERVER_URL || 'http://localhost:5002'
+
+=======
         // Hybrid authentication methods
-        getTierStatus: async () => {
+
+        getTierStatus: async (): Promise<TierStatus> => {
+
           try {
+
             const tierStatus = await hybridAuthManager.getTierStatus()
+
             set({
+
               tierStatus,
+
               lastSync: new Date().toISOString(),
+
               isOnline: true
+
             }, false, 'getTierStatus:success')
+
             return tierStatus
+
           } catch (error) {
+
             console.error('Get tier status error:', error)
+
             set({ isOnline: false }, false, 'getTierStatus:error')
 
-            // Return cached tier status or default
-            const { tierStatus } = get()
-            if (tierStatus) {
-              return tierStatus
+>>>>>>>
+
+
+
+
+
+
+<<<<<<<
+// Initialize hybrid authentication manager
+
+=======
+            // Default free tier status for offline mode that matches TierStatus interface
+
+            const fallbackTierStatus: TierStatus = {
+
+              tier: 'free',
+
+              features: ['basic_calculations', 'pdf_import'],
+
+              limits: {
+
+                projectsMax: 3,
+
+                calculationsPerDay: 25,
+
+                exportFormats: ['pdf'],
+
+                supportLevel: 'community',
+
+                storageGB: 1
+
+              },
+
+              isActive: true
+
             }
 
-            // Default free tier status for offline mode
-            return {
-              tier: 'free',
-              features: {
-                max_projects: 3,
-                max_segments_per_project: 25,
-                high_res_exports: false,
-                watermarked_exports: true,
-                api_access: false,
-              },
-              usage: {
-                projects_count: 0,
-                segments_count: 0,
-              },
-              last_validated: new Date().toISOString(),
-            }
+            return fallbackTierStatus
+
           }
+
         },
 
+>>>>>>>
+
+
+<<<<<<<
+const hybridAuthManager = new HybridAuthManager(AUTH_SERVER_URL)
+
+=======
         canPerformAction: async (action, context) => {
+
           try {
-            return await hybridAuthManager.canPerformAction(action, context)
-          } catch (error) {
-            console.error('Can perform action error:', error)
-            // Fallback to legacy tier checking for offline mode
-            const { user } = get()
+
+            // Mock implementation since canPerformAction doesn't exist in HybridAuthManager
+
+            const user = hybridAuthManager.getCurrentUser()
+
             if (!user) return false
 
-            switch (action) {
-              case 'create_project':
-                return user.tier !== 'free' || true // Allow for now
-              case 'add_segment':
-                return user.tier !== 'free' || (context?.segments_count || 0) < 25
-              case 'high_res_export':
-                return user.tier !== 'free'
-              case 'api_access':
-                return user.tier === 'pro' || user.tier === 'super_admin'
-              default:
-                return true
-            }
-          }
+
+
+            // Basic permission checking based on tier
+
+            if (user.tier === 'enterprise') return true
+
+            if (user.tier === 'pro' && !action.includes('admin:')) return true
+
+            if (user.tier === 'free' && action.includes('user:basic')) return true
+
+
+
+            return false
+
+          } catch (error) {
+
+            console.error('Can perform action error:', error)
+
+            // Fallback to legacy tier checking for offline mode
+
+            const { user } = get()
+
+            if (!user) return false
+
+>>>>>>>
+
+
+
+
+
+
+const getTierLimits = (tier: 'free' | 'pro' | 'enterprise' | 'super_admin'): TierLimits => {
+
+
+
+  if (tier === 'pro' || tier === 'enterprise' || tier === 'super_admin') {
+
+
+
+    return {
+
+
+
+      maxRooms: Infinity,
+
+
+
+      maxSegments: Infinity,
+
+
+
+      maxProjects: Infinity,
+
+
+
+      canEditComputationalProperties: true,
+
+
+
+      canExportWithoutWatermark: true,
+
+
+
+      canUseSimulation: true,
+
+
+
+      canUseCatalog: true,
+
+
+
+    }
+
+
+
+  }
+
+
+
+
+
+
+
+  // Free tier limits - aligned with business requirements
+
+
+
+  return {
+
+
+
+    maxRooms: 3,
+
+
+
+    maxSegments: 25,
+
+
+
+    maxProjects: 3, // Fixed: Free tier allows 3 projects, not 10
+
+
+
+    canEditComputationalProperties: false,
+
+
+
+    canExportWithoutWatermark: false,
+
+
+
+    canUseSimulation: false,
+
+
+
+    canUseCatalog: false,
+
+
+
+  }
+
+
+
+}
+
+
+
+
+
+
+
+export const useAuthStore = create<AuthStore>()(
+
+
+
+  devtools(
+
+
+
+    persist(
+
+
+
+      (set, get) => ({
+
+
+
+        // Initialize with Premium Pro tier user for testing
+
+
+
+        user: {
+
+
+
+          id: 'premium-pro-user',
+
+
+
+          email: 'demo@sizewise.com',
+
+
+
+          name: 'Demo User',
+
+
+
+          tier: 'pro',
+
+
+
+          company: 'SizeWise Engineering',
+
+
+
+          subscription_expires: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(), // 1 year from now
+
+
+
+          created_at: new Date().toISOString(),
+
+
+
+          updated_at: new Date().toISOString(),
+
+
+
         },
 
-        syncWithServer: async () => {
+
+
+        token: null,
+
+
+
+        isAuthenticated: false,
+
+
+
+        isLoading: false,
+
+
+
+
+
+
+
+        // Hybrid authentication state
+
+
+
+        tierStatus: null,
+
+
+
+        isOnline: typeof navigator !== 'undefined' ? navigator.onLine : true,
+
+
+
+        lastSync: null,
+
+
+
+
+
+
+
+        login: async (email, password) => {
+
+
+
+          set({ isLoading: true }, false, 'login:start')
+
+
+
+
+
+
+
           try {
-            const tierStatus = await hybridAuthManager.getTierStatus()
+
+
+
+            // Use HybridAuthManager for authentication
+
+
+
+            const result = await hybridAuthManager.login(email, password)
+
+
+
+
+
+
+
+            if (result.success && result.user && result.token) {
+
+
+
+              // Convert HybridUser to User format for compatibility
+
+
+
+              const user: User = {
+
+
+
+                id: result.user.id,
+
+
+
+                email: result.user.email,
+
+
+
+                name: result.user.name,
+
+
+
+                tier: result.user.tier as 'free' | 'pro' | 'super_admin',
+
+
+
+                company: '',
+
+
+
+                created_at: result.user.created_at,
+
+
+
+                updated_at: new Date().toISOString(),
+
+
+
+                is_super_admin: result.user.is_super_admin,
+
+
+
+                permissions: result.user.is_super_admin ? [
+
+
+
+                  'admin:full_access',
+
+
+
+                  'admin:user_management',
+
+
+
+                  'admin:system_configuration',
+
+
+
+                  'admin:license_management',
+
+
+
+                  'admin:database_access',
+
+
+
+                  'admin:security_settings',
+
+
+
+                  'admin:audit_logs',
+
+
+
+                  'admin:emergency_access',
+
+
+
+                  'admin:super_admin_functions',
+
+
+
+                  'user:all_features',
+
+
+
+                  'user:unlimited_access',
+
+
+
+                  'user:export_without_watermark',
+
+
+
+                  'user:advanced_calculations',
+
+
+
+                  'user:simulation_access',
+
+
+
+                  'user:catalog_access',
+
+
+
+                  'user:computational_properties',
+
+
+
+                ] : undefined,
+
+
+
+              }
+
+
+
+
+
+
+
+              // Set token in cookie for middleware authentication
+
+
+
+              if (typeof document !== 'undefined') {
+
+
+
+                document.cookie = `auth-token=${result.token}; path=/; max-age=${24 * 60 * 60}; secure; samesite=strict`;
+
+
+
+              }
+
+
+
+
+
+
+
+              // Get tier status
+
+
+
+              const tierStatus = await hybridAuthManager.getTierStatus()
+
+
+
+
+
+
+
+              // Set auth cookie for middleware
+
+
+
+              if (result.token) {
+
+
+
+                document.cookie = `auth-token=${result.token}; path=/; max-age=${7 * 24 * 60 * 60}; SameSite=Lax`;
+
+
+
+              }
+
+
+
+
+
+
+
+              set({
+
+
+
+                user,
+
+
+
+                token: result.token,
+
+
+
+                isAuthenticated: true,
+
+
+
+                isLoading: false,
+
+
+
+                tierStatus,
+
+
+
+                lastSync: new Date().toISOString(),
+
+
+
+                isOnline: true,
+
+
+
+              }, false, 'login:success')
+
+
+
+
+
+
+
+              console.log('✅ Hybrid authentication successful')
+
+
+
+              return true
+
+
+
+            } else {
+
+
+
+              throw new Error(result.error || 'Login failed')
+
+
+
+            }
+
+
+
+          } catch (error) {
+
+
+
+            console.error('Login error:', error)
+
+
+
             set({
-              tierStatus,
-              lastSync: new Date().toISOString(),
-              isOnline: true
-            }, false, 'syncWithServer:success')
-            return true
-          } catch (error) {
-            console.error('Sync with server error:', error)
-            set({ isOnline: false }, false, 'syncWithServer:error')
+
+
+
+              isLoading: false,
+
+
+
+              isOnline: false
+
+
+
+            }, false, 'login:error')
+
+
+
             return false
+
+
+
           }
+
+
+
         },
 
-        getTierLimits: () => {
-          const { user } = get()
-          return getTierLimits(user?.tier || 'free')
-        },
 
-        canAddRoom: () => {
-          const limits = get().getTierLimits()
-          // This would need to check current room count from project store
-          // For now, just return the tier capability
-          return limits.maxRooms > 0
-        },
 
-        canAddSegment: () => {
-          const limits = get().getTierLimits()
-          // This would need to check current segment count from project store
-          // For now, just return the tier capability
-          return limits.maxSegments > 0
-        },
 
-        canEditComputationalProperties: () => {
-          return get().getTierLimits().canEditComputationalProperties
-        },
 
-        canExportWithoutWatermark: () => {
-          return get().getTierLimits().canExportWithoutWatermark
-        },
 
-        canUseSimulation: () => {
-          return get().getTierLimits().canUseSimulation
-        },
 
-        canUseCatalog: () => {
-          return get().getTierLimits().canUseCatalog
-        },
+        register: async (email, password, name, company) => {
 
-        upgradeToPro: async () => {
-          // This would integrate with payment system
-          // For now, just simulate the upgrade
-          const { user } = get()
-          if (!user) return false
+
+
+          set({ isLoading: true }, false, 'register:start')
+
+
+
+
+
+
 
           try {
-            // Simulate API call to upgrade subscription
-            const updatedUser: User = {
-              ...user,
-              tier: 'pro',
-              subscription_expires: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(), // 1 year from now
+
+
+
+            // Use HybridAuthManager for registration
+
+
+
+            const result = await hybridAuthManager.register(email, password, name, company)
+
+
+
+
+
+
+
+            if (result.success && result.user && result.token) {
+
+
+
+              // Convert HybridUser to User format for compatibility
+
+
+
+              const user: User = {
+
+
+
+                id: result.user.id,
+
+
+
+                email: result.user.email,
+
+
+
+                name: result.user.name,
+
+
+
+                tier: result.user.tier as 'free' | 'pro' | 'super_admin',
+
+
+
+                company: '',
+
+
+
+                created_at: result.user.created_at,
+
+
+
+                updated_at: new Date().toISOString(),
+
+
+
+              }
+
+
+
+
+
+
+
+              // Set token in cookie for middleware authentication
+
+
+
+              if (typeof document !== 'undefined') {
+
+
+
+                document.cookie = `auth-token=${result.token}; path=/; max-age=${24 * 60 * 60}; secure; samesite=strict`;
+
+
+
+              }
+
+
+
+
+
+
+
+              // Get tier status
+
+
+
+              const tierStatus = await hybridAuthManager.getTierStatus()
+
+
+
+
+
+
+
+              set({
+
+
+
+                user,
+
+
+
+                token: result.token,
+
+
+
+                isAuthenticated: true,
+
+
+
+                isLoading: false,
+
+
+
+                tierStatus,
+
+
+
+                lastSync: new Date().toISOString(),
+
+
+
+                isOnline: true,
+
+
+
+              }, false, 'register:success')
+
+
+
+
+
+
+
+              return true
+
+
+
+            } else {
+
+
+
+              throw new Error(result.error || 'Registration failed')
+
+
+
             }
 
-            set({ user: updatedUser }, false, 'upgradeToPro')
-            return true
+
+
           } catch (error) {
-            console.error('Upgrade error:', error)
+
+
+
+            console.error('Registration error:', error)
+
+
+
+            set({
+
+
+
+              isLoading: false,
+
+
+
+              isOnline: false
+
+
+
+            }, false, 'register:error')
+
+
+
             return false
+
+
+
           }
+
+
+
         },
 
-        downgradeToFree: async () => {
-          const { user } = get()
-          if (!user) return false
+
+
+
+
+
+
+        logout: async () => {
+
+
+
+          set({ isLoading: true }, false, 'logout:start')
+
+
+
+
+
+
 
           try {
-            // Simulate API call to downgrade subscription
-            const updatedUser: User = {
-              ...user,
-              tier: 'free',
-              subscription_expires: undefined,
-            }
 
-            set({ user: updatedUser }, false, 'downgradeToFree')
-            return true
+
+
+            // Use HybridAuthManager for comprehensive logout
+
+
+
+            await hybridAuthManager.logout()
+
+
+
+
+
+
+
+            // Clear auth cookie
+
+
+
+            document.cookie = 'auth-token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax';
+
+
+
+
+
+
+
+            // Clear all auth state
+
+
+
+            set({
+
+
+
+              user: null,
+
+
+
+              token: null,
+
+
+
+              isAuthenticated: false,
+
+
+
+              isLoading: false,
+
+
+
+              tierStatus: null,
+
+
+
+              isOnline: false,
+
+
+
+              lastSync: null,
+
+
+
+            }, false, 'logout:success')
+
+
+
+
+
+
+
           } catch (error) {
-            console.error('Downgrade error:', error)
-            return false
+
+
+
+            console.error('Logout error:', error)
+
+
+
+
+
+
+
+            // Even if logout fails, clear local state and cookie
+
+
+
+            document.cookie = 'auth-token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax';
+
+
+
+
+
+
+
+            set({
+
+
+
+              user: null,
+
+
+
+              token: null,
+
+
+
+              isAuthenticated: false,
+
+
+
+              isLoading: false,
+
+
+
+              tierStatus: null,
+
+
+
+              isOnline: false,
+
+
+
+              lastSync: null,
+
+
+
+            }, false, 'logout:force')
+
+
+
           }
+
+
+
         },
 
-        checkSubscriptionStatus: async () => {
-          const { user, token } = get()
-          if (!user || !token) return false
+
+
+
+
+
+
+        refreshToken: async () => {
+
+
+
+          const { token } = get()
+
+
+
+          if (!token) return false
+
+
+
+
+
+
 
           try {
-            const response = await fetch(`${API_BASE_URL}/auth/subscription-status`, {
+
+
+
+            const response = await fetch(`${API_BASE_URL}/auth/refresh`, {
+
+
+
+              method: 'POST',
+
+
+
               headers: {
+
+
+
                 'Authorization': `Bearer ${token}`,
+
+
+
+                'Content-Type': 'application/json',
+
+
+
               },
+
+
+
             })
 
+
+
+
+
+
+
             if (!response.ok) {
-              throw new Error('Failed to check subscription status')
+
+
+
+              throw new Error('Token refresh failed')
+
+
+
             }
+
+
+
+
+
+
 
             const data = await response.json()
+
+
+
             
-            if (data.success && data.user) {
-              set({ user: data.user }, false, 'checkSubscriptionStatus')
+
+
+
+            if (data.success) {
+
+
+
+              set({ token: data.token }, false, 'refreshToken:success')
+
+
+
               return true
+
+
+
+            } else {
+
+
+
+              throw new Error('Token refresh failed')
+
+
+
             }
 
-            return false
+
+
           } catch (error) {
-            console.error('Subscription status check error:', error)
+
+
+
+            console.error('Token refresh error:', error)
+
+
+
+            get().logout()
+
+
+
             return false
+
+
+
           }
+
+
+
         },
+
+
+
+
+
+
+
+        setUser: (user) => {
+
+
+
+          set({ user }, false, 'setUser')
+
+
+
+        },
+
+
+
+
+
+
+
+        setToken: (token) => {
+
+
+
+          set({ token }, false, 'setToken')
+
+
+
+        },
+
+
+
+
+
+
+
+        setLoading: (loading) => {
+
+
+
+          set({ isLoading: loading }, false, 'setLoading')
+
+
+
+        },
+
+
+
+
+
+
+
+        // Hybrid authentication methods
+
+
+
+        getTierStatus: async () => {
+
+
+
+          try {
+
+
+
+            const tierStatus = await hybridAuthManager.getTierStatus()
+
+
+
+            set({
+
+
+
+              tierStatus,
+
+
+
+              lastSync: new Date().toISOString(),
+
+
+
+              isOnline: true
+
+
+
+            }, false, 'getTierStatus:success')
+
+
+
+            return tierStatus
+
+
+
+          } catch (error) {
+
+
+
+            console.error('Get tier status error:', error)
+
+
+
+            set({ isOnline: false }, false, 'getTierStatus:error')
+
+
+
+
+
+
+
+            // Return cached tier status or default
+
+
+
+            const { tierStatus } = get()
+
+
+
+            if (tierStatus) {
+
+
+
+              return tierStatus
+
+
+
+            }
+
+
+
+
+
+
+
+            // Default free tier status for offline mode
+
+
+
+            return {
+
+
+
+              tier: 'free',
+
+
+
+              features: {
+
+
+
+                max_projects: 3,
+
+
+
+                max_segments_per_project: 25,
+
+
+
+                high_res_exports: false,
+
+
+
+                watermarked_exports: true,
+
+
+
+                api_access: false,
+
+
+
+              },
+
+
+
+              usage: {
+
+
+
+                projects_count: 0,
+
+
+
+                segments_count: 0,
+
+
+
+              },
+
+
+
+              last_validated: new Date().toISOString(),
+
+
+
+            }
+
+
+
+          }
+
+
+
+        },
+
+
+
+
+
+
+
+        canPerformAction: async (action, context) => {
+
+
+
+          try {
+
+
+
+            return await hybridAuthManager.canPerformAction(action, context)
+
+
+
+          } catch (error) {
+
+
+
+            console.error('Can perform action error:', error)
+
+
+
+            // Fallback to legacy tier checking for offline mode
+
+
+
+            const { user } = get()
+
+
+
+            if (!user) return false
+
+
+
+
+
+
+
+            switch (action) {
+
+
+
+              case 'create_project':
+
+
+
+                return user.tier !== 'free' || true // Allow for now
+
+
+
+              case 'add_segment':
+
+
+
+                return user.tier !== 'free' || (context?.segments_count || 0) < 25
+
+
+
+              case 'high_res_export':
+
+
+
+                return user.tier !== 'free'
+
+
+
+              case 'api_access':
+
+
+
+                return user.tier === 'pro' || user.tier === 'super_admin'
+
+
+
+              default:
+
+
+
+                return true
+
+
+
+            }
+
+
+
+          }
+
+
+
+        },
+
+
+
+
+
+
+
+        syncWithServer: async () => {
+
+
+
+          try {
+
+
+
+            const tierStatus = await hybridAuthManager.getTierStatus()
+
+
+
+            set({
+
+
+
+              tierStatus,
+
+
+
+              lastSync: new Date().toISOString(),
+
+
+
+              isOnline: true
+
+
+
+            }, false, 'syncWithServer:success')
+
+
+
+            return true
+
+
+
+          } catch (error) {
+
+
+
+            console.error('Sync with server error:', error)
+
+
+
+            set({ isOnline: false }, false, 'syncWithServer:error')
+
+
+
+            return false
+
+
+
+          }
+
+
+
+        },
+
+
+
+
+
+
+
+        getTierLimits: () => {
+
+
+
+          const { user } = get()
+
+
+
+          return getTierLimits(user?.tier || 'free')
+
+
+
+        },
+
+
+
+
+
+
+
+        canAddRoom: () => {
+
+
+
+          const limits = get().getTierLimits()
+
+
+
+          // This would need to check current room count from project store
+
+
+
+          // For now, just return the tier capability
+
+
+
+          return limits.maxRooms > 0
+
+
+
+        },
+
+
+
+
+
+
+
+        canAddSegment: () => {
+
+
+
+          const limits = get().getTierLimits()
+
+
+
+          // This would need to check current segment count from project store
+
+
+
+          // For now, just return the tier capability
+
+
+
+          return limits.maxSegments > 0
+
+
+
+        },
+
+
+
+
+
+
+
+        canEditComputationalProperties: () => {
+
+
+
+          return get().getTierLimits().canEditComputationalProperties
+
+
+
+        },
+
+
+
+
+
+
+
+        canExportWithoutWatermark: () => {
+
+
+
+          return get().getTierLimits().canExportWithoutWatermark
+
+
+
+        },
+
+
+
+
+
+
+
+        canUseSimulation: () => {
+
+
+
+          return get().getTierLimits().canUseSimulation
+
+
+
+        },
+
+
+
+
+
+
+
+        canUseCatalog: () => {
+
+
+
+          return get().getTierLimits().canUseCatalog
+
+
+
+        },
+
+
+
+
+
+
+
+        upgradeToPro: async () => {
+
+
+
+          // This would integrate with payment system
+
+
+
+          // For now, just simulate the upgrade
+
+
+
+          const { user } = get()
+
+
+
+          if (!user) return false
+
+
+
+
+
+
+
+          try {
+
+
+
+            // Simulate API call to upgrade subscription
+
+
+
+            const updatedUser: User = {
+
+
+
+              ...user,
+
+
+
+              tier: 'pro',
+
+
+
+              subscription_expires: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(), // 1 year from now
+
+
+
+            }
+
+
+
+
+
+
+
+            set({ user: updatedUser }, false, 'upgradeToPro')
+
+
+
+            return true
+
+
+
+          } catch (error) {
+
+
+
+            console.error('Upgrade error:', error)
+
+
+
+            return false
+
+
+
+          }
+
+
+
+        },
+
+
+
+
+
+
+
+        downgradeToFree: async () => {
+
+
+
+          const { user } = get()
+
+
+
+          if (!user) return false
+
+
+
+
+
+
+
+          try {
+
+
+
+            // Simulate API call to downgrade subscription
+
+
+
+            const updatedUser: User = {
+
+
+
+              ...user,
+
+
+
+              tier: 'free',
+
+
+
+              subscription_expires: undefined,
+
+
+
+            }
+
+
+
+
+
+
+
+            set({ user: updatedUser }, false, 'downgradeToFree')
+
+
+
+            return true
+
+
+
+          } catch (error) {
+
+
+
+            console.error('Downgrade error:', error)
+
+
+
+            return false
+
+
+
+          }
+
+
+
+        },
+
+
+
+
+
+
+
+        checkSubscriptionStatus: async () => {
+
+
+
+          const { user, token } = get()
+
+
+
+          if (!user || !token) return false
+
+
+
+
+
+
+
+          try {
+
+
+
+            const response = await fetch(`${API_BASE_URL}/auth/subscription-status`, {
+
+
+
+              headers: {
+
+
+
+                'Authorization': `Bearer ${token}`,
+
+
+
+              },
+
+
+
+            })
+
+
+
+
+
+
+
+            if (!response.ok) {
+
+
+
+              throw new Error('Failed to check subscription status')
+
+
+
+            }
+
+
+
+
+
+
+
+            const data = await response.json()
+
+
+
+            
+
+
+
+            if (data.success && data.user) {
+
+
+
+              set({ user: data.user }, false, 'checkSubscriptionStatus')
+
+
+
+              return true
+
+
+
+            }
+
+
+
+
+
+
+
+            return false
+
+
+
+          } catch (error) {
+
+
+
+            console.error('Subscription status check error:', error)
+
+
+
+            return false
+
+
+
+          }
+
+
+
+        },
+
+
+
       }),
+
+
+
       {
+
+
+
         name: 'sizewise-hybrid-auth',
+
+
+
         partialize: (state) => ({
+
+
+
           user: state.user,
+
+
+
           token: state.token,
+
+
+
           isAuthenticated: state.isAuthenticated,
+
+
+
           tierStatus: state.tierStatus,
+
+
+
           lastSync: state.lastSync,
+
+
+
         }),
+
+
+
       }
+
+
+
     ),
+
+
+
     { name: 'AuthStore' }
+
+
+
   )
+
+
+
 )
+
+
+

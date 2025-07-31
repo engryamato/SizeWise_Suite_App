@@ -553,7 +553,10 @@ class FittingGenerator {
     position: Vector3,
     direction: Vector3
   ): ConnectionPoint {
+    const generatedId = `${segment.id}-fit-${Date.now()}`;
     return {
+      id: generatedId,
+      status: 'available',
       position,
       direction,
       shape: segment.shape,

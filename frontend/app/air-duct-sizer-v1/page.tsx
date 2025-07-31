@@ -2,14 +2,14 @@
 
 import React, { useState, useCallback, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Vector3 } from 'three'
-import { Canvas3D } from '@/components/3d/Canvas3D'
+import { Vector3, Euler } from 'three'
+import { Canvas3D, Equipment } from '@/components/3d/Canvas3D'
 import { useToast } from '@/lib/hooks/useToaster'
 import { withAirDuctSizerAccess } from '@/components/hoc/withToolAccess'
 
 // V1 Components
 import { ProjectPropertiesManager } from '@/components/managers/ProjectPropertiesManager'
-import { DrawingToolFAB, DrawingMode } from '@/components/ui/DrawingToolFAB'
+import { DrawingToolFAB, DrawingMode, DuctProperties } from '@/components/ui/DrawingToolFAB'
 import { ContextPropertyPanel, ElementProperties } from '@/components/ui/ContextPropertyPanel'
 import { ModelSummaryPanel } from '@/components/ui/ModelSummaryPanel'
 import { StatusBar } from '@/components/ui/StatusBar'
@@ -23,9 +23,20 @@ interface DuctSegment {
   id: string;
   start: Vector3;
   end: Vector3;
-  width: number;
-  height: number;
+  width?: number; // Optional for round ducts
+  height?: number; // Optional for round ducts
+  diameter?: number; // For round ducts
+  shape: 'rectangular' | 'round';
   type: 'supply' | 'return' | 'exhaust';
+  material: string;
+}
+
+// Import fitting types from Canvas3D
+interface DuctFitting {
+  id: string;
+  type: 'transition' | 'elbow';
+  position: Vector3;
+  rotation: Euler;
   material: string;
 }
 
@@ -48,6 +59,7 @@ function AirDuctSizerV1Page() {
   const [drawingMode, setDrawingMode] = useState<DrawingMode>('off');
   const [selectedElement, setSelectedElement] = useState<ElementProperties | null>(null);
   const [ductSegments, setDuctSegments] = useState<DuctSegment[]>([]);
+  const [ductFittings, setDuctFittings] = useState<DuctFitting[]>([]);
 
   // Grid and view state
   const [gridEnabled, setGridEnabled] = useState(true);
@@ -66,6 +78,17 @@ function AirDuctSizerV1Page() {
   // Connection state
   const [isOnline, setIsOnline] = useState(true);
   const [isConnectedToServer, setIsConnectedToServer] = useState(true);
+
+  // Duct properties state
+  const [ductProperties, setDuctProperties] = useState<DuctProperties>({
+    shape: 'rectangular',
+    width: 12,
+    height: 8,
+    diameter: 12,
+    material: 'Galvanized Steel',
+    insulation: false,
+    name: '' // Auto-generated, will be set when creating segments
+  });
 
   // Hooks
   const toast = useToast();
@@ -86,6 +109,7 @@ function AirDuctSizerV1Page() {
         end: new Vector3(5, 0, 0),
         width: 12,
         height: 8,
+        shape: 'rectangular',
         type: 'supply',
         material: 'galvanized_steel',
       },
@@ -95,6 +119,7 @@ function AirDuctSizerV1Page() {
         end: new Vector3(5, 0, 5),
         width: 10,
         height: 6,
+        shape: 'rectangular',
         type: 'supply',
         material: 'galvanized_steel',
       },
@@ -102,8 +127,10 @@ function AirDuctSizerV1Page() {
         id: 'demo-3',
         start: new Vector3(0, 0, 0),
         end: new Vector3(-3, 0, 0),
-        width: 14,
-        height: 10,
+        diameter: 12,
+        width: 12, // Keep for compatibility
+        height: 12, // Keep for compatibility
+        shape: 'round',
         type: 'return',
         material: 'galvanized_steel',
       },
@@ -157,6 +184,61 @@ function AirDuctSizerV1Page() {
 
   const handleDrawingModeChange = useCallback((mode: DrawingMode) => {
     setDrawingMode(mode);
+  }, []);
+
+  const handleEquipmentPlace = useCallback((position: { x: number; y: number; z: number }) => {
+    // Create new equipment at the specified position
+    const baseEquipment: Equipment = {
+      id: `equipment-${Date.now()}`,
+      type: 'Fan',
+      position: new Vector3(position.x, position.y, position.z),
+      rotation: new Euler(0, 0, 0),
+      dimensions: {
+        width: 2,
+        height: 2,
+        depth: 2
+      },
+      properties: {
+        cfmCapacity: 1000,
+        staticPressureCapacity: 2.0,
+        model: 'Standard Fan',
+        manufacturer: 'Generic',
+        powerConsumption: 5.0
+      },
+      material: 'Steel',
+      connectionPoints: [] // Will be populated below
+    };
+
+    // Enhanced: Automatically add connection points to new equipment
+    const connectionPoints = [];
+
+    // Fan has inlet and outlet
+    connectionPoints.push(
+      {
+        id: `${baseEquipment.id}-inlet`,
+        position: new Vector3(position.x - baseEquipment.dimensions.width / 2, position.y, position.z),
+        direction: new Vector3(1, 0, 0),
+        shape: 'round' as const,
+        diameter: Math.min(baseEquipment.dimensions.width, baseEquipment.dimensions.height) * 0.8,
+        status: 'available' as const
+      },
+      {
+        id: `${baseEquipment.id}-outlet`,
+        position: new Vector3(position.x + baseEquipment.dimensions.width / 2, position.y, position.z),
+        direction: new Vector3(1, 0, 0),
+        shape: 'round' as const,
+        diameter: Math.min(baseEquipment.dimensions.width, baseEquipment.dimensions.height) * 0.8,
+        status: 'available' as const
+      }
+    );
+
+    const newEquipment: Equipment = {
+      ...baseEquipment,
+      connectionPoints
+    };
+
+    setEquipment(prev => [...prev, newEquipment]);
+    console.log('Equipment placed with connection points:', newEquipment);
   }, []);
 
   const handleElementSelect = useCallback((elementId: string, position: { x: number; y: number }) => {
@@ -332,6 +414,22 @@ function AirDuctSizerV1Page() {
     toast.info('Duct Removed', 'Duct segment removed from the system.');
   }, [toast]);
 
+  // Duct fitting handlers
+  const handleFittingAdd = useCallback((fitting: DuctFitting) => {
+    setDuctFittings(prev => [...prev, fitting]);
+    setSaveStatus('unsaved');
+    toast.success('Fitting Added', `${fitting.type === 'transition' ? 'Transition' : 'Elbow'} fitting automatically generated.`);
+  }, [toast]);
+
+  // Equipment state and handlers
+  const [equipment, setEquipment] = useState<Equipment[]>([]);
+
+  const handleEquipmentAdd = useCallback((equip: Equipment) => {
+    setEquipment(prev => [...prev, equip]);
+    setSaveStatus('unsaved');
+    toast.success('Equipment Added', `${equip.type} equipment added to the system.`);
+  }, [toast]);
+
   // Priority 5-7 Component handlers
   const handleWarningClick = useCallback((warning: ValidationWarning) => {
     if (warning.elementId) {
@@ -417,9 +515,15 @@ function AirDuctSizerV1Page() {
           onSegmentDelete={handleSegmentDelete}
           showGrid={gridEnabled}
           showGizmo={true}
-          activeTool={drawingMode === 'on' || drawingMode === 'drawing' ? 'line' : 'select'}
+          activeTool={drawingMode === 'duct' || drawingMode === 'drawing' ? 'line' : 'select'}
           onElementSelect={handleElementSelect}
           onCameraReady={handleCameraReady}
+          ductProperties={ductProperties}
+          fittings={ductFittings}
+          onFittingAdd={handleFittingAdd}
+          equipment={equipment}
+          onEquipmentAdd={handleEquipmentAdd}
+          onEquipmentPlace={drawingMode === 'equipment' ? handleEquipmentPlace : undefined}
         />
       </div>
 
@@ -430,6 +534,9 @@ function AirDuctSizerV1Page() {
         onPropertyPanelOpen={() => {
           // Handle property panel opening if needed
         }}
+        ductProperties={ductProperties}
+        onDuctPropertiesChange={setDuctProperties}
+        onEquipmentPlace={handleEquipmentPlace}
       />
 
       {/* Chat & Help elements removed from tool interface - only on main page */}

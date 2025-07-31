@@ -150,16 +150,20 @@ export const ViewCube: React.FC<ViewCubeProps> = ({
       >
         {/* Main View Cube */}
         <motion.div
-          onHoverStart={() => setIsHovered(true)}
-          onHoverEnd={() => setIsHovered(false)}
+          onMouseEnter={() => setIsHovered(true)}
+          onMouseLeave={() => setIsHovered(false)}
           className={cn(
             "relative w-24 h-24",
             "bg-white/10 dark:bg-neutral-900/10 backdrop-blur-md",
             "border border-white/20 dark:border-neutral-700/50",
-            "rounded-xl shadow-lg transition-all duration-300",
-            isHovered && "shadow-xl scale-105"
+            "rounded-xl shadow-lg transition-all duration-200",
+            isHovered && "shadow-xl"
           )}
-          style={{ perspective: '1000px' }}
+          style={{
+            transform: isHovered ? 'scale(1.02)' : 'scale(1)',
+            transformOrigin: 'center',
+            perspective: '1000px'
+          }}
         >
           {/* 3D Cube Container */}
           <motion.div
@@ -190,8 +194,8 @@ export const ViewCube: React.FC<ViewCubeProps> = ({
                 onClick={() => handleFaceClick(face)}
                 onMouseEnter={() => setHoveredFace(face.id)}
                 onMouseLeave={() => setHoveredFace(null)}
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
               >
                 {face.label}
               </motion.button>
@@ -218,8 +222,8 @@ export const ViewCube: React.FC<ViewCubeProps> = ({
                 onClick={() => handleFaceClick(view)}
                 onMouseEnter={() => setHoveredFace(view.id)}
                 onMouseLeave={() => setHoveredFace(null)}
-                whileHover={{ scale: 1.2 }}
-                whileTap={{ scale: 0.9 }}
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.95 }}
                 title={`${view.label} View`}
               >
                 {view.label}

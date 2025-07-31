@@ -28,15 +28,84 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { defaultPerformanceConfig } from '@/lib/utils/performance';
+import { DuctProperties } from '@/components/ui/DrawingToolFAB';
 
 interface DuctSegment {
   id: string;
   start: Vector3;
   end: Vector3;
-  width: number;
-  height: number;
+  width?: number; // Optional for round ducts
+  height?: number; // Optional for round ducts
+  diameter?: number; // For round ducts
+  shape: 'rectangular' | 'round';
   type: 'supply' | 'return' | 'exhaust';
   material: string;
+  // Connection points for HVAC system connectivity
+  inlet?: ConnectionPoint;
+  outlet?: ConnectionPoint;
+}
+
+// Enhanced connection point for duct fittings and system connectivity
+interface ConnectionPoint {
+  id: string;
+  position: Vector3;
+  direction: Vector3;
+  shape: 'rectangular' | 'round';
+  width?: number;
+  height?: number;
+  diameter?: number;
+  // Connection status for system validation
+  status: 'available' | 'connected' | 'blocked';
+  connectedTo?: string; // ID of connected element
+}
+
+// Base fitting interface
+interface DuctFitting {
+  id: string;
+  type: 'transition' | 'elbow';
+  position: Vector3;
+  rotation: Euler;
+  inlet: ConnectionPoint;
+  outlet: ConnectionPoint;
+  material: string;
+}
+
+interface Equipment {
+  id: string;
+  type: 'Fan' | 'AHU' | 'VAV Box' | 'Damper' | 'Filter' | 'Coil' | 'Custom';
+  position: Vector3;
+  rotation: Euler;
+  dimensions: {
+    width: number;
+    height: number;
+    depth: number;
+  };
+  properties: {
+    cfmCapacity: number;
+    staticPressureCapacity: number;
+    model?: string;
+    manufacturer?: string;
+    powerConsumption?: number;
+  };
+  material: string;
+  // Connection points for HVAC system integration
+  connectionPoints: ConnectionPoint[];
+}
+
+// Transition fitting for size/shape changes
+interface TransitionFitting extends DuctFitting {
+  type: 'transition';
+  transitionType: 'rect-to-rect' | 'round-to-round' | 'rect-to-round' | 'round-to-rect';
+  length: number; // Calculated from SMACNA 2.5:1 slope ratio
+  slopeRatio: number;
+}
+
+// Elbow fitting for direction changes
+interface ElbowFitting extends DuctFitting {
+  type: 'elbow';
+  elbowType: 'rectangular' | 'round';
+  angle: 30 | 45 | 90; // Restricted angles for snapping
+  centerlineRadius: number; // Based on SMACNA guidelines
 }
 
 interface Canvas3DProps {
@@ -52,14 +121,778 @@ interface Canvas3DProps {
   onElementSelect?: (elementId: string, position: { x: number; y: number }) => void;
   // Camera control integration
   onCameraReady?: (cameraController: any) => void;
+  // Duct properties for new segments
+  ductProperties?: DuctProperties;
+  // Fitting callbacks
+  onFittingAdd?: (fitting: DuctFitting) => void;
+  fittings?: DuctFitting[];
+  // Equipment callbacks
+  onEquipmentAdd?: (equipment: Equipment) => void;
+  equipment?: Equipment[];
+  // Equipment placement functionality
+  onEquipmentPlace?: (position: { x: number; y: number; z: number }) => void;
 }
 
-// 3D Duct Component
-const DuctMesh: React.FC<{ 
-  segment: DuctSegment; 
+// Connection Validation and Management System
+class ConnectionValidator {
+  /**
+   * Check if two connection points are compatible for connection
+   */
+  static areCompatible(point1: ConnectionPoint, point2: ConnectionPoint): boolean {
+    // Check if both points are available
+    if (point1.status !== 'available' || point2.status !== 'available') {
+      return false;
+    }
+
+    // Check shape compatibility
+    if (point1.shape !== point2.shape) {
+      // Allow round-to-rectangular connections with transitions
+      return true;
+    }
+
+    // Check dimensional compatibility
+    if (point1.shape === 'round' && point2.shape === 'round') {
+      const diameter1 = point1.diameter || 12;
+      const diameter2 = point2.diameter || 12;
+      // Allow up to 25% size difference for direct connection
+      return Math.abs(diameter1 - diameter2) / Math.max(diameter1, diameter2) <= 0.25;
+    }
+
+    if (point1.shape === 'rectangular' && point2.shape === 'rectangular') {
+      const area1 = (point1.width || 12) * (point1.height || 8);
+      const area2 = (point2.width || 12) * (point2.height || 8);
+      // Allow up to 25% area difference for direct connection
+      return Math.abs(area1 - area2) / Math.max(area1, area2) <= 0.25;
+    }
+
+    return true;
+  }
+
+  /**
+   * Calculate connection distance between two points
+   */
+  static getConnectionDistance(point1: ConnectionPoint, point2: ConnectionPoint): number {
+    return point1.position.distanceTo(point2.position);
+  }
+
+  /**
+   * Check if connection points are within connection range
+   */
+  static isWithinConnectionRange(point1: ConnectionPoint, point2: ConnectionPoint, maxDistance: number = 2.0): boolean {
+    return this.getConnectionDistance(point1, point2) <= maxDistance;
+  }
+}
+
+// Connection Point Utilities for System Integration
+class ConnectionPointUtils {
+  /**
+   * Create connection points for a duct segment
+   */
+  static createDuctConnectionPoints(segment: DuctSegment): { inlet: ConnectionPoint; outlet: ConnectionPoint } {
+    const direction = new Vector3().subVectors(segment.end, segment.start).normalize();
+
+    return {
+      inlet: {
+        id: `${segment.id}-inlet`,
+        position: segment.start.clone(),
+        direction: direction.clone().negate(),
+        shape: segment.shape,
+        width: segment.width,
+        height: segment.height,
+        diameter: segment.diameter,
+        status: 'available'
+      },
+      outlet: {
+        id: `${segment.id}-outlet`,
+        position: segment.end.clone(),
+        direction: direction.clone(),
+        shape: segment.shape,
+        width: segment.width,
+        height: segment.height,
+        diameter: segment.diameter,
+        status: 'available'
+      }
+    };
+  }
+
+  /**
+   * Create connection points for equipment based on type
+   */
+  static createEquipmentConnectionPoints(equipment: Equipment): ConnectionPoint[] {
+    const points: ConnectionPoint[] = [];
+    const { position, dimensions, type } = equipment;
+
+    switch (type) {
+      case 'Fan':
+        // Fan has inlet and outlet
+        points.push(
+          {
+            id: `${equipment.id}-inlet`,
+            position: new Vector3(position.x - dimensions.width / 2, position.y, position.z),
+            direction: new Vector3(1, 0, 0),
+            shape: 'round',
+            diameter: Math.min(dimensions.width, dimensions.height) * 0.8,
+            status: 'available'
+          },
+          {
+            id: `${equipment.id}-outlet`,
+            position: new Vector3(position.x + dimensions.width / 2, position.y, position.z),
+            direction: new Vector3(1, 0, 0),
+            shape: 'round',
+            diameter: Math.min(dimensions.width, dimensions.height) * 0.8,
+            status: 'available'
+          }
+        );
+        break;
+
+      case 'AHU':
+        // AHU has multiple connection points
+        points.push(
+          {
+            id: `${equipment.id}-supply`,
+            position: new Vector3(position.x + dimensions.width / 2, position.y, position.z),
+            direction: new Vector3(1, 0, 0),
+            shape: 'rectangular',
+            width: dimensions.width * 0.6,
+            height: dimensions.height * 0.4,
+            status: 'available'
+          },
+          {
+            id: `${equipment.id}-return`,
+            position: new Vector3(position.x - dimensions.width / 2, position.y, position.z),
+            direction: new Vector3(-1, 0, 0),
+            shape: 'rectangular',
+            width: dimensions.width * 0.6,
+            height: dimensions.height * 0.4,
+            status: 'available'
+          }
+        );
+        break;
+
+      case 'VAV Box':
+        // VAV has inlet and outlet
+        points.push(
+          {
+            id: `${equipment.id}-inlet`,
+            position: new Vector3(position.x, position.y, position.z - dimensions.depth / 2),
+            direction: new Vector3(0, 0, 1),
+            shape: 'rectangular',
+            width: dimensions.width * 0.8,
+            height: dimensions.height * 0.6,
+            status: 'available'
+          },
+          {
+            id: `${equipment.id}-outlet`,
+            position: new Vector3(position.x, position.y, position.z + dimensions.depth / 2),
+            direction: new Vector3(0, 0, 1),
+            shape: 'rectangular',
+            width: dimensions.width * 0.6,
+            height: dimensions.height * 0.4,
+            status: 'available'
+          }
+        );
+        break;
+
+      default:
+        // Generic equipment with single connection point
+        points.push({
+          id: `${equipment.id}-connection`,
+          position: new Vector3(position.x, position.y, position.z + dimensions.depth / 2),
+          direction: new Vector3(0, 0, 1),
+          shape: 'rectangular',
+          width: dimensions.width * 0.5,
+          height: dimensions.height * 0.5,
+          status: 'available'
+        });
+        break;
+    }
+
+    return points;
+  }
+}
+
+// SMACNA Standards and Calculations
+class SMACNAStandards {
+  // Standard transition slope ratio (2.5:1)
+  static readonly TRANSITION_SLOPE_RATIO = 2.5;
+
+  // Standard elbow centerline radius ratios
+  static readonly ROUND_ELBOW_RADIUS_RATIO = 1.5; // R/D = 1.5
+  static readonly RECT_ELBOW_RADIUS_RATIO = 1.0; // R/W = 1.0 for rectangular
+
+  // Restricted angles for snapping (degrees)
+  static readonly ALLOWED_ANGLES = [30, 45, 90] as const;
+
+  /**
+   * Calculate transition length based on size difference
+   */
+  static calculateTransitionLength(sizeDiff: number): number {
+    return Math.max(sizeDiff * this.TRANSITION_SLOPE_RATIO, 6); // Minimum 6 inches
+  }
+
+  /**
+   * Calculate elbow centerline radius
+   */
+  static calculateElbowRadius(shape: 'rectangular' | 'round', size: number): number {
+    if (shape === 'round') {
+      return size * this.ROUND_ELBOW_RADIUS_RATIO;
+    } else {
+      return size * this.RECT_ELBOW_RADIUS_RATIO;
+    }
+  }
+
+  /**
+   * Snap angle to nearest allowed angle
+   */
+  static snapAngle(angle: number): 30 | 45 | 90 {
+    const angleDeg = Math.abs(angle * 180 / Math.PI);
+
+    // Find closest allowed angle
+    let closest = this.ALLOWED_ANGLES[0];
+    let minDiff = Math.abs(angleDeg - closest);
+
+    for (const allowedAngle of this.ALLOWED_ANGLES) {
+      const diff = Math.abs(angleDeg - allowedAngle);
+      if (diff < minDiff) {
+        minDiff = diff;
+        closest = allowedAngle;
+      }
+    }
+
+    return closest;
+  }
+}
+
+// Connectivity Analysis Utilities
+class ConnectivityAnalyzer {
+  /**
+   * Analyze if two segments need a transition fitting
+   */
+  static needsTransition(segment1: DuctSegment, segment2: DuctSegment): boolean {
+    // Check if shapes are different
+    if (segment1.shape !== segment2.shape) {
+      return true;
+    }
+
+    // Check if sizes are different
+    if (segment1.shape === 'round' && segment2.shape === 'round') {
+      return Math.abs((segment1.diameter || 0) - (segment2.diameter || 0)) > 0.5; // 0.5" tolerance
+    }
+
+    if (segment1.shape === 'rectangular' && segment2.shape === 'rectangular') {
+      const width1 = segment1.width || 0;
+      const height1 = segment1.height || 0;
+      const width2 = segment2.width || 0;
+      const height2 = segment2.height || 0;
+
+      return Math.abs(width1 - width2) > 0.5 || Math.abs(height1 - height2) > 0.5;
+    }
+
+    return false;
+  }
+
+  /**
+   * Analyze if two segments need an elbow fitting
+   */
+  static needsElbow(segment1: DuctSegment, segment2: DuctSegment): boolean {
+    const dir1 = new Vector3().subVectors(segment1.end, segment1.start).normalize();
+    const dir2 = new Vector3().subVectors(segment2.end, segment2.start).normalize();
+
+    // Calculate angle between directions
+    const angle = Math.acos(Math.max(-1, Math.min(1, dir1.dot(dir2))));
+    const angleDeg = angle * 180 / Math.PI;
+
+    // Need elbow if not straight (allow 5° tolerance)
+    return angleDeg > 5 && angleDeg < 175;
+  }
+
+  /**
+   * Calculate the angle between two segments
+   */
+  static calculateAngle(segment1: DuctSegment, segment2: DuctSegment): number {
+    const dir1 = new Vector3().subVectors(segment1.end, segment1.start).normalize();
+    const dir2 = new Vector3().subVectors(segment2.end, segment2.start).normalize();
+
+    return Math.acos(Math.max(-1, Math.min(1, dir1.dot(dir2))));
+  }
+}
+
+// Fitting Generation Utilities
+class FittingGenerator {
+  /**
+   * Generate transition fitting between two segments
+   */
+  static generateTransition(
+    segment1: DuctSegment,
+    segment2: DuctSegment,
+    connectionPoint: Vector3
+  ): TransitionFitting {
+    // Determine transition type
+    let transitionType: TransitionFitting['transitionType'];
+    if (segment1.shape === 'rectangular' && segment2.shape === 'rectangular') {
+      transitionType = 'rect-to-rect';
+    } else if (segment1.shape === 'round' && segment2.shape === 'round') {
+      transitionType = 'round-to-round';
+    } else if (segment1.shape === 'rectangular' && segment2.shape === 'round') {
+      transitionType = 'rect-to-round';
+    } else {
+      transitionType = 'round-to-rect';
+    }
+
+    // Calculate size difference for transition length
+    const sizeDiff = this.calculateSizeDifference(segment1, segment2);
+    const length = SMACNAStandards.calculateTransitionLength(sizeDiff);
+
+    // Calculate position and rotation
+    const direction = new Vector3().subVectors(segment2.start, segment1.end).normalize();
+    const position = new Vector3().addVectors(connectionPoint, direction.clone().multiplyScalar(length / 2));
+    const rotation = new Euler().setFromQuaternion(
+      new Quaternion().setFromUnitVectors(new Vector3(0, 0, 1), direction)
+    );
+
+    return {
+      id: `transition-${Date.now()}`,
+      type: 'transition',
+      transitionType,
+      position,
+      rotation,
+      length,
+      slopeRatio: SMACNAStandards.TRANSITION_SLOPE_RATIO,
+      material: segment1.material,
+      inlet: this.createConnectionPoint(segment1, connectionPoint, direction.clone().negate()),
+      outlet: this.createConnectionPoint(segment2, connectionPoint, direction)
+    };
+  }
+
+  /**
+   * Generate elbow fitting between two segments
+   */
+  static generateElbow(
+    segment1: DuctSegment,
+    segment2: DuctSegment,
+    connectionPoint: Vector3
+  ): ElbowFitting {
+    const angle = ConnectivityAnalyzer.calculateAngle(segment1, segment2);
+    const snappedAngle = SMACNAStandards.snapAngle(angle);
+
+    // Use the larger duct size for elbow sizing
+    const elbowSize = this.getLargerDuctSize(segment1, segment2);
+    const centerlineRadius = SMACNAStandards.calculateElbowRadius(segment1.shape, elbowSize);
+
+    // Calculate elbow position and rotation
+    const dir1 = new Vector3().subVectors(segment1.end, segment1.start).normalize();
+    const dir2 = new Vector3().subVectors(segment2.end, segment2.start).normalize();
+    const bisector = new Vector3().addVectors(dir1, dir2).normalize();
+
+    const rotation = new Euler().setFromQuaternion(
+      new Quaternion().setFromUnitVectors(new Vector3(0, 0, 1), bisector)
+    );
+
+    return {
+      id: `elbow-${Date.now()}`,
+      type: 'elbow',
+      elbowType: segment1.shape,
+      angle: snappedAngle,
+      centerlineRadius,
+      position: connectionPoint,
+      rotation,
+      material: segment1.material,
+      inlet: this.createConnectionPoint(segment1, connectionPoint, dir1.clone().negate()),
+      outlet: this.createConnectionPoint(segment2, connectionPoint, dir2)
+    };
+  }
+
+  /**
+   * Calculate size difference between two segments
+   */
+  private static calculateSizeDifference(segment1: DuctSegment, segment2: DuctSegment): number {
+    if (segment1.shape === 'round' && segment2.shape === 'round') {
+      return Math.abs((segment1.diameter || 0) - (segment2.diameter || 0));
+    }
+
+    if (segment1.shape === 'rectangular' && segment2.shape === 'rectangular') {
+      const area1 = (segment1.width || 0) * (segment1.height || 0);
+      const area2 = (segment2.width || 0) * (segment2.height || 0);
+      return Math.abs(Math.sqrt(area1) - Math.sqrt(area2));
+    }
+
+    // For mixed shapes, use equivalent diameter
+    const equiv1 = this.getEquivalentDiameter(segment1);
+    const equiv2 = this.getEquivalentDiameter(segment2);
+    return Math.abs(equiv1 - equiv2);
+  }
+
+  /**
+   * Get equivalent diameter for any duct shape
+   */
+  private static getEquivalentDiameter(segment: DuctSegment): number {
+    if (segment.shape === 'round') {
+      return segment.diameter || 0;
+    } else {
+      // Equivalent diameter for rectangular: 4*Area/Perimeter
+      const width = segment.width || 0;
+      const height = segment.height || 0;
+      return (4 * width * height) / (2 * (width + height));
+    }
+  }
+
+  /**
+   * Get the larger duct size for elbow sizing
+   */
+  private static getLargerDuctSize(segment1: DuctSegment, segment2: DuctSegment): number {
+    const size1 = this.getEquivalentDiameter(segment1);
+    const size2 = this.getEquivalentDiameter(segment2);
+    return Math.max(size1, size2);
+  }
+
+  /**
+   * Create connection point for fitting
+   */
+  private static createConnectionPoint(
+    segment: DuctSegment,
+    position: Vector3,
+    direction: Vector3
+  ): ConnectionPoint {
+    return {
+      position,
+      direction,
+      shape: segment.shape,
+      width: segment.width,
+      height: segment.height,
+      diameter: segment.diameter
+    };
+  }
+}
+
+// Enhanced 3D Transition Fitting Component with Proper Dimension Handling
+const TransitionMesh: React.FC<{
+  fitting: TransitionFitting;
   isSelected?: boolean;
   onSelect?: () => void;
-}> = ({ segment, isSelected, onSelect }) => {
+}> = ({ fitting, isSelected, onSelect }) => {
+  const meshRef = useRef<any>(null);
+  const [hovered, setHovered] = useState(false);
+
+  // Enhanced dimension validation and calculation
+  const validateAndGetDimensions = () => {
+    // Log inlet and outlet dimensions for debugging
+    console.log('TransitionMesh - Inlet dimensions:', {
+      shape: fitting.inlet.shape,
+      width: fitting.inlet.width,
+      height: fitting.inlet.height,
+      diameter: fitting.inlet.diameter
+    });
+    console.log('TransitionMesh - Outlet dimensions:', {
+      shape: fitting.outlet.shape,
+      width: fitting.outlet.width,
+      height: fitting.outlet.height,
+      diameter: fitting.outlet.diameter
+    });
+
+    // Validate inlet dimensions
+    let inletSize: number;
+    let inletWidth: number;
+    let inletHeight: number;
+
+    if (fitting.inlet.shape === 'round') {
+      if (!fitting.inlet.diameter) {
+        console.warn('TransitionMesh - Missing inlet diameter for round duct, using default 12');
+        inletSize = 12;
+      } else {
+        inletSize = fitting.inlet.diameter;
+      }
+      inletWidth = inletSize;
+      inletHeight = inletSize;
+    } else {
+      if (!fitting.inlet.width || !fitting.inlet.height) {
+        console.warn('TransitionMesh - Missing inlet width/height for rectangular duct, using defaults');
+        inletWidth = fitting.inlet.width || 12;
+        inletHeight = fitting.inlet.height || 8;
+      } else {
+        inletWidth = fitting.inlet.width;
+        inletHeight = fitting.inlet.height;
+      }
+      inletSize = Math.max(inletWidth, inletHeight);
+    }
+
+    // Validate outlet dimensions
+    let outletSize: number;
+    let outletWidth: number;
+    let outletHeight: number;
+
+    if (fitting.outlet.shape === 'round') {
+      if (!fitting.outlet.diameter) {
+        console.warn('TransitionMesh - Missing outlet diameter for round duct, using default 12');
+        outletSize = 12;
+      } else {
+        outletSize = fitting.outlet.diameter;
+      }
+      outletWidth = outletSize;
+      outletHeight = outletSize;
+    } else {
+      if (!fitting.outlet.width || !fitting.outlet.height) {
+        console.warn('TransitionMesh - Missing outlet width/height for rectangular duct, using defaults');
+        outletWidth = fitting.outlet.width || 12;
+        outletHeight = fitting.outlet.height || 8;
+      } else {
+        outletWidth = fitting.outlet.width;
+        outletHeight = fitting.outlet.height;
+      }
+      outletSize = Math.max(outletWidth, outletHeight);
+    }
+
+    console.log('TransitionMesh - Calculated dimensions:', {
+      inletSize, inletWidth, inletHeight,
+      outletSize, outletWidth, outletHeight
+    });
+
+    return {
+      inletSize, inletWidth, inletHeight,
+      outletSize, outletWidth, outletHeight
+    };
+  };
+
+  const dimensions = validateAndGetDimensions();
+
+  const getColor = () => {
+    if (isSelected) return '#3b82f6'; // Blue when selected
+    if (hovered) return '#6366f1'; // Indigo when hovered
+    return '#595959'; // Match duct color for visual consistency
+  };
+
+  return (
+    <mesh
+      ref={meshRef}
+      position={fitting.position}
+      rotation={fitting.rotation}
+      onClick={onSelect}
+      onPointerOver={() => setHovered(true)}
+      onPointerOut={() => setHovered(false)}
+    >
+      {/* Enhanced transition geometry using validated dimensions */}
+      {fitting.inlet.shape === 'round' && fitting.outlet.shape === 'round' ? (
+        // Round to round transition - tapered cylinder with actual dimensions
+        <cylinderGeometry args={[dimensions.outletSize / 2, dimensions.inletSize / 2, fitting.length, 16]} />
+      ) : fitting.inlet.shape === 'rectangular' && fitting.outlet.shape === 'rectangular' ? (
+        // Rectangular to rectangular transition - use box geometry with actual dimensions
+        <boxGeometry args={[
+          (dimensions.inletWidth + dimensions.outletWidth) / 2,
+          (dimensions.inletHeight + dimensions.outletHeight) / 2,
+          fitting.length
+        ]} />
+      ) : (
+        // Mixed transitions - use cylinder with validated average dimensions
+        <cylinderGeometry args={[dimensions.outletSize / 2, dimensions.inletSize / 2, fitting.length, 16]} />
+      )}
+      <meshStandardMaterial
+        color={getColor()}
+        transparent={false}
+        opacity={1.0}
+        wireframe={isSelected}
+        metalness={0.2}
+        roughness={0.7}
+      />
+
+      {/* Fitting label */}
+      {(isSelected || hovered) && (
+        <Text
+          position={[0, 0, fitting.length / 2 + 0.5]}
+          fontSize={0.25}
+          color="white"
+          anchorX="center"
+          anchorY="middle"
+        >
+          {`${fitting.transitionType.toUpperCase()}`}
+        </Text>
+      )}
+    </mesh>
+  );
+};
+
+// Enhanced 3D Elbow Fitting Component with Proper Dimension Handling
+const ElbowMesh: React.FC<{
+  fitting: ElbowFitting;
+  isSelected?: boolean;
+  onSelect?: () => void;
+}> = ({ fitting, isSelected, onSelect }) => {
+  const meshRef = useRef<any>(null);
+  const [hovered, setHovered] = useState(false);
+
+  // Enhanced dimension validation and calculation for elbow
+  const validateAndGetElbowDimensions = () => {
+    // Log inlet dimensions for debugging
+    console.log('ElbowMesh - Inlet dimensions:', {
+      shape: fitting.inlet.shape,
+      width: fitting.inlet.width,
+      height: fitting.inlet.height,
+      diameter: fitting.inlet.diameter
+    });
+
+    let ductSize: number;
+    let ductWidth: number;
+    let ductHeight: number;
+
+    if (fitting.inlet.shape === 'round') {
+      if (!fitting.inlet.diameter) {
+        console.warn('ElbowMesh - Missing inlet diameter for round duct, using default 12');
+        ductSize = 12;
+      } else {
+        ductSize = fitting.inlet.diameter;
+      }
+      ductWidth = ductSize;
+      ductHeight = ductSize;
+    } else {
+      if (!fitting.inlet.width || !fitting.inlet.height) {
+        console.warn('ElbowMesh - Missing inlet width/height for rectangular duct, using defaults');
+        ductWidth = fitting.inlet.width || 12;
+        ductHeight = fitting.inlet.height || 8;
+      } else {
+        ductWidth = fitting.inlet.width;
+        ductHeight = fitting.inlet.height;
+      }
+      ductSize = Math.max(ductWidth, ductHeight);
+    }
+
+    console.log('ElbowMesh - Calculated dimensions:', {
+      ductSize, ductWidth, ductHeight
+    });
+
+    return { ductSize, ductWidth, ductHeight };
+  };
+
+  const elbowDimensions = validateAndGetElbowDimensions();
+
+  const getColor = () => {
+    if (isSelected) return '#3b82f6'; // Blue when selected
+    if (hovered) return '#6366f1'; // Indigo when hovered
+    return '#595959'; // Match duct color for visual consistency
+  };
+
+  return (
+    <mesh
+      ref={meshRef}
+      position={fitting.position}
+      rotation={fitting.rotation}
+      onClick={onSelect}
+      onPointerOver={() => setHovered(true)}
+      onPointerOut={() => setHovered(false)}
+    >
+      {/* Enhanced elbow geometry using validated dimensions */}
+      {fitting.inlet.shape === 'round' ? (
+        // Round elbow - torus segment with actual diameter
+        <torusGeometry args={[fitting.centerlineRadius, elbowDimensions.ductSize / 2, 8, 16, (fitting.angle * Math.PI) / 180]} />
+      ) : (
+        // Rectangular elbow - box geometry with actual width and height
+        <boxGeometry args={[elbowDimensions.ductWidth, elbowDimensions.ductHeight, fitting.centerlineRadius * 0.5]} />
+      )}
+      <meshStandardMaterial
+        color={getColor()}
+        transparent={false}
+        opacity={1.0}
+        wireframe={isSelected}
+        metalness={0.2}
+        roughness={0.7}
+      />
+
+      {/* Fitting label */}
+      {(isSelected || hovered) && (
+        <Text
+          position={[0, 0, ductSize / 2 + 0.5]}
+          fontSize={0.25}
+          color="white"
+          anchorX="center"
+          anchorY="middle"
+        >
+          {`${fitting.angle}° ELBOW`}
+        </Text>
+      )}
+    </mesh>
+  );
+};
+
+// Connection Point Visual Indicator Component
+const ConnectionPointIndicator: React.FC<{
+  connectionPoint: ConnectionPoint;
+  isVisible?: boolean;
+  onConnectionPointClick?: (connectionPoint: ConnectionPoint) => void;
+}> = ({ connectionPoint, isVisible = true, onConnectionPointClick }) => {
+  const [hovered, setHovered] = useState(false);
+
+  if (!isVisible) return null;
+
+  const getIndicatorColor = () => {
+    switch (connectionPoint.status) {
+      case 'available':
+        return hovered ? '#10b981' : '#059669'; // Green for available
+      case 'connected':
+        return '#3b82f6'; // Blue for connected
+      case 'blocked':
+        return '#ef4444'; // Red for blocked
+      default:
+        return '#6b7280'; // Gray for unknown
+    }
+  };
+
+  const getIndicatorSize = () => {
+    if (connectionPoint.shape === 'round') {
+      const diameter = connectionPoint.diameter || 12;
+      return diameter * 0.1; // Scale indicator to 10% of duct size
+    } else {
+      const avgSize = ((connectionPoint.width || 12) + (connectionPoint.height || 8)) / 2;
+      return avgSize * 0.1;
+    }
+  };
+
+  return (
+    <mesh
+      position={connectionPoint.position}
+      onClick={() => onConnectionPointClick?.(connectionPoint)}
+      onPointerOver={() => setHovered(true)}
+      onPointerOut={() => setHovered(false)}
+    >
+      {/* Connection point indicator sphere */}
+      <sphereGeometry args={[getIndicatorSize(), 8, 8]} />
+      <meshStandardMaterial
+        color={getIndicatorColor()}
+        transparent={true}
+        opacity={0.8}
+        emissive={getIndicatorColor()}
+        emissiveIntensity={hovered ? 0.3 : 0.1}
+      />
+
+      {/* Direction indicator arrow */}
+      <mesh position={[0, 0, getIndicatorSize() * 1.5]}>
+        <coneGeometry args={[getIndicatorSize() * 0.5, getIndicatorSize() * 2, 8]} />
+        <meshStandardMaterial
+          color={getIndicatorColor()}
+          transparent={true}
+          opacity={0.6}
+        />
+      </mesh>
+
+      {/* Connection point label */}
+      {hovered && (
+        <Text
+          position={[0, getIndicatorSize() * 3, 0]}
+          fontSize={getIndicatorSize() * 2}
+          color="white"
+          anchorX="center"
+          anchorY="middle"
+        >
+          {`${connectionPoint.shape} - ${connectionPoint.status}`}
+        </Text>
+      )}
+    </mesh>
+  );
+};
+
+// 3D Duct Component
+const DuctMesh: React.FC<{
+  segment: DuctSegment;
+  isSelected?: boolean;
+  onSelect?: () => void;
+  onElementSelect?: (elementId: string, position: { x: number; y: number }) => void;
+}> = ({ segment, isSelected, onSelect, onElementSelect }) => {
   const meshRef = useRef<any>(null);
   const [hovered, setHovered] = useState(false);
 
@@ -87,51 +920,83 @@ const DuctMesh: React.FC<{
     return [0, 0, 0] as [number, number, number];
   }, [direction, length]);
 
-  // Color based on duct type
+  // Professional color scheme for HVAC design
   const getColor = () => {
     if (isSelected) return '#3b82f6'; // Blue when selected
     if (hovered) return '#6366f1'; // Indigo when hovered
-
-    switch (segment.type) {
-      case 'supply': return '#10b981'; // Green
-      case 'return': return '#f59e0b'; // Amber
-      case 'exhaust': return '#ef4444'; // Red
-      default: return '#6b7280'; // Gray
-    }
+    return '#595959'; // Professional darker grey for all ducts
   };
 
   // Convert inches to scene units (assuming 1 scene unit = 12 inches)
-  const sceneWidth = segment.width / 12;
-  const sceneHeight = segment.height / 12;
+  // Handle undefined values for round vs rectangular ducts
+  const sceneWidth = segment.width ? segment.width / 12 : 0;
+  const sceneHeight = segment.height ? segment.height / 12 : 0;
+  const sceneDiameter = segment.diameter ? segment.diameter / 12 : 0;
+
+  // Calculate label position based on shape
+  const labelPosition: [number, number, number] = segment.shape === 'round'
+    ? [0, sceneDiameter / 2 + 0.5, 0]
+    : [0, sceneHeight / 2 + 0.5, 0];
+
+  // Create label text based on shape with safe handling of undefined values
+  const labelText = segment.shape === 'round'
+    ? `Ø${segment.diameter || 12}"`
+    : `${segment.width || 12}" x ${segment.height || 8}"`;
+
+  // For round ducts, we need to rotate the cylinder to align with the direction
+  const cylinderRotation = React.useMemo(() => {
+    if (segment.shape === 'round' && length > 0) {
+      // Cylinder default orientation is along Y-axis, we need to align with our direction
+      const normalizedDirection = direction.clone().normalize();
+
+      // Calculate rotation to align cylinder with direction vector
+      const yRotation = Math.atan2(normalizedDirection.x, normalizedDirection.z);
+      const xRotation = -Math.asin(normalizedDirection.y) + Math.PI / 2; // Add 90 degrees to align with direction
+
+      return [xRotation, yRotation, 0] as [number, number, number];
+    }
+    return rotation;
+  }, [segment.shape, direction, length, rotation]);
 
   return (
     <mesh
       ref={meshRef}
       position={center}
-      rotation={rotation}
-      onClick={onSelect}
+      rotation={segment.shape === 'round' ? cylinderRotation : rotation}
+      onClick={(event) => {
+        onSelect?.();
+        if (onElementSelect) {
+          onElementSelect(segment.id, { x: event.clientX, y: event.clientY });
+        }
+      }}
       onPointerOver={() => setHovered(true)}
       onPointerOut={() => setHovered(false)}
     >
-      {/* Box geometry: width (X), height (Y), length (Z) */}
-      <boxGeometry args={[sceneWidth, sceneHeight, length]} />
+      {/* Geometry based on duct shape */}
+      {segment.shape === 'round' ? (
+        <cylinderGeometry args={[sceneDiameter / 2, sceneDiameter / 2, length, 16]} />
+      ) : (
+        <boxGeometry args={[sceneWidth, sceneHeight, length]} />
+      )}
       <meshStandardMaterial
         color={getColor()}
-        transparent
-        opacity={isSelected ? 0.8 : 0.7}
+        transparent={false}
+        opacity={1.0}
         wireframe={isSelected}
+        metalness={0.1}
+        roughness={0.8}
       />
 
       {/* Duct label */}
       {(isSelected || hovered) && (
         <Text
-          position={[0, sceneHeight / 2 + 0.5, 0]}
+          position={labelPosition}
           fontSize={0.3}
           color="white"
           anchorX="center"
           anchorY="middle"
         >
-          {`${segment.width}" x ${segment.height}"`}
+          {labelText}
         </Text>
       )}
     </mesh>
@@ -177,6 +1042,60 @@ const DrawingPreview: React.FC<{
   );
 };
 
+// Equipment Mesh Component
+const EquipmentMesh: React.FC<{
+  equipment: Equipment;
+  isSelected: boolean;
+  onSelect: () => void;
+}> = ({ equipment, isSelected, onSelect }) => {
+  const meshRef = useRef<any>();
+  const [hovered, setHovered] = useState(false);
+
+  // Professional color scheme for HVAC equipment
+  const getColor = () => {
+    if (isSelected) return '#3b82f6'; // Blue when selected
+    if (hovered) return '#6366f1'; // Indigo when hovered
+    return '#404040'; // Much darker grey to distinguish from ducts
+  };
+
+  const labelText = `${equipment.type} - ${equipment.properties.cfmCapacity} CFM`;
+
+  return (
+    <mesh
+      ref={meshRef}
+      position={equipment.position}
+      rotation={equipment.rotation}
+      onClick={onSelect}
+      onPointerOver={() => setHovered(true)}
+      onPointerOut={() => setHovered(false)}
+    >
+      {/* Equipment geometry - rectangular box */}
+      <boxGeometry args={[equipment.dimensions.width, equipment.dimensions.height, equipment.dimensions.depth]} />
+      <meshStandardMaterial
+        color={getColor()}
+        transparent={false}
+        opacity={1.0}
+        wireframe={isSelected}
+        metalness={0.3}
+        roughness={0.6}
+      />
+
+      {/* Equipment label */}
+      {(isSelected || hovered) && (
+        <Text
+          position={[0, equipment.dimensions.height / 2 + 0.5, 0]}
+          fontSize={0.3}
+          color="white"
+          anchorX="center"
+          anchorY="middle"
+        >
+          {labelText}
+        </Text>
+      )}
+    </mesh>
+  );
+};
+
 // 3D Scene Component
 const Scene3D: React.FC<{
   segments: DuctSegment[];
@@ -187,9 +1106,20 @@ const Scene3D: React.FC<{
   onSegmentAdd?: (segment: DuctSegment) => void;
   onElementSelect?: (elementId: string, position: { x: number; y: number }) => void;
   onCameraReady?: (cameraController: any) => void;
-}> = ({ segments, selectedSegmentId, onSegmentSelect, showGrid, activeTool, onSegmentAdd, onElementSelect, onCameraReady }) => {
+  ductProperties?: DuctProperties;
+  onFittingAdd?: (fitting: DuctFitting) => void;
+  fittings?: DuctFitting[];
+  onEquipmentAdd?: (equipment: Equipment) => void;
+  equipment?: Equipment[];
+  onEquipmentPlace?: (position: { x: number; y: number; z: number }) => void;
+}> = ({ segments, selectedSegmentId, onSegmentSelect, showGrid, activeTool, onSegmentAdd, onElementSelect, onCameraReady, ductProperties, onFittingAdd, fittings = [], onEquipmentAdd, equipment = [], onEquipmentPlace }) => {
   const { camera, raycaster, scene } = useThree();
   const { grid } = useUIStore();
+
+  // State for selected fitting and equipment
+  const [selectedFittingId, setSelectedFittingId] = useState<string>();
+  const [selectedEquipmentId, setSelectedEquipmentId] = useState<string>();
+  const [showConnectionPoints, setShowConnectionPoints] = useState<boolean>(false);
 
   // Initialize camera controller
   const cameraController = useCameraController(camera);
@@ -274,17 +1204,79 @@ const Scene3D: React.FC<{
             console.log('Segment start coordinates:', { x: segmentStart.x, y: segmentStart.y, z: segmentStart.z });
             console.log('Segment end coordinates:', { x: segmentEnd.x, y: segmentEnd.y, z: segmentEnd.z });
 
+            // Create segment with proper properties based on shape
+            const isRound = ductProperties?.shape === 'round';
+
+            // Generate auto-incremented duct ID based on existing segments
+            // Find the highest existing duct number to ensure uniqueness
+            const existingDuctNumbers = segments
+              .map(seg => seg.id)
+              .filter(id => id.startsWith('Duct-'))
+              .map(id => parseInt(id.replace('Duct-', ''), 10))
+              .filter(num => !isNaN(num));
+
+            const nextDuctNumber = existingDuctNumbers.length > 0
+              ? Math.max(...existingDuctNumbers) + 1
+              : 1;
+
+            const autoGeneratedId = `Duct-${nextDuctNumber.toString().padStart(3, '0')}`;
+
             const newSegment: DuctSegment = {
-              id: `duct-${Date.now()}`,
+              id: autoGeneratedId,
               start: segmentStart,
               end: segmentEnd,
-              width: 12, // Default 12 inches
-              height: 8,  // Default 8 inches
+              // For round ducts, use diameter; for rectangular, use width/height
+              width: isRound ? undefined : (ductProperties?.width || 12),
+              height: isRound ? undefined : (ductProperties?.height || 8),
+              diameter: isRound ? (ductProperties?.diameter || 12) : undefined,
+              shape: ductProperties?.shape || 'rectangular',
               type: 'supply',
-              material: 'Galvanized Steel'
+              material: ductProperties?.material || 'Galvanized Steel'
             };
-            console.log('Creating new segment:', newSegment);
-            onSegmentAdd(newSegment);
+
+            // Enhanced: Automatically add connection points to new segment
+            const connectionPoints = ConnectionPointUtils.createDuctConnectionPoints(newSegment);
+            const enhancedSegment: DuctSegment = {
+              ...newSegment,
+              inlet: connectionPoints.inlet,
+              outlet: connectionPoints.outlet
+            };
+
+            console.log('Creating new segment with connection points:', enhancedSegment);
+            console.log('Segment dimensions:', {
+              width: enhancedSegment.width,
+              height: enhancedSegment.height,
+              diameter: enhancedSegment.diameter,
+              shape: enhancedSegment.shape
+            });
+            onSegmentAdd(enhancedSegment);
+
+            // Analyze connectivity and generate fittings if needed
+            if (segments.length > 0 && onFittingAdd) {
+              const lastSegment = segments[segments.length - 1];
+
+              // Check if we need a transition fitting
+              if (ConnectivityAnalyzer.needsTransition(lastSegment, newSegment)) {
+                const transition = FittingGenerator.generateTransition(
+                  lastSegment,
+                  newSegment,
+                  segmentStart
+                );
+                console.log('Generated transition fitting:', transition);
+                onFittingAdd(transition);
+              }
+
+              // Check if we need an elbow fitting
+              if (ConnectivityAnalyzer.needsElbow(lastSegment, newSegment)) {
+                const elbow = FittingGenerator.generateElbow(
+                  lastSegment,
+                  newSegment,
+                  segmentStart
+                );
+                console.log('Generated elbow fitting:', elbow);
+                onFittingAdd(elbow);
+              }
+            }
 
             // Continue drawing: start next segment from this end point (exact same coordinates)
             const nextStartPoint = new Vector3(segmentEnd.x, segmentEnd.y, segmentEnd.z);
@@ -299,7 +1291,21 @@ const Scene3D: React.FC<{
         }
       }
     }
-  }, [activeTool, drawingState, onSegmentAdd]);
+
+    // Handle equipment placement - only when not in line drawing mode
+    if (activeTool === 'select' && onEquipmentPlace) {
+      let clickPoint = event.point ? event.point.clone() : new Vector3(0, 0, 0);
+
+      // Ensure the point is on the ground plane (y=0)
+      clickPoint.y = 0;
+
+      // Apply grid snapping
+      clickPoint = snapToGrid(clickPoint);
+
+      console.log('Equipment placement at:', clickPoint);
+      onEquipmentPlace({ x: clickPoint.x, y: clickPoint.y, z: clickPoint.z });
+    }
+  }, [activeTool, drawingState, onSegmentAdd, onEquipmentPlace, snapToGrid]);
 
   // Handle mouse move for drawing preview
   const handleMouseMove = useCallback((event: any) => {
@@ -395,7 +1401,97 @@ const Scene3D: React.FC<{
           segment={segment}
           isSelected={selectedSegmentId === segment.id}
           onSelect={() => onSegmentSelect?.(segment.id)}
+          onElementSelect={onElementSelect}
         />
+      ))}
+
+      {/* Duct Fittings */}
+      {fittings.map((fitting) => {
+        if (fitting.type === 'transition') {
+          return (
+            <TransitionMesh
+              key={fitting.id}
+              fitting={fitting as TransitionFitting}
+              isSelected={selectedFittingId === fitting.id}
+              onSelect={() => setSelectedFittingId(fitting.id)}
+            />
+          );
+        } else if (fitting.type === 'elbow') {
+          return (
+            <ElbowMesh
+              key={fitting.id}
+              fitting={fitting as ElbowFitting}
+              isSelected={selectedFittingId === fitting.id}
+              onSelect={() => setSelectedFittingId(fitting.id)}
+            />
+          );
+        }
+        return null;
+      })}
+
+      {/* Equipment */}
+      {equipment.map((equip) => (
+        <EquipmentMesh
+          key={equip.id}
+          equipment={equip}
+          isSelected={selectedEquipmentId === equip.id}
+          onSelect={() => setSelectedEquipmentId(equip.id)}
+        />
+      ))}
+
+      {/* Connection Point Indicators */}
+      {/* Render connection points for duct segments */}
+      {segments.map((segment) => (
+        <React.Fragment key={`${segment.id}-connections`}>
+          {segment.inlet && (
+            <ConnectionPointIndicator
+              key={`${segment.id}-inlet`}
+              connectionPoint={segment.inlet}
+              isVisible={selectedSegmentId === segment.id || showConnectionPoints}
+              onConnectionPointClick={(cp) => console.log('Connection point clicked:', cp)}
+            />
+          )}
+          {segment.outlet && (
+            <ConnectionPointIndicator
+              key={`${segment.id}-outlet`}
+              connectionPoint={segment.outlet}
+              isVisible={selectedSegmentId === segment.id || showConnectionPoints}
+              onConnectionPointClick={(cp) => console.log('Connection point clicked:', cp)}
+            />
+          )}
+        </React.Fragment>
+      ))}
+
+      {/* Render connection points for equipment */}
+      {equipment.map((equip) => (
+        <React.Fragment key={`${equip.id}-connections`}>
+          {equip.connectionPoints?.map((connectionPoint) => (
+            <ConnectionPointIndicator
+              key={connectionPoint.id}
+              connectionPoint={connectionPoint}
+              isVisible={selectedEquipmentId === equip.id || showConnectionPoints}
+              onConnectionPointClick={(cp) => console.log('Equipment connection point clicked:', cp)}
+            />
+          ))}
+        </React.Fragment>
+      ))}
+
+      {/* Render connection points for fittings */}
+      {fittings.map((fitting) => (
+        <React.Fragment key={`${fitting.id}-connections`}>
+          <ConnectionPointIndicator
+            key={`${fitting.id}-inlet`}
+            connectionPoint={fitting.inlet}
+            isVisible={selectedFittingId === fitting.id || showConnectionPoints}
+            onConnectionPointClick={(cp) => console.log('Fitting inlet clicked:', cp)}
+          />
+          <ConnectionPointIndicator
+            key={`${fitting.id}-outlet`}
+            connectionPoint={fitting.outlet}
+            isVisible={selectedFittingId === fitting.id || showConnectionPoints}
+            onConnectionPointClick={(cp) => console.log('Fitting outlet clicked:', cp)}
+          />
+        </React.Fragment>
       ))}
 
       {/* Controls */}
@@ -493,11 +1589,31 @@ export const Canvas3D: React.FC<Canvas3DProps> = ({
   activeTool = 'select',
   onElementSelect,
   onCameraReady,
+  ductProperties,
+  onFittingAdd,
+  fittings = [],
+  onEquipmentAdd,
+  equipment = [],
+  onEquipmentPlace,
 }) => {
   const [selectedSegmentId, setSelectedSegmentId] = useState<string>();
   const [showGrid, setShowGrid] = useState(initialShowGrid);
   const [showGizmo, setShowGizmo] = useState(initialShowGizmo);
   const canvasRef = useRef<HTMLDivElement>(null);
+
+  // Internal fitting state if no external fitting management is provided
+  const [internalFittings, setInternalFittings] = useState<DuctFitting[]>([]);
+  const effectiveFittings = fittings.length > 0 ? fittings : internalFittings;
+  const effectiveOnFittingAdd = onFittingAdd || ((fitting: DuctFitting) => {
+    setInternalFittings(prev => [...prev, fitting]);
+  });
+
+  // Internal equipment state if no external equipment management is provided
+  const [internalEquipment, setInternalEquipment] = useState<Equipment[]>([]);
+  const effectiveEquipment = equipment.length > 0 ? equipment : internalEquipment;
+  const effectiveOnEquipmentAdd = onEquipmentAdd || ((equip: Equipment) => {
+    setInternalEquipment(prev => [...prev, equip]);
+  });
 
   const handleResetCamera = useCallback(() => {
     // This will be handled by the Scene3D component
@@ -525,6 +1641,12 @@ export const Canvas3D: React.FC<Canvas3DProps> = ({
             onSegmentAdd={onSegmentAdd}
             onElementSelect={onElementSelect}
             onCameraReady={onCameraReady}
+            ductProperties={ductProperties}
+            onFittingAdd={effectiveOnFittingAdd}
+            fittings={effectiveFittings}
+            onEquipmentAdd={effectiveOnEquipmentAdd}
+            equipment={effectiveEquipment}
+            onEquipmentPlace={onEquipmentPlace}
           />
           
           {/* Gizmo Helper */}
@@ -558,6 +1680,7 @@ export const Canvas3D: React.FC<Canvas3DProps> = ({
         <div className="bg-white/80 dark:bg-neutral-800/80 backdrop-blur-md rounded-lg border border-white/20 dark:border-neutral-700/50 shadow-lg px-3 py-2">
           <div className="flex items-center space-x-4 text-sm text-neutral-600 dark:text-neutral-300">
             <span>Segments: {segments.length}</span>
+            <span>Equipment: {effectiveEquipment.length}</span>
             {selectedSegmentId && <span>Selected: {selectedSegmentId}</span>}
             <span>Grid: {showGrid ? 'On' : 'Off'}</span>
           </div>

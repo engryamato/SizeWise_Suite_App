@@ -4,20 +4,26 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Pencil,
-  X
+  X,
+  Settings,
+  Fan
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-export type DrawingMode = 'off' | 'on' | 'drawing';
+export type DrawingMode = 'off' | 'duct' | 'equipment' | 'drawing';
 
 interface DrawingToolFABProps {
   drawingMode: DrawingMode;
   onDrawingModeChange: (mode: DrawingMode) => void;
   onPropertyPanelOpen?: () => void;
   className?: string;
+  ductProperties: DuctProperties;
+  onDuctPropertiesChange: (properties: DuctProperties) => void;
+  // Equipment placement functionality
+  onEquipmentPlace?: (position: { x: number; y: number; z: number }) => void;
 }
 
-interface DuctProperties {
+export interface DuctProperties {
   shape: 'rectangular' | 'round';
   width?: number;
   height?: number;
@@ -25,37 +31,43 @@ interface DuctProperties {
   material: string;
   insulation: boolean;
   insulationThickness?: number;
-  name: string;
+  name: string; // Keep for backward compatibility, but will be auto-generated
 }
 
 export const DrawingToolFAB: React.FC<DrawingToolFABProps> = ({
   drawingMode,
   onDrawingModeChange,
   onPropertyPanelOpen,
-  className
+  className,
+  ductProperties,
+  onDuctPropertiesChange,
+  onEquipmentPlace
 }) => {
   const [showPropertyPanel, setShowPropertyPanel] = useState(false);
-  const [ductProperties, setDuctProperties] = useState<DuctProperties>({
-    shape: 'rectangular',
-    width: 12,
-    height: 8,
-    material: 'Galvanized Steel',
-    insulation: false,
-    name: 'Duct-1'
-  });
 
   const handleMainButtonClick = useCallback(() => {
     if (drawingMode === 'off') {
-      // Toggle to ON mode - show property panel first
+      // Toggle to duct drawing mode - show property panel first
       setShowPropertyPanel(true);
       onPropertyPanelOpen?.();
-      onDrawingModeChange('on');
+      onDrawingModeChange('duct');
     } else {
       // Toggle to OFF mode - auto-convert and exit drawing
       onDrawingModeChange('off');
       setShowPropertyPanel(false);
     }
   }, [drawingMode, onPropertyPanelOpen, onDrawingModeChange]);
+
+  const handleEquipmentButtonClick = useCallback(() => {
+    if (drawingMode === 'equipment') {
+      // Turn off equipment mode
+      onDrawingModeChange('off');
+    } else {
+      // Turn on equipment mode
+      onDrawingModeChange('equipment');
+      setShowPropertyPanel(false);
+    }
+  }, [drawingMode, onDrawingModeChange]);
 
   const handlePropertyConfirm = () => {
     setShowPropertyPanel(false);
@@ -83,8 +95,10 @@ export const DrawingToolFAB: React.FC<DrawingToolFABProps> = ({
     switch (drawingMode) {
       case 'off':
         return 'Draw Duct Lines (OFF) - Press D';
-      case 'on':
+      case 'duct':
         return 'Draw Duct Lines (ON) - Press D';
+      case 'equipment':
+        return 'Equipment Mode (ON) - Click to place equipment';
       case 'drawing':
         return 'Drawing in progress...';
       default:
@@ -96,8 +110,10 @@ export const DrawingToolFAB: React.FC<DrawingToolFABProps> = ({
     switch (drawingMode) {
       case 'off':
         return 'bg-neutral-400 hover:bg-neutral-500'; // Grey
-      case 'on':
-        return 'bg-orange-500 hover:bg-orange-600'; // Orange
+      case 'duct':
+        return 'bg-orange-500 hover:bg-orange-600'; // Orange for duct mode
+      case 'equipment':
+        return 'bg-blue-500 hover:bg-blue-600'; // Blue for equipment mode
       case 'drawing':
         return 'bg-orange-500 hover:bg-orange-600'; // Orange but dimmed
       default:
@@ -118,7 +134,7 @@ export const DrawingToolFAB: React.FC<DrawingToolFABProps> = ({
             initial={{ opacity: 0, scale: 0.8, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.8, y: 20 }}
-            className="fixed bottom-24 right-6 z-[60] bg-white/95 dark:bg-neutral-900/95 backdrop-blur-lg rounded-2xl border border-white/20 shadow-2xl p-6 w-80"
+            className="fixed bottom-32 right-6 z-[60] bg-white/95 dark:bg-neutral-900/95 backdrop-blur-lg rounded-2xl border border-white/20 shadow-2xl p-6 w-80"
           >
             <div className="flex items-center justify-between mb-4">
               <h3 className="font-semibold text-neutral-800 dark:text-white text-lg">
@@ -148,7 +164,7 @@ export const DrawingToolFAB: React.FC<DrawingToolFABProps> = ({
                       name="shape"
                       value="rectangular"
                       checked={ductProperties.shape === 'rectangular'}
-                      onChange={(e) => setDuctProperties(prev => ({ ...prev, shape: e.target.value as 'rectangular' | 'round' }))}
+                      onChange={(e) => onDuctPropertiesChange({ ...ductProperties, shape: e.target.value as 'rectangular' | 'round' })}
                       className="mr-2"
                     />
                     <span className="text-sm">Rectangular</span>
@@ -159,7 +175,7 @@ export const DrawingToolFAB: React.FC<DrawingToolFABProps> = ({
                       name="shape"
                       value="round"
                       checked={ductProperties.shape === 'round'}
-                      onChange={(e) => setDuctProperties(prev => ({ ...prev, shape: e.target.value as 'rectangular' | 'round' }))}
+                      onChange={(e) => onDuctPropertiesChange({ ...ductProperties, shape: e.target.value as 'rectangular' | 'round' })}
                       className="mr-2"
                     />
                     <span className="text-sm">Round</span>
@@ -177,7 +193,7 @@ export const DrawingToolFAB: React.FC<DrawingToolFABProps> = ({
                     <input
                       type="number"
                       value={ductProperties.width || ''}
-                      onChange={(e) => setDuctProperties(prev => ({ ...prev, width: Number(e.target.value) }))}
+                      onChange={(e) => onDuctPropertiesChange({ ...ductProperties, width: Number(e.target.value) })}
                       className="w-full px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-lg bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white"
                       placeholder="12"
                     />
@@ -189,7 +205,7 @@ export const DrawingToolFAB: React.FC<DrawingToolFABProps> = ({
                     <input
                       type="number"
                       value={ductProperties.height || ''}
-                      onChange={(e) => setDuctProperties(prev => ({ ...prev, height: Number(e.target.value) }))}
+                      onChange={(e) => onDuctPropertiesChange({ ...ductProperties, height: Number(e.target.value) })}
                       className="w-full px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-lg bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white"
                       placeholder="8"
                     />
@@ -203,7 +219,7 @@ export const DrawingToolFAB: React.FC<DrawingToolFABProps> = ({
                   <input
                     type="number"
                     value={ductProperties.diameter || ''}
-                    onChange={(e) => setDuctProperties(prev => ({ ...prev, diameter: Number(e.target.value) }))}
+                    onChange={(e) => onDuctPropertiesChange({ ...ductProperties, diameter: Number(e.target.value) })}
                     className="w-full px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-lg bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white"
                     placeholder="12"
                   />
@@ -217,8 +233,9 @@ export const DrawingToolFAB: React.FC<DrawingToolFABProps> = ({
                 </label>
                 <select
                   value={ductProperties.material}
-                  onChange={(e) => setDuctProperties(prev => ({ ...prev, material: e.target.value }))}
+                  onChange={(e) => onDuctPropertiesChange({ ...ductProperties, material: e.target.value })}
                   className="w-full px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-lg bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white"
+                  title="Material Type"
                 >
                   <option value="Galvanized Steel">Galvanized Steel</option>
                   <option value="Aluminum">Aluminum</option>
@@ -233,7 +250,7 @@ export const DrawingToolFAB: React.FC<DrawingToolFABProps> = ({
                   <input
                     type="checkbox"
                     checked={ductProperties.insulation}
-                    onChange={(e) => setDuctProperties(prev => ({ ...prev, insulation: e.target.checked }))}
+                    onChange={(e) => onDuctPropertiesChange({ ...ductProperties, insulation: e.target.checked })}
                     className="mr-2"
                   />
                   <span className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
@@ -248,7 +265,7 @@ export const DrawingToolFAB: React.FC<DrawingToolFABProps> = ({
                     <input
                       type="number"
                       value={ductProperties.insulationThickness || ''}
-                      onChange={(e) => setDuctProperties(prev => ({ ...prev, insulationThickness: Number(e.target.value) }))}
+                      onChange={(e) => onDuctPropertiesChange({ ...ductProperties, insulationThickness: Number(e.target.value) })}
                       className="w-full px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-lg bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white"
                       placeholder="1"
                       step="0.5"
@@ -257,19 +274,8 @@ export const DrawingToolFAB: React.FC<DrawingToolFABProps> = ({
                 )}
               </div>
 
-              {/* Duct Name */}
-              <div>
-                <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">
-                  Duct Name/Tag
-                </label>
-                <input
-                  type="text"
-                  value={ductProperties.name}
-                  onChange={(e) => setDuctProperties(prev => ({ ...prev, name: e.target.value }))}
-                  className="w-full px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-lg bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white"
-                  placeholder="Duct-1"
-                />
-              </div>
+              {/* Duct Name - Hidden, auto-generated */}
+              {/* Note: Duct names are now auto-generated using system naming convention */}
             </div>
 
             <div className="mt-6 flex space-x-3">
@@ -295,12 +301,34 @@ export const DrawingToolFAB: React.FC<DrawingToolFABProps> = ({
         )}
       </AnimatePresence>
 
+      {/* Equipment FAB Button */}
+      <motion.button
+        type="button"
+        onClick={handleEquipmentButtonClick}
+        className={cn(
+          "fixed bottom-32 right-6 z-[60] w-12 h-12 rounded-full",
+          drawingMode === 'equipment'
+            ? 'bg-blue-500 hover:bg-blue-600'
+            : 'bg-neutral-400 hover:bg-neutral-500',
+          "text-white shadow-xl",
+          "flex items-center justify-center transition-all duration-150",
+          "border-2 border-white/20",
+          "focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+        )}
+        whileHover={{ scale: 1.1 }}
+        whileTap={{ scale: 0.9 }}
+        title={drawingMode === 'equipment' ? 'Equipment Mode (ON)' : 'Equipment Mode (OFF)'}
+        aria-label={drawingMode === 'equipment' ? 'Equipment Mode (ON)' : 'Equipment Mode (OFF)'}
+      >
+        <Fan className="w-5 h-5" />
+      </motion.button>
+
       {/* Main FAB Button */}
       <motion.button
         type="button"
         onClick={handleMainButtonClick}
         className={cn(
-          "fixed bottom-6 right-6 z-[60] w-14 h-14 rounded-full",
+          "fixed bottom-14 right-6 z-[60] w-14 h-14 rounded-full",
           getButtonColor(),
           getButtonOpacity(),
           "text-white shadow-2xl",
@@ -314,7 +342,7 @@ export const DrawingToolFAB: React.FC<DrawingToolFABProps> = ({
         title={getTooltipText()}
         aria-label={getTooltipText()}
       >
-        <Pencil className="w-6 h-6" />
+        {drawingMode === 'equipment' ? <Fan className="w-6 h-6" /> : <Pencil className="w-6 h-6" />}
       </motion.button>
 
       {/* Tool Indicator Tooltip */}
@@ -322,7 +350,7 @@ export const DrawingToolFAB: React.FC<DrawingToolFABProps> = ({
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="fixed bottom-20 right-6 z-[60] bg-black/80 text-white px-3 py-1 rounded-lg text-sm font-medium pointer-events-none"
+          className="fixed bottom-28 right-6 z-[60] bg-black/80 text-white px-3 py-1 rounded-lg text-sm font-medium pointer-events-none"
         >
           {getTooltipText()}
         </motion.div>

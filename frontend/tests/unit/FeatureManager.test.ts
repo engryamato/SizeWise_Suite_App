@@ -8,9 +8,9 @@
  * @see docs/developer-guide/tier-implementation-checklist.md section 4.3
  */
 
-import { FeatureManager } from '../../backend/features/FeatureManager';
-import { DatabaseManager } from '../../backend/database/DatabaseManager';
-import { SecurityManager } from '../../backend/security/SecurityManager';
+import { FeatureManager } from '../../lib/features/FeatureManager';
+import { DatabaseManager } from '../../__mocks__/backend/database/DatabaseManager';
+import { SecurityManager } from '../../__mocks__/backend/security/SecurityManager';
 import {
   TEST_TIERS,
   TEST_USERS,
@@ -37,9 +37,47 @@ describe('FeatureManager - Comprehensive Feature Flag Testing', () => {
   beforeEach(() => {
     jest.clearAllMocks();
 
+    // Create mock user data for getCurrentUser() calls
+    const mockUser = {
+      id: 'test-user-123',
+      email: 'test@example.com',
+      name: 'Test User',
+      tier: 'pro',
+      company: 'Test Company',
+      license_key: 'test-license-key',
+      organization_id: null,
+      settings: null,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    };
+
+    // Create mock database connection with prepare method
+    const mockConnection = {
+      prepare: jest.fn().mockImplementation((sql: string) => {
+        // Return different mocks based on SQL query
+        if (sql.includes('FROM users') && sql.includes('ORDER BY created_at ASC')) {
+          // This is getCurrentUser() query
+          return {
+            get: jest.fn().mockReturnValue(mockUser),
+            all: jest.fn().mockReturnValue([mockUser]),
+            run: jest.fn().mockReturnValue({ changes: 1, lastInsertRowid: 1 })
+          };
+        }
+        // Default mock for other queries
+        return {
+          get: jest.fn().mockReturnValue(null),
+          all: jest.fn().mockReturnValue([]),
+          run: jest.fn().mockReturnValue({ changes: 1, lastInsertRowid: 1 })
+        };
+      }),
+      transaction: jest.fn().mockImplementation((fn) => () => fn()),
+      exec: jest.fn(),
+      close: jest.fn()
+    };
+
     // Mock DatabaseManager
     mockDatabaseManager = {
-      getConnection: jest.fn(),
+      getConnection: jest.fn().mockReturnValue(mockConnection),
       query: jest.fn(),
       transaction: jest.fn(),
       close: jest.fn()

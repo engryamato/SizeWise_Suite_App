@@ -13,7 +13,7 @@
  * - Interactive data visualizations
  */
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import {
   LineChart, Line, AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell,
   XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
@@ -178,12 +178,7 @@ const AdvancedAnalyticsDashboard: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('overview');
 
-  // Load analytics data
-  useEffect(() => {
-    loadAnalyticsData();
-  }, [selectedTimeRange]);
-
-  const loadAnalyticsData = async () => {
+  const loadAnalyticsData = useCallback(async () => {
     setIsLoading(true);
     try {
       // Simulate API call - replace with actual data fetching
@@ -194,7 +189,12 @@ const AdvancedAnalyticsDashboard: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [selectedTimeRange]);
+
+  // Load analytics data
+  useEffect(() => {
+    loadAnalyticsData();
+  }, [loadAnalyticsData]);
 
   // Calculate key performance indicators
   const kpis = useMemo(() => {

@@ -9,7 +9,7 @@
  */
 
 import { LocalUserRepository } from '../LocalUserRepository';
-import { DatabaseManager } from '../../../../../backend/database/DatabaseManager';
+import { DatabaseManager } from '../../../../__mocks__/backend/database/DatabaseManager';
 import { User, UserTier, ValidationError, UserNotFoundError, DatabaseError } from '../../interfaces/UserRepository';
 
 describe('LocalUserRepository', () => {

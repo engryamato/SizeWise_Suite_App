@@ -10,7 +10,7 @@
  * - Memory management
  */
 
-import { describe, it, expect, beforeEach, afterEach, vi, beforeAll } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, beforeAll } from '@jest/globals';
 import { 
   WASMCalculationService,
   WASMCalculationConfig,
@@ -22,10 +22,10 @@ import {
 
 // Mock WebAssembly for testing
 const mockWASMModule = {
-  calculateAirDuctSize: vi.fn().mockReturnValue(12.5),
-  calculatePressureDrop: vi.fn().mockReturnValue(0.25),
-  calculateHeatTransfer: vi.fn().mockReturnValue(15000),
-  optimizeSystem: vi.fn().mockReturnValue({
+  calculateAirDuctSize: jest.fn().mockReturnValue(12.5),
+  calculatePressureDrop: jest.fn().mockReturnValue(0.25),
+  calculateHeatTransfer: jest.fn().mockReturnValue(15000),
+  optimizeSystem: jest.fn().mockReturnValue({
     efficiency: 0.92,
     energySavings: 15.5,
     recommendations: ['Increase duct size', 'Optimize airflow']
@@ -36,7 +36,7 @@ const mockWASMModule = {
 
 // Mock WebAssembly.instantiate
 global.WebAssembly = {
-  instantiate: vi.fn().mockResolvedValue({
+  instantiate: jest.fn().mockResolvedValue({
     instance: {
       exports: mockWASMModule
     }
@@ -62,7 +62,7 @@ describe('WASMCalculationService', () => {
     };
     
     wasmService = new WASMCalculationService(defaultConfig);
-    vi.clearAllMocks();
+    jest.clearAllMocks();
   });
 
   afterEach(() => {
@@ -492,7 +492,7 @@ describe('WASMCalculationService', () => {
     });
 
     it('should cleanup resources on service destruction', () => {
-      const cleanupSpy = vi.spyOn(wasmService, 'cleanup');
+      const cleanupSpy = jest.spyOn(wasmService, 'cleanup');
 
       wasmService.cleanup();
 

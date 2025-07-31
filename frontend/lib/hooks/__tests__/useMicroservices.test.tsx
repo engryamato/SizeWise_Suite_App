@@ -10,37 +10,38 @@
  * - Real-time service status updates
  */
 
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach } from '@jest/globals';
 import { renderHook, act, waitFor } from '@testing-library/react';
 import { useMicroservices } from '../useMicroservices';
 
 // Mock the ServiceRegistry and related classes
-vi.mock('../../services/ServiceRegistry', () => ({
-  ServiceRegistry: vi.fn().mockImplementation(() => ({
-    registerService: vi.fn(),
-    unregisterService: vi.fn(),
-    getService: vi.fn().mockReturnValue(null),
-    discoverServices: vi.fn().mockReturnValue([]),
-    checkServiceHealth: vi.fn().mockResolvedValue('healthy'),
-    startHealthMonitoring: vi.fn(),
-    stopHealthMonitoring: vi.fn(),
-    shutdown: vi.fn(),
-    getMetrics: vi.fn().mockReturnValue({
+jest.mock('../../services/ServiceRegistry', () => ({
+  ServiceRegistry: jest.fn().mockImplementation(() => ({
+    registerService: jest.fn(),
+    unregisterService: jest.fn(),
+    getService: jest.fn().mockReturnValue(null),
+    discoverServices: jest.fn().mockReturnValue([]),
+    checkServiceHealth: jest.fn().mockResolvedValue('healthy'),
+    startHealthMonitoring: jest.fn(),
+    stopHealthMonitoring: jest.fn(),
+    shutdown: jest.fn(),
+    destroy: jest.fn(),
+    getMetrics: jest.fn().mockReturnValue({
       totalServices: 0,
       healthyServices: 0,
       unhealthyServices: 0,
       averageResponseTime: 0
     })
   })),
-  APIGateway: vi.fn().mockImplementation(() => ({
-    routeRequest: vi.fn().mockResolvedValue({
+  APIGateway: jest.fn().mockImplementation(() => ({
+    routeRequest: jest.fn().mockResolvedValue({
       ok: true,
       status: 200,
       json: async () => ({ result: 'success' })
     }),
-    setLoadBalancingStrategy: vi.fn(),
-    setRateLimit: vi.fn(),
-    getMetrics: vi.fn().mockReturnValue({
+    setLoadBalancingStrategy: jest.fn(),
+    setRateLimit: jest.fn(),
+    getMetrics: jest.fn().mockReturnValue({
       totalRequests: 0,
       successfulRequests: 0,
       failedRequests: 0,
@@ -48,16 +49,16 @@ vi.mock('../../services/ServiceRegistry', () => ({
       rateLimitedRequests: 0
     })
   })),
-  CircuitBreaker: vi.fn().mockImplementation(() => ({
-    execute: vi.fn().mockResolvedValue('success'),
-    getState: vi.fn().mockReturnValue('closed'),
-    getMetrics: vi.fn().mockReturnValue({
+  CircuitBreaker: jest.fn().mockImplementation(() => ({
+    execute: jest.fn().mockResolvedValue('success'),
+    getState: jest.fn().mockReturnValue('closed'),
+    getMetrics: jest.fn().mockReturnValue({
       successCount: 0,
       failureCount: 0,
       totalRequests: 0,
       successRate: 1
     }),
-    reset: vi.fn()
+    reset: jest.fn()
   }))
 }));
 
@@ -66,7 +67,7 @@ describe('useMicroservices Hook', () => {
   let mockAPIGateway: any;
 
   beforeEach(() => {
-    vi.clearAllMocks();
+    jest.clearAllMocks();
     // Get the mocked instances
     const { ServiceRegistry, APIGateway } = require('../../services/ServiceRegistry');
     mockServiceRegistry = new ServiceRegistry();
@@ -74,7 +75,7 @@ describe('useMicroservices Hook', () => {
   });
 
   afterEach(() => {
-    vi.clearAllMocks();
+    jest.clearAllMocks();
   });
 
   // =============================================================================
@@ -231,7 +232,7 @@ describe('useMicroservices Hook', () => {
       mockServiceRegistry.getService.mockReturnValue(mockService);
 
       // Mock fetch for direct service call
-      global.fetch = vi.fn().mockResolvedValue({
+      global.fetch = jest.fn().mockResolvedValue({
         ok: true,
         status: 200,
         json: async () => ({ result: 'success' })
@@ -409,7 +410,7 @@ describe('useMicroservices Hook', () => {
 
   describe('Error Handling', () => {
     it('should handle service communication errors gracefully', async () => {
-      global.fetch = vi.fn().mockRejectedValue(new Error('Network error'));
+      global.fetch = jest.fn().mockRejectedValue(new Error('Network error'));
 
       mockServiceRegistry.getService.mockReturnValue({
         id: 'test-service',

@@ -67,7 +67,7 @@ export const ProjectPanelContainer: React.FC<Omit<ProjectPanelProps, 'data' | 'u
 
   useEffect(() => {
     loadUserTierInfo();
-  }, [user]);
+  }, [loadUserTierInfo]);
 
   const loadUserTierInfo = useCallback(async () => {
     if (!user || !tier.service) return;
@@ -84,7 +84,7 @@ export const ProjectPanelContainer: React.FC<Omit<ProjectPanelProps, 'data' | 'u
       console.error('Failed to load tier information:', error);
       toast.error('Failed to load user tier information');
     }
-  }, [user, tier.service, toast]);
+  }, [user, tier, toast]);
 
   // =============================================================================
   // Project Operations
@@ -117,7 +117,7 @@ export const ProjectPanelContainer: React.FC<Omit<ProjectPanelProps, 'data' | 'u
       console.error('Failed to update project:', error);
       toast.error('Failed to update project');
     }
-  }, [currentProject, updateProject, onProjectUpdate, toast]);
+  }, [currentProject, updateProject, onProjectUpdate, toast, validateProjectUpdates]);
 
   const handleProjectSave = useCallback(async () => {
     if (!currentProject || !project.service) return;
@@ -136,7 +136,7 @@ export const ProjectPanelContainer: React.FC<Omit<ProjectPanelProps, 'data' | 'u
     } finally {
       setSaving(false);
     }
-  }, [currentProject, project.service, onProjectSave, toast]);
+  }, [currentProject, project, onProjectSave, toast]);
 
   const handleProjectExport = useCallback(async (options: ExportOptions) => {
     if (!currentProject || !exportService.service) return;
@@ -176,7 +176,7 @@ export const ProjectPanelContainer: React.FC<Omit<ProjectPanelProps, 'data' | 'u
     } finally {
       setExporting(false);
     }
-  }, [currentProject, exportService.service, onProjectExport, toast]);
+  }, [currentProject, exportService, onProjectExport, toast, validateExportOptions]);
 
   // =============================================================================
   // Validation Functions

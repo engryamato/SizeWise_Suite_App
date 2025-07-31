@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useRef, useEffect, useState } from 'react'
+import React, { useRef, useEffect, useState, useCallback } from 'react'
 import { useUIStore } from '@/stores/ui-store'
 import { useProjectStore } from '@/stores/project-store'
 import { HVACTracing } from '@/lib/monitoring/HVACTracing'
@@ -91,10 +91,10 @@ export const SimpleCanvas: React.FC<SimpleCanvasProps> = ({ width, height }) => 
         // No need to revoke data URLs, but if using object URLs, do revoke here
       }
     }
-  }, [currentProject?.plan_pdf])
+  }, [currentProject?.id, currentProject?.plan_pdf, reportError])
 
   // Draw the canvas content
-  const draw = () => {
+  const draw = useCallback(() => {
     const canvas = canvasRef.current
     if (!canvas) return
 
@@ -103,7 +103,7 @@ export const SimpleCanvas: React.FC<SimpleCanvasProps> = ({ width, height }) => 
 
     // Clear canvas
     ctx.clearRect(0, 0, width, height)
-    
+
     // Apply viewport transform
     ctx.save()
     ctx.translate(viewport.x, viewport.y)
@@ -131,9 +131,9 @@ export const SimpleCanvas: React.FC<SimpleCanvasProps> = ({ width, height }) => 
 
     // Draw UI elements (not affected by viewport transform)
     drawUI(ctx)
-  }
+  }, [width, height, viewport, pdfImage, grid, currentProject, drawGrid, drawRooms, drawSegments, drawEquipment, drawUI]);
 
-  const drawGrid = (ctx: CanvasRenderingContext2D) => {
+  const drawGrid = useCallback((ctx: CanvasRenderingContext2D) => {
     const gridSize = grid.size
     ctx.strokeStyle = '#e5e7eb'
     ctx.lineWidth = 0.5
@@ -159,9 +159,9 @@ export const SimpleCanvas: React.FC<SimpleCanvasProps> = ({ width, height }) => 
       ctx.lineTo(endX, y)
       ctx.stroke()
     }
-  }
+  }, [grid, viewport, width, height]);
 
-  const drawRooms = (ctx: CanvasRenderingContext2D) => {
+  const drawRooms = useCallback((ctx: CanvasRenderingContext2D) => {
     if (!currentProject) return
 
     currentProject.rooms.forEach((room) => {
@@ -183,15 +183,15 @@ export const SimpleCanvas: React.FC<SimpleCanvasProps> = ({ width, height }) => 
       ctx.font = '12px Arial'
       ctx.textAlign = 'center'
       ctx.fillText(room.name, x + w / 2, y + h / 2)
-      
+
       // Dimensions
       ctx.font = '10px Arial'
       ctx.fillStyle = '#6b7280'
       ctx.fillText(`${room.dimensions.length.toFixed(1)}' × ${room.dimensions.width.toFixed(1)}'`, x + w / 2, y + h / 2 + 15)
     })
-  }
+  }, [currentProject, selectedObjects]);
 
-  const drawSegments = (ctx: CanvasRenderingContext2D) => {
+  const drawSegments = useCallback((ctx: CanvasRenderingContext2D) => {
     if (!currentProject) return
 
     currentProject.segments.forEach((segment) => {
@@ -211,20 +211,20 @@ export const SimpleCanvas: React.FC<SimpleCanvasProps> = ({ width, height }) => 
       // Segment label
       const midX = (x1 + x2) / 2
       const midY = (y1 + y2) / 2
-      
+
       ctx.fillStyle = '#374151'
       ctx.font = '10px Arial'
       ctx.textAlign = 'center'
-      
+
       if (segment.size.width && segment.size.height) {
         ctx.fillText(`${segment.size.width}" × ${segment.size.height}"`, midX, midY - 10)
       } else if (segment.size.diameter) {
         ctx.fillText(`Ø${segment.size.diameter}"`, midX, midY - 10)
       }
     })
-  }
+  }, [currentProject, selectedObjects]);
 
-  const drawEquipment = (ctx: CanvasRenderingContext2D) => {
+  const drawEquipment = useCallback((ctx: CanvasRenderingContext2D) => {
     if (!currentProject) return
 
     currentProject.equipment.forEach((equipment) => {
@@ -246,9 +246,9 @@ export const SimpleCanvas: React.FC<SimpleCanvasProps> = ({ width, height }) => 
       ctx.textAlign = 'center'
       ctx.fillText(equipment.type.substring(0, 3).toUpperCase(), x, y + 3)
     })
-  }
+  }, [currentProject, selectedObjects]);
 
-  const drawUI = (ctx: CanvasRenderingContext2D) => {
+  const drawUI = useCallback((ctx: CanvasRenderingContext2D) => {
     // Draw drawing preview if active
     if (isDrawing && startPoint && currentPoint && drawingState.tool !== 'select' && drawingState.tool !== 'pan') {
       ctx.save()
@@ -306,7 +306,7 @@ export const SimpleCanvas: React.FC<SimpleCanvasProps> = ({ width, height }) => 
 
       ctx.restore()
     }
-  }
+  }, [isDrawing, startPoint, currentPoint, drawingState, viewport]);
 
   // Snap to grid helper
   const snapToGrid = (x: number, y: number): { x: number; y: number } => {
@@ -536,7 +536,7 @@ export const SimpleCanvas: React.FC<SimpleCanvasProps> = ({ width, height }) => 
   // Redraw when state changes
   useEffect(() => {
     draw()
-  }, [currentProject, selectedObjects, viewport, grid, width, height])
+  }, [draw])
 
   return (
     <div className="relative w-full h-full bg-white">

@@ -13,7 +13,7 @@
  * @see docs/implementation/security/super-admin-architecture.md
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { AuthenticationManager } from '../../lib/auth/AuthenticationManager';
 import { UserRepository, SuperAdminUserInfo, SuperAdminUserFilters } from '../../lib/repositories/interfaces/UserRepository';
 import { FeatureFlagRepository, FeatureFlagStats } from '../../lib/repositories/interfaces/FeatureFlagRepository';
@@ -48,13 +48,9 @@ export const UserRecoveryTool: React.FC<SuperAdminToolsProps> = ({
   const [reason, setReason] = useState('');
   const [users, setUsers] = useState<SuperAdminUserInfo[]>([]);
 
-  useEffect(() => {
-    loadUsers();
-  }, []);
-
-  const loadUsers = async () => {
+  const loadUsers = useCallback(async () => {
     setState(prev => ({ ...prev, loading: true, error: null }));
-    
+
     try {
       const session = authManager.getCurrentSuperAdminSession();
       if (!session) {
@@ -64,13 +60,17 @@ export const UserRecoveryTool: React.FC<SuperAdminToolsProps> = ({
       const allUsers = await userRepository.superAdminGetAllUsers(session.superAdminSessionId, {
         accountStatus: 'locked'
       });
-      
+
       setUsers(allUsers);
       setState(prev => ({ ...prev, loading: false }));
     } catch (error) {
       setState(prev => ({ ...prev, loading: false, error: error instanceof Error ? error.message : 'Unknown error' }));
     }
-  };
+  }, [authManager, userRepository]);
+
+  useEffect(() => {
+    loadUsers();
+  }, [loadUsers]);
 
   const handleUserRecovery = async () => {
     if (!userId || !reason) {
@@ -409,20 +409,20 @@ export const AuditTrailTool: React.FC<SuperAdminToolsProps> = ({
   const [state, setState] = useState<ToolState>({ loading: false, error: null, success: null, data: [] });
   const [limit, setLimit] = useState(50);
 
-  useEffect(() => {
-    loadAuditTrail();
-  }, [limit]);
-
-  const loadAuditTrail = async () => {
+  const loadAuditTrail = useCallback(async () => {
     setState(prev => ({ ...prev, loading: true, error: null }));
-    
+
     try {
       const auditTrail = authManager.getSuperAdminAuditTrail(limit);
       setState(prev => ({ ...prev, loading: false, data: auditTrail }));
     } catch (error) {
       setState(prev => ({ ...prev, loading: false, error: error instanceof Error ? error.message : 'Unknown error' }));
     }
-  };
+  }, [authManager, limit]);
+
+  useEffect(() => {
+    loadAuditTrail();
+  }, [loadAuditTrail]);
 
   return (
     <div className="super-admin-tool">

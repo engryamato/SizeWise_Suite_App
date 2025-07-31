@@ -5,8 +5,8 @@
  * Tests K-factor lookups, velocity pressure calculations, and fitting loss calculations
  */
 
-// Import from backend - adjust path as needed
-import { FittingLossCalculator, FittingConfiguration } from '../../../../backend/services/calculations/FittingLossCalculator';
+// FIXED: Import from correct lib path instead of non-existent backend path
+import { FittingLossCalculator, FittingConfiguration } from '../../../lib/services/calculations/FittingLossCalculator';
 
 describe('FittingLossCalculator', () => {
   

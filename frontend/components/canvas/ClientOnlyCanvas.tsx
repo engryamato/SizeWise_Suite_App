@@ -55,7 +55,7 @@ export const ClientOnlyCanvas: React.FC<ClientOnlyCanvasProps> = ({ width, heigh
     }
 
     loadCanvas()
-  }, [])
+  }, [height, reportError, width])
 
   if (isLoading) {
     return (

@@ -12,8 +12,9 @@ import {
   Line,
   Box
 } from '@react-three/drei';
-import { Vector3, BufferGeometry, Float32BufferAttribute } from 'three';
+import { Vector3, Vector2, Raycaster, Quaternion, Euler } from 'three';
 import { useCameraController } from '@/lib/hooks/useCameraController';
+import { useUIStore } from '@/stores/ui-store';
 import { motion } from 'framer-motion';
 import {
   Move3D,
@@ -66,12 +67,31 @@ const DuctMesh: React.FC<{
   const direction = new Vector3().subVectors(segment.end, segment.start);
   const length = direction.length();
   const center = new Vector3().addVectors(segment.start, segment.end).multiplyScalar(0.5);
-  
+
+  // Calculate rotation to align duct with direction vector
+  // Default box geometry is aligned along Z-axis, so we need to rotate to align with our direction
+  const rotation = React.useMemo(() => {
+    if (length > 0) {
+      // Normalize direction vector
+      const normalizedDirection = direction.clone().normalize();
+
+      // Calculate rotation angles
+      // Y rotation (around Y-axis) for horizontal direction
+      const yRotation = Math.atan2(normalizedDirection.x, normalizedDirection.z);
+
+      // X rotation (around X-axis) for vertical direction
+      const xRotation = -Math.asin(normalizedDirection.y);
+
+      return [xRotation, yRotation, 0] as [number, number, number];
+    }
+    return [0, 0, 0] as [number, number, number];
+  }, [direction, length]);
+
   // Color based on duct type
   const getColor = () => {
     if (isSelected) return '#3b82f6'; // Blue when selected
     if (hovered) return '#6366f1'; // Indigo when hovered
-    
+
     switch (segment.type) {
       case 'supply': return '#10b981'; // Green
       case 'return': return '#f59e0b'; // Amber
@@ -80,26 +100,32 @@ const DuctMesh: React.FC<{
     }
   };
 
+  // Convert inches to scene units (assuming 1 scene unit = 12 inches)
+  const sceneWidth = segment.width / 12;
+  const sceneHeight = segment.height / 12;
+
   return (
     <mesh
       ref={meshRef}
       position={center}
+      rotation={rotation}
       onClick={onSelect}
       onPointerOver={() => setHovered(true)}
       onPointerOut={() => setHovered(false)}
     >
-      <boxGeometry args={[segment.width, segment.height, length]} />
-      <meshStandardMaterial 
-        color={getColor()} 
-        transparent 
+      {/* Box geometry: width (X), height (Y), length (Z) */}
+      <boxGeometry args={[sceneWidth, sceneHeight, length]} />
+      <meshStandardMaterial
+        color={getColor()}
+        transparent
         opacity={isSelected ? 0.8 : 0.7}
         wireframe={isSelected}
       />
-      
+
       {/* Duct label */}
       {(isSelected || hovered) && (
         <Text
-          position={[0, segment.height / 2 + 0.5, 0]}
+          position={[0, sceneHeight / 2 + 0.5, 0]}
           fontSize={0.3}
           color="white"
           anchorX="center"
@@ -163,9 +189,25 @@ const Scene3D: React.FC<{
   onCameraReady?: (cameraController: any) => void;
 }> = ({ segments, selectedSegmentId, onSegmentSelect, showGrid, activeTool, onSegmentAdd, onElementSelect, onCameraReady }) => {
   const { camera, raycaster, scene } = useThree();
+  const { grid } = useUIStore();
 
   // Initialize camera controller
   const cameraController = useCameraController(camera);
+
+  // Grid snapping helper function
+  const snapToGrid = useCallback((point: Vector3): Vector3 => {
+    if (!grid.snapEnabled) return point;
+
+    // Convert grid size from 2D pixels to 3D scene units
+    // Assuming 1 scene unit = 1 foot, and grid.size is in pixels (typically 20px = 1 foot)
+    const gridSize = 1; // 1 scene unit per grid cell
+
+    return new Vector3(
+      Math.round(point.x / gridSize) * gridSize,
+      point.y, // Keep Y at 0 for ground plane
+      Math.round(point.z / gridSize) * gridSize
+    );
+  }, [grid.snapEnabled]);
 
   // Expose camera controller to parent component (only once when ready)
   const [cameraReadyNotified, setCameraReadyNotified] = React.useState(false);
@@ -182,63 +224,102 @@ const Scene3D: React.FC<{
     currentPoint?: Vector3;
   }>({ isDrawing: false });
 
+  // Debug: Log when activeTool changes
+  React.useEffect(() => {
+    console.log('activeTool changed to:', activeTool);
+  }, [activeTool]);
+
   // Handle canvas clicks for drawing
   const handleCanvasClick = useCallback((event: any) => {
+    console.log('Canvas click detected, activeTool:', activeTool, 'drawingState:', drawingState);
+    console.log('Event details:', event);
+
     // For drawing tools, always project to ground plane (ignore existing segments)
     if (activeTool && activeTool !== 'select') {
-      // Project click to y=0 plane for drawing new segments
-      const planeNormal = new Vector3(0, 1, 0);
-      const distance = 0; // y=0 plane
-      const ray = raycaster.ray;
-      const t = -(ray.origin.dot(planeNormal) + distance) / ray.direction.dot(planeNormal);
-      const clickPoint = ray.origin.clone().add(ray.direction.clone().multiplyScalar(t));
+      // Use the event's point directly (React Three Fiber provides world coordinates)
+      let clickPoint = event.point ? event.point.clone() : new Vector3(0, 0, 0);
+
+      // Ensure the point is on the ground plane (y=0)
+      clickPoint.y = 0;
+
+      // Apply grid snapping
+      clickPoint = snapToGrid(clickPoint);
+
+      console.log('Click point calculated (after snapping):', clickPoint);
+      console.log('Click point coordinates:', { x: clickPoint.x, y: clickPoint.y, z: clickPoint.z });
 
       if (activeTool === 'line') {
         if (!drawingState.isDrawing) {
-          // Start drawing
+          // Start drawing - create a new Vector3 to avoid reference issues
+          const startPoint = new Vector3(clickPoint.x, clickPoint.y, clickPoint.z);
+          console.log('Starting drawing at point:', startPoint);
+          console.log('Start point coordinates:', { x: startPoint.x, y: startPoint.y, z: startPoint.z });
           setDrawingState({
             isDrawing: true,
-            startPoint: clickPoint,
-            currentPoint: clickPoint
+            startPoint: startPoint,
+            currentPoint: startPoint.clone()
           });
         } else {
-          // Finish drawing - create duct segment
+          // Finish drawing - create duct segment with proper coordinate precision
           if (drawingState.startPoint && onSegmentAdd) {
+            // Create new Vector3 instances to ensure no reference sharing
+            const segmentStart = new Vector3(
+              drawingState.startPoint.x,
+              drawingState.startPoint.y,
+              drawingState.startPoint.z
+            );
+            const segmentEnd = new Vector3(clickPoint.x, clickPoint.y, clickPoint.z);
+
+            console.log('Finishing drawing from', segmentStart, 'to', segmentEnd);
+            console.log('Segment start coordinates:', { x: segmentStart.x, y: segmentStart.y, z: segmentStart.z });
+            console.log('Segment end coordinates:', { x: segmentEnd.x, y: segmentEnd.y, z: segmentEnd.z });
+
             const newSegment: DuctSegment = {
               id: `duct-${Date.now()}`,
-              start: drawingState.startPoint,
-              end: clickPoint,
+              start: segmentStart,
+              end: segmentEnd,
               width: 12, // Default 12 inches
               height: 8,  // Default 8 inches
               type: 'supply',
               material: 'Galvanized Steel'
             };
+            console.log('Creating new segment:', newSegment);
             onSegmentAdd(newSegment);
-          }
 
-          // Reset drawing state
-          setDrawingState({ isDrawing: false });
+            // Continue drawing: start next segment from this end point (exact same coordinates)
+            const nextStartPoint = new Vector3(segmentEnd.x, segmentEnd.y, segmentEnd.z);
+            console.log('Next segment will start at:', nextStartPoint);
+            console.log('Next start coordinates:', { x: nextStartPoint.x, y: nextStartPoint.y, z: nextStartPoint.z });
+            setDrawingState({
+              isDrawing: true,
+              startPoint: nextStartPoint,
+              currentPoint: nextStartPoint.clone()
+            });
+          }
         }
       }
     }
-  }, [activeTool, drawingState, raycaster, onSegmentAdd]);
+  }, [activeTool, drawingState, onSegmentAdd]);
 
   // Handle mouse move for drawing preview
   const handleMouseMove = useCallback((event: any) => {
     if (!drawingState.isDrawing || !drawingState.startPoint) return;
 
-    // Always project to ground plane for drawing preview
-    const planeNormal = new Vector3(0, 1, 0);
-    const distance = 0;
-    const ray = raycaster.ray;
-    const t = -(ray.origin.dot(planeNormal) + distance) / ray.direction.dot(planeNormal);
-    const currentPoint = ray.origin.clone().add(ray.direction.clone().multiplyScalar(t));
+    // Use the event's point directly and project to ground plane
+    let currentPoint = event.point ? event.point.clone() : new Vector3(0, 0, 0);
+    currentPoint.y = 0; // Keep on ground plane
+
+    // Apply grid snapping for preview
+    currentPoint = snapToGrid(currentPoint);
+
+    // Create a new Vector3 to avoid reference issues
+    const previewPoint = new Vector3(currentPoint.x, currentPoint.y, currentPoint.z);
 
     setDrawingState(prev => ({
       ...prev,
-      currentPoint
+      currentPoint: previewPoint
     }));
-  }, [drawingState.isDrawing, drawingState.startPoint, raycaster]);
+  }, [drawingState.isDrawing, drawingState.startPoint, snapToGrid]);
 
   // Reset camera to home position
   const resetCamera = useCallback(() => {
@@ -247,7 +328,19 @@ const Scene3D: React.FC<{
   }, [camera]);
 
   return (
-    <group onClick={handleCanvasClick} onPointerMove={handleMouseMove}>
+    <>
+      {/* Invisible plane for click detection */}
+      <mesh
+        position={[0, 0, 0]}
+        rotation={[-Math.PI / 2, 0, 0]}
+        onClick={handleCanvasClick}
+        onPointerMove={handleMouseMove}
+        visible={false}
+      >
+        <planeGeometry args={[100, 100]} />
+        <meshBasicMaterial transparent opacity={0} />
+      </mesh>
+
       {/* Lighting */}
       <ambientLight intensity={0.6} />
       <directionalLight position={[10, 10, 5]} intensity={0.8} castShadow />
@@ -315,7 +408,7 @@ const Scene3D: React.FC<{
         minDistance={1}
         maxDistance={100}
       />
-    </group>
+    </>
   );
 };
 
@@ -420,6 +513,7 @@ export const Canvas3D: React.FC<Canvas3DProps> = ({
         dpr={Math.min(window.devicePixelRatio, 2)} // Limit pixel ratio
         performance={{ min: 0.5 }} // Allow quality reduction
         className="bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800"
+
       >
         <Suspense fallback={null}>
           <Scene3D

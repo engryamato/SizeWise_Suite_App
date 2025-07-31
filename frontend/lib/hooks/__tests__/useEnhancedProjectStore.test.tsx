@@ -27,69 +27,112 @@ import { advancedStateManager } from '../../state/AdvancedStateManager';
 // =============================================================================
 
 // Mock the enhanced project store
-jest.mock('../../stores/enhanced-project-store', () => ({
+jest.mock('../../../stores/enhanced-project-store', () => ({
   useEnhancedProjectStore: jest.fn(() => ({
-    getState: jest.fn(() => ({
-      currentProject: null,
-      projects: [],
-      isLoading: false,
-      isSaving: false,
-      error: null,
-      totalRooms: 0,
-      totalSegments: 0,
-      totalEquipment: 0,
-      totalCFM: 0,
-      totalDuctLength: 0,
-      averageVelocity: 0,
-      systemPressureDrop: 0,
-      projectComplexity: 'simple',
-      complianceStatus: { smacna: false, ashrae: false, overall: false },
-      lastCalculationTime: 0,
-      cacheHitRate: 0,
-      createProject: jest.fn(),
-      loadProject: jest.fn(),
-      updateProject: jest.fn(),
-      saveProject: jest.fn(),
-      deleteProject: jest.fn(),
-      clearProject: jest.fn(),
-      addRoom: jest.fn(),
-      updateRoom: jest.fn(),
-      deleteRoom: jest.fn(),
-      addSegment: jest.fn(),
-      updateSegment: jest.fn(),
-      deleteSegment: jest.fn(),
-      addEquipment: jest.fn(),
-      updateEquipment: jest.fn(),
-      deleteEquipment: jest.fn(),
-      optimisticUpdate: jest.fn(() => 'update-id'),
-      confirmOptimisticUpdate: jest.fn(),
-      rollbackOptimisticUpdate: jest.fn(),
-      undo: jest.fn(() => true),
-      redo: jest.fn(() => false),
-      getComputedProperty: jest.fn(),
-      getStateMetrics: jest.fn(() => ({
-        storeName: 'enhanced-project',
-        stateSize: 1024,
-        historySize: 5,
-        optimisticUpdatesCount: 0,
-        computedPropertiesCount: 8,
-        cacheSize: 10,
-        memoryUsage: 2048
-      })),
-      clearHistory: jest.fn(),
-      getHistorySize: jest.fn(() => 5),
-      canAddRoom: jest.fn(() => true),
-      canAddSegment: jest.fn(() => true),
-      canAddEquipment: jest.fn(() => true),
-      validateProject: jest.fn(() => ({ valid: true, errors: [], warnings: [] })),
-      exportProject: jest.fn(() => '{}'),
-      importProject: jest.fn()
+    // Core project data (state properties)
+    currentProject: null,
+    projects: [],
+    selectedRoom: null,
+    selectedSegment: null,
+    selectedEquipment: null,
+
+    // Enhanced state properties
+    isLoading: false,
+    isSyncing: false,
+    lastSyncTime: null,
+    conflictResolution: null,
+    optimisticUpdates: new Map(), // FIXED: Added missing optimisticUpdates Map
+
+    // Collaboration state
+    collaborators: [],
+
+    // Performance tracking (FIXED: Added missing metrics object)
+    metrics: {
+      loadTime: 0,
+      syncTime: 0,
+      operationCount: 0
+    },
+
+    // Legacy properties for backward compatibility
+    isSaving: false,
+    error: null,
+    totalRooms: 0,
+    totalSegments: 0,
+    totalEquipment: 0,
+    totalCFM: 0,
+    totalDuctLength: 0,
+    averageVelocity: 0,
+    systemPressureDrop: 0,
+    projectComplexity: 'simple',
+    complianceStatus: { smacna: false, ashrae: false, overall: false },
+    lastCalculationTime: 0,
+    cacheHitRate: 0,
+
+    // Core actions
+    setCurrentProject: jest.fn(),
+    setProjects: jest.fn(),
+    addProject: jest.fn(),
+    createProject: jest.fn(),
+    loadProject: jest.fn(),
+    updateProject: jest.fn(),
+    saveProject: jest.fn(),
+    deleteProject: jest.fn(),
+    clearProject: jest.fn(),
+
+    // Room management
+    addRoom: jest.fn(),
+    updateRoom: jest.fn(),
+    deleteRoom: jest.fn(),
+    setSelectedRoom: jest.fn(),
+
+    // Segment management
+    addSegment: jest.fn(),
+    updateSegment: jest.fn(),
+    deleteSegment: jest.fn(),
+    setSelectedSegment: jest.fn(),
+
+    // Equipment management
+    addEquipment: jest.fn(),
+    updateEquipment: jest.fn(),
+    deleteEquipment: jest.fn(),
+    setSelectedEquipment: jest.fn(),
+
+    // Advanced state management (FIXED: Added missing optimistic update methods)
+    addOptimisticUpdate: jest.fn(),
+    removeOptimisticUpdate: jest.fn(),
+    optimisticUpdate: jest.fn(() => 'update-id'),
+    confirmOptimisticUpdate: jest.fn(),
+    rollbackOptimisticUpdate: jest.fn(),
+    undo: jest.fn(() => true),
+    redo: jest.fn(() => false),
+
+    // Sync and collaboration
+    syncProject: jest.fn(),
+    resolveConflict: jest.fn(),
+
+    // Performance methods (FIXED: Added missing updateMetrics and resetMetrics)
+    updateMetrics: jest.fn(),
+    resetMetrics: jest.fn(),
+
+    // Utility methods
+    getComputedProperty: jest.fn(),
+    getStateMetrics: jest.fn(() => ({
+      storeName: 'enhanced-project',
+      stateSize: 1024,
+      historySize: 5,
+      optimisticUpdatesCount: 0,
+      computedPropertiesCount: 8,
+      cacheSize: 10,
+      memoryUsage: 2048
     })),
-    subscribe: jest.fn((callback) => {
-      // Return unsubscribe function
-      return jest.fn();
-    }),
-    setState: jest.fn()
+    clearHistory: jest.fn(),
+    getHistorySize: jest.fn(() => 5),
+    canAddRoom: jest.fn(() => true),
+    canAddSegment: jest.fn(() => true),
+    canAddEquipment: jest.fn(() => true),
+    validateProject: jest.fn(() => ({ valid: true, errors: [], warnings: [] })),
+    exportProject: jest.fn(() => '{}'),
+    importProject: jest.fn()
   }))
 }));
 
@@ -368,7 +411,7 @@ describe('useEnhancedProjectStore Hook', () => {
       };
 
       // Override the mock for this test
-      const useEnhancedProjectStoreMock = jest.requireMock('../../stores/enhanced-project-store').useEnhancedProjectStore;
+      const useEnhancedProjectStoreMock = jest.requireMock('../../../stores/enhanced-project-store').useEnhancedProjectStore;
       useEnhancedProjectStoreMock.mockReturnValue(mockStore);
 
       const { unmount } = renderHook(() => useEnhancedProjectStore());
@@ -389,7 +432,7 @@ describe('useEnhancedProjectStore Hook', () => {
         setState: jest.fn()
       };
 
-      const useEnhancedProjectStoreMock = jest.requireMock('../../stores/enhanced-project-store').useEnhancedProjectStore;
+      const useEnhancedProjectStoreMock = jest.requireMock('../../../stores/enhanced-project-store').useEnhancedProjectStore;
       useEnhancedProjectStoreMock.mockReturnValue(mockStore);
 
       const { unmount } = renderHook(() => useEnhancedProjectStore());
@@ -448,7 +491,7 @@ describe('useEnhancedProjectStore Hook', () => {
         setState: jest.fn()
       };
 
-      const useEnhancedProjectStoreMock = jest.requireMock('../../stores/enhanced-project-store').useEnhancedProjectStore;
+      const useEnhancedProjectStoreMock = jest.requireMock('../../../stores/enhanced-project-store').useEnhancedProjectStore;
       useEnhancedProjectStoreMock.mockReturnValue(mockStore);
 
       renderHook(() => useEnhancedProjectStore());
@@ -480,7 +523,7 @@ describe('useEnhancedProjectStore Hook', () => {
         setState: jest.fn()
       };
 
-      const useEnhancedProjectStoreMock = jest.requireMock('../../stores/enhanced-project-store').useEnhancedProjectStore;
+      const useEnhancedProjectStoreMock = jest.requireMock('../../../stores/enhanced-project-store').useEnhancedProjectStore;
       useEnhancedProjectStoreMock.mockReturnValue(mockStore);
 
       expect(() => {

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { format } from 'date-fns';
 
 interface LocaleConfig {
@@ -44,9 +44,9 @@ export const InternationalizationDashboard: React.FC = () => {
 
   useEffect(() => {
     loadI18nData();
-  }, []);
+  }, [loadI18nData]);
 
-  const loadI18nData = async () => {
+  const loadI18nData = useCallback(async () => {
     setLoading(true);
     try {
       // Load supported locales
@@ -69,7 +69,7 @@ export const InternationalizationDashboard: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [currentLocale]);
 
   const changeLocale = async (localeKey: string) => {
     try {

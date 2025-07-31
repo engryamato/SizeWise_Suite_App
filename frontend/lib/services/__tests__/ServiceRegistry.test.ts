@@ -10,7 +10,7 @@
  * - Service lifecycle management
  */
 
-import { describe, it, expect, beforeEach, afterEach, vi, beforeAll } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach } from '@jest/globals';
 import { 
   ServiceRegistry, 
   CircuitBreaker, 
@@ -21,14 +21,14 @@ import {
 } from '../ServiceRegistry';
 
 // Mock fetch for API calls
-global.fetch = vi.fn();
+global.fetch = jest.fn();
 
 describe('ServiceRegistry', () => {
   let serviceRegistry: ServiceRegistry;
 
   beforeEach(() => {
     serviceRegistry = new ServiceRegistry();
-    vi.clearAllMocks();
+    jest.clearAllMocks();
   });
 
   afterEach(() => {
@@ -239,7 +239,7 @@ describe('ServiceRegistry', () => {
     });
 
     it('should start and stop health monitoring', async () => {
-      const monitoringSpy = vi.spyOn(serviceRegistry as any, 'performHealthChecks');
+      const monitoringSpy = jest.spyOn(serviceRegistry as any, 'performHealthChecks');
       
       serviceRegistry.startHealthMonitoring(100); // 100ms interval
       

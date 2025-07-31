@@ -16,7 +16,7 @@ jest.mock('@/stores/project-store', () => ({
 jest.mock('@/stores/ui-store', () => ({
   useUIStore: () => ({
     setPlanScale: mockUpdateUIScale,
-    planScale: 1,
+    planScale: { pixelsPerMeter: 1 },
   }),
 }))
 

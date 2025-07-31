@@ -155,6 +155,43 @@ export const CanvasSystemContainer: React.FC<CanvasContainerProps> = ({
     onObjectSelect?.(newSelection);
   }, [currentSelectedObjects, selectMultiple, onObjectSelect]);
 
+  const triggerCalculation = useCallback(async (objectId: string, objectType: 'room' | 'segment' | 'equipment') => {
+    if (!calculation.service) return;
+
+    try {
+      if (objectType === 'segment') {
+        const segment = getSegmentById(objectId);
+        if (!segment || !segment.airflow) return;
+
+        const inputs: CalculationInput = {
+          airflow: segment.airflow,
+          duct_type: segment.size.diameter ? 'round' : 'rectangular',
+          friction_rate: currentProject?.computational_properties?.friction_rate || 0.08,
+          units: 'imperial',
+          material: segment.material || 'Galvanized Steel'
+        };
+
+        const result = await calculation.service.calculateAirDuctSize(inputs);
+
+        if (result.success && result.data) {
+          // Update segment with calculated size
+          updateSegment(objectId, {
+            size: {
+              width: Math.round(result.data.width || 12),
+              height: Math.round(result.data.height || 8)
+            }
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Calculation failed:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      setValidationWarnings(prev =>
+        new Map(prev).set(objectId, [`Calculation failed: ${errorMessage}`])
+      );
+    }
+  }, [calculation, getSegmentById, currentProject, updateSegment]);
+
   const handleObjectUpdate = useCallback((id: string, updates: any) => {
     // Determine object type and update accordingly
     const room = getRoomById(id);
@@ -178,7 +215,7 @@ export const CanvasSystemContainer: React.FC<CanvasContainerProps> = ({
     }
 
     onObjectUpdate?.(id, updates);
-  }, [getRoomById, getSegmentById, getEquipmentById, updateRoom, updateSegment, updateEquipment, onObjectUpdate]);
+  }, [getRoomById, getSegmentById, getEquipmentById, updateRoom, updateSegment, updateEquipment, onObjectUpdate, triggerCalculation]);
 
   // =============================================================================
   // Drawing Operations
@@ -202,32 +239,10 @@ export const CanvasSystemContainer: React.FC<CanvasContainerProps> = ({
     }
   }, [isDrawing, drawingPreview]);
 
-  const handleDrawingEnd = useCallback((point: { x: number; y: number }) => {
-    if (!isDrawing || !drawingPreview) return;
-
-    const { tool, startPoint } = drawingPreview;
-    
-    // Create object based on drawing tool
-    switch (tool) {
-      case 'room':
-        createRoom(startPoint, point);
-        break;
-      case 'duct':
-        createSegment(startPoint, point);
-        break;
-      case 'equipment':
-        createEquipment(point);
-        break;
-    }
-
-    setIsDrawing(false);
-    setDrawingPreview(null);
-  }, [isDrawing, drawingPreview]);
-
   const createRoom = useCallback((start: { x: number; y: number }, end: { x: number; y: number }) => {
     const width = Math.abs(end.x - start.x);
     const height = Math.abs(end.y - start.y);
-    
+
     if (width < 10 || height < 10) return; // Minimum size check
 
     const newRoom: Room = {
@@ -247,7 +262,7 @@ export const CanvasSystemContainer: React.FC<CanvasContainerProps> = ({
 
   const createSegment = useCallback((start: { x: number; y: number }, end: { x: number; y: number }) => {
     const length = Math.sqrt(Math.pow(end.x - start.x, 2) + Math.pow(end.y - start.y, 2));
-    
+
     if (length < 20) return; // Minimum length check
 
     const newSegment: Segment = {
@@ -275,45 +290,31 @@ export const CanvasSystemContainer: React.FC<CanvasContainerProps> = ({
     addEquipment(newEquipment);
   }, [addEquipment]);
 
+  const handleDrawingEnd = useCallback((point: { x: number; y: number }) => {
+    if (!isDrawing || !drawingPreview) return;
+
+    const { tool, startPoint } = drawingPreview;
+
+    // Create object based on drawing tool
+    switch (tool) {
+      case 'room':
+        createRoom(startPoint, point);
+        break;
+      case 'duct':
+        createSegment(startPoint, point);
+        break;
+      case 'equipment':
+        createEquipment(point);
+        break;
+    }
+
+    setIsDrawing(false);
+    setDrawingPreview(null);
+  }, [isDrawing, drawingPreview, createRoom, createSegment, createEquipment]);
+
   // =============================================================================
   // Calculations and Validation
   // =============================================================================
-
-  const triggerCalculation = useCallback(async (objectId: string, objectType: 'room' | 'segment' | 'equipment') => {
-    if (!calculation.service) return;
-
-    try {
-      if (objectType === 'segment') {
-        const segment = getSegmentById(objectId);
-        if (!segment || !segment.airflow) return;
-
-        const inputs: CalculationInput = {
-          airflow: segment.airflow,
-          duct_type: segment.size.diameter ? 'round' : 'rectangular',
-          friction_rate: currentProject?.computational_properties?.friction_rate || 0.1,
-          units: 'imperial',
-          material: segment.material
-        };
-
-        const result = await calculation.calculateDuctSizing(inputs);
-        setCalculationResults(prev => new Map(prev).set(objectId, result));
-
-        // Update segment with calculation results
-        if (result.success && result.results) {
-          updateSegment(objectId, {
-            velocity: result.results.velocity,
-            pressure_loss: result.results.pressure_loss
-          });
-        }
-      }
-    } catch (error) {
-      console.error('Calculation failed:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      setValidationWarnings(prev =>
-        new Map(prev).set(objectId, [`Calculation failed: ${errorMessage}`])
-      );
-    }
-  }, [calculation.service, getSegmentById, currentProject, updateSegment]);
 
   // =============================================================================
   // Keyboard Shortcuts

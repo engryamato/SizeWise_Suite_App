@@ -362,14 +362,14 @@ toast.error('File Too Large', `File size must be less than ${maxFileSize}MB.`);
     return true;
   };
 
-  const handleFileLoad = async (file: File) => {
+  const handleFileLoad = useCallback(async (file: File) => {
     if (!validateFile(file)) return;
 
     setIsLoading(true);
     try {
       const url = URL.createObjectURL(file);
       const pdf = await pdfjs.getDocument(url).promise;
-      
+
       const pdfFile: PDFFile = {
         file,
         name: file.name,
@@ -389,7 +389,7 @@ toast.error('PDF Load Error', 'Failed to load the PDF file.');
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [validateFile, onPDFLoad, toast]);
 
   const handleFileRemove = () => {
     if (pdfFile) {
@@ -409,7 +409,7 @@ toast.info('PDF Removed', 'PDF background has been removed.');
     if (files.length > 0) {
       handleFileLoad(files[0]);
     }
-  }, []);
+  }, [handleFileLoad]);
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();

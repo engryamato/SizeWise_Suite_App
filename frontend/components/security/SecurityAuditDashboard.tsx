@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { securityService, SecurityEvent } from '@/lib/services/SecurityService';
 import { format } from 'date-fns';
 
@@ -27,9 +27,9 @@ export const SecurityAuditDashboard: React.FC<SecurityAuditDashboardProps> = ({ 
 
   useEffect(() => {
     loadSecurityData();
-  }, [userId, timeRange]);
+  }, [loadSecurityData]);
 
-  const loadSecurityData = async () => {
+  const loadSecurityData = useCallback(async () => {
     setLoading(true);
     try {
       const securityEvents = await securityService.getSecurityEvents(100);
@@ -40,9 +40,9 @@ export const SecurityAuditDashboard: React.FC<SecurityAuditDashboardProps> = ({ 
     } finally {
       setLoading(false);
     }
-  };
+  }, [calculateMetrics]);
 
-  const calculateMetrics = (events: SecurityEvent[]) => {
+  const calculateMetrics = useCallback((events: SecurityEvent[]) => {
     const now = new Date();
     const timeRangeHours = {
       '24h': 24,
@@ -65,7 +65,7 @@ export const SecurityAuditDashboard: React.FC<SecurityAuditDashboardProps> = ({ 
     };
 
     setMetrics(metrics);
-  };
+  }, [timeRange]);
 
   const getFilteredEvents = () => {
     if (filter === 'all') return events;

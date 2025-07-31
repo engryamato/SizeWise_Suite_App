@@ -11,21 +11,21 @@
  * - Error handling and recovery
  */
 
-import { describe, it, expect, beforeEach, afterEach, vi, beforeAll } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, beforeAll } from '@jest/globals';
 import { AdvancedCachingService, CacheConfig } from '../AdvancedCachingService';
 import { SizeWiseDatabase } from '../../database/DexieDatabase';
 
 // Mock DexieDatabase for testing
-vi.mock('../../database/DexieDatabase', () => ({
-  SizeWiseDatabase: vi.fn().mockImplementation(() => ({
+jest.mock('../../database/DexieDatabase', () => ({
+  SizeWiseDatabase: jest.fn().mockImplementation(() => ({
     cacheEntries: {
-      put: vi.fn().mockResolvedValue(undefined),
-      get: vi.fn().mockResolvedValue(null),
-      delete: vi.fn().mockResolvedValue(undefined),
-      clear: vi.fn().mockResolvedValue(undefined),
-      where: vi.fn().mockReturnValue({
-        below: vi.fn().mockReturnValue({
-          delete: vi.fn().mockResolvedValue(0)
+      put: jest.fn().mockResolvedValue(undefined),
+      get: jest.fn().mockResolvedValue(null),
+      delete: jest.fn().mockResolvedValue(undefined),
+      clear: jest.fn().mockResolvedValue(undefined),
+      where: jest.fn().mockReturnValue({
+        below: jest.fn().mockReturnValue({
+          delete: jest.fn().mockResolvedValue(0)
         })
       })
     }
@@ -39,7 +39,7 @@ describe('AdvancedCachingService', () => {
 
   beforeAll(() => {
     // Mock performance.now for consistent testing
-    vi.spyOn(performance, 'now').mockImplementation(() => Date.now());
+    jest.spyOn(performance, 'now').mockImplementation(() => Date.now());
   });
 
   beforeEach(() => {
@@ -56,7 +56,7 @@ describe('AdvancedCachingService', () => {
   });
 
   afterEach(() => {
-    vi.clearAllMocks();
+    jest.clearAllMocks();
   });
 
   // =============================================================================
@@ -140,7 +140,7 @@ describe('AdvancedCachingService', () => {
     });
 
     it('should handle TTL cleanup automatically', async () => {
-      const cleanupSpy = vi.spyOn(cachingService as any, 'cleanupExpiredEntries');
+      const cleanupSpy = jest.spyOn(cachingService as any, 'cleanupExpiredEntries');
       
       await cachingService.set('key1', 'value1', 50);
       await cachingService.set('key2', 'value2', 100);
@@ -217,7 +217,7 @@ describe('AdvancedCachingService', () => {
     });
 
     it('should handle memory pressure by triggering cleanup', async () => {
-      const cleanupSpy = vi.spyOn(cachingService as any, 'handleMemoryPressure');
+      const cleanupSpy = jest.spyOn(cachingService as any, 'handleMemoryPressure');
       
       // Fill cache to trigger memory pressure
       const largeValue = 'x'.repeat(1000);
@@ -295,7 +295,7 @@ describe('AdvancedCachingService', () => {
     });
 
     it('should handle project data prefetching', async () => {
-      const prefetchSpy = vi.spyOn(cachingService as any, 'prefetchProjectCalculations');
+      const prefetchSpy = jest.spyOn(cachingService as any, 'prefetchProjectCalculations');
       
       await cachingService.prefetchProjectData('project-123');
       
@@ -372,7 +372,7 @@ describe('AdvancedCachingService', () => {
     });
 
     it('should clean up expired entries from IndexedDB', async () => {
-      const cleanupSpy = vi.spyOn(cachingService as any, 'cleanupIndexedDB');
+      const cleanupSpy = jest.spyOn(cachingService as any, 'cleanupIndexedDB');
       
       await cachingService.set('key', 'value', 50);
       

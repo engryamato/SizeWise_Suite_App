@@ -102,7 +102,7 @@ export const AppShellContainer: React.FC<AppShellProps> = ({
           toast.error('Failed to load user information');
         });
     }
-  }, [isAuthenticated, tier.service, toast]);
+  }, [isAuthenticated, tier, toast]);
 
   // Handle service errors
   useEffect(() => {

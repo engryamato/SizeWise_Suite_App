@@ -12,11 +12,11 @@ import React from 'react';
 import { renderHook, act, waitFor } from '@testing-library/react';
 import { useFeatureFlag, useBatchFeatureFlag, useUserTier, cleanupFeatureHooks } from '../useFeatureFlag';
 import { FeatureManager } from '../../features/FeatureManager';
-import { DatabaseManager } from '../../../../backend/database/DatabaseManager';
+import { DatabaseManager } from '../../../__mocks__/backend/database/DatabaseManager';
 
-// Mock dependencies
+// Mock dependencies - FIXED: Use correct mock paths
 jest.mock('../../features/FeatureManager');
-jest.mock('../../../../backend/database/DatabaseManager');
+jest.mock('../../../__mocks__/backend/database/DatabaseManager');
 
 describe('useFeatureFlag Hook', () => {
   let mockFeatureManager: jest.Mocked<FeatureManager>;

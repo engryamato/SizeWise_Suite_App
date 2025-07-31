@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useCallback, useEffect } from 'react'
+import React, { useState, useCallback, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Vector3 } from 'three'
 import { Canvas3D } from '@/components/3d/Canvas3D'
@@ -70,8 +70,14 @@ function AirDuctSizerPage() {
   // Hooks
   const toast = useToast();
 
+  // Track if demo data has been loaded to prevent infinite loop
+  const demoDataLoadedRef = useRef(false);
+
   // Initialize with demo data (only once on mount)
   useEffect(() => {
+    // Only load demo data once
+    if (demoDataLoadedRef.current) return;
+
     // Demo data - defined inside useEffect to avoid dependency issues
     const demoSegments: DuctSegment[] = [
       {
@@ -105,7 +111,8 @@ function AirDuctSizerPage() {
 
     setDuctSegments(demoSegments);
     toast.info('Demo Data Loaded', 'Sample duct segments have been loaded for demonstration.');
-  }, [toast]); // Only depend on toast, not demoSegments
+    demoDataLoadedRef.current = true;
+  }, []); // Empty dependency array - only run once on mount
 
   // Monitor online status
   useEffect(() => {

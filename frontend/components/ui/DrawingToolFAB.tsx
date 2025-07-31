@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Pencil,
@@ -44,7 +44,7 @@ export const DrawingToolFAB: React.FC<DrawingToolFABProps> = ({
     name: 'Duct-1'
   });
 
-  const handleMainButtonClick = () => {
+  const handleMainButtonClick = useCallback(() => {
     if (drawingMode === 'off') {
       // Toggle to ON mode - show property panel first
       setShowPropertyPanel(true);
@@ -55,7 +55,7 @@ export const DrawingToolFAB: React.FC<DrawingToolFABProps> = ({
       onDrawingModeChange('off');
       setShowPropertyPanel(false);
     }
-  };
+  }, [drawingMode, onPropertyPanelOpen, onDrawingModeChange]);
 
   const handlePropertyConfirm = () => {
     setShowPropertyPanel(false);
@@ -77,7 +77,7 @@ export const DrawingToolFAB: React.FC<DrawingToolFABProps> = ({
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [drawingMode, showPropertyPanel]);
+  }, [drawingMode, showPropertyPanel, handleMainButtonClick]);
 
   const getTooltipText = () => {
     switch (drawingMode) {

@@ -9,22 +9,22 @@
  * - HVAC calculation caching workflows
  */
 
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach } from '@jest/globals';
 import { renderHook, act, waitFor } from '@testing-library/react';
 import { useAdvancedCaching } from '../useAdvancedCaching';
 import { useMicroservices } from '../useMicroservices';
 
 // Mock the AdvancedCachingService
-vi.mock('../../services/AdvancedCachingService', () => ({
-  AdvancedCachingService: vi.fn().mockImplementation(() => ({
-    get: vi.fn().mockResolvedValue(null),
-    set: vi.fn().mockResolvedValue(undefined),
-    delete: vi.fn().mockResolvedValue(undefined),
-    clear: vi.fn().mockResolvedValue(undefined),
-    cacheCalculationResult: vi.fn().mockResolvedValue(undefined),
-    getCachedCalculation: vi.fn().mockResolvedValue(null),
-    prefetchProjectData: vi.fn().mockResolvedValue(undefined),
-    getMetrics: vi.fn().mockReturnValue({
+jest.mock('../../services/AdvancedCachingService', () => ({
+  AdvancedCachingService: jest.fn().mockImplementation(() => ({
+    get: jest.fn().mockResolvedValue(null),
+    set: jest.fn().mockResolvedValue(undefined),
+    delete: jest.fn().mockResolvedValue(undefined),
+    clear: jest.fn().mockResolvedValue(undefined),
+    cacheCalculationResult: jest.fn().mockResolvedValue(undefined),
+    getCachedCalculation: jest.fn().mockResolvedValue(null),
+    prefetchProjectData: jest.fn().mockResolvedValue(undefined),
+    getMetrics: jest.fn().mockReturnValue({
       totalRequests: 0,
       totalHits: 0,
       totalMisses: 0,
@@ -35,20 +35,20 @@ vi.mock('../../services/AdvancedCachingService', () => ({
       compressionRatio: 1,
       avgResponseTime: 0
     }),
-    getRecommendations: vi.fn().mockReturnValue([]),
-    resetMetrics: vi.fn(),
-    updateConfig: vi.fn()
+    getRecommendations: jest.fn().mockReturnValue([]),
+    resetMetrics: jest.fn(),
+    updateConfig: jest.fn()
   }))
 }));
 
 // Mock DexieDatabase
-vi.mock('../../database/DexieDatabase', () => ({
-  SizeWiseDatabase: vi.fn().mockImplementation(() => ({
+jest.mock('../../database/DexieDatabase', () => ({
+  SizeWiseDatabase: jest.fn().mockImplementation(() => ({
     cacheEntries: {
-      put: vi.fn().mockResolvedValue(undefined),
-      get: vi.fn().mockResolvedValue(null),
-      delete: vi.fn().mockResolvedValue(undefined),
-      clear: vi.fn().mockResolvedValue(undefined)
+      put: jest.fn().mockResolvedValue(undefined),
+      get: jest.fn().mockResolvedValue(null),
+      delete: jest.fn().mockResolvedValue(undefined),
+      clear: jest.fn().mockResolvedValue(undefined)
     }
   }))
 }));
@@ -57,14 +57,14 @@ describe('useAdvancedCaching Hook', () => {
   let mockCachingService: any;
 
   beforeEach(() => {
-    vi.clearAllMocks();
+    jest.clearAllMocks();
     // Get the mocked service instance
     const { AdvancedCachingService } = require('../../services/AdvancedCachingService');
     mockCachingService = new AdvancedCachingService();
   });
 
   afterEach(() => {
-    vi.clearAllMocks();
+    jest.clearAllMocks();
   });
 
   // =============================================================================
@@ -266,7 +266,7 @@ describe('useAdvancedCaching Hook', () => {
           type: 'performance' as const,
           severity: 'medium' as const,
           message: 'Cache hit rate is below optimal threshold',
-          action: vi.fn()
+          action: jest.fn()
         }
       ];
 

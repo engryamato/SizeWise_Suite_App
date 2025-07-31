@@ -9,11 +9,11 @@
  */
 
 import { FeatureManager } from '../FeatureManager';
-import { DatabaseManager } from '../../../../backend/database/DatabaseManager';
+import { DatabaseManager } from '../../../__mocks__/backend/database/DatabaseManager';
 import { LocalUserRepository } from '../../repositories/local/LocalUserRepository';
 
-// Mock dependencies for testing
-jest.mock('../../../../backend/database/DatabaseManager');
+// Mock dependencies for testing - FIXED: Use correct mock paths
+jest.mock('../../../__mocks__/backend/database/DatabaseManager');
 jest.mock('../../repositories/local/LocalUserRepository');
 jest.mock('../../repositories/local/LocalFeatureFlagRepository');
 jest.mock('../../security/SecureFeatureValidator');

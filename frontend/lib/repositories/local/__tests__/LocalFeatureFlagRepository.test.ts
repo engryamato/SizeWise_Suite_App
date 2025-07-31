@@ -9,7 +9,7 @@
  */
 
 import { LocalFeatureFlagRepository } from '../LocalFeatureFlagRepository';
-import { DatabaseManager } from '../../../../../backend/database/DatabaseManager';
+import { DatabaseManager } from '../../../../__mocks__/backend/database/DatabaseManager';
 import { FeatureFlag, UserTier, ValidationError, UserNotFoundError, DatabaseError } from '../../interfaces/FeatureFlagRepository';
 
 describe('LocalFeatureFlagRepository', () => {

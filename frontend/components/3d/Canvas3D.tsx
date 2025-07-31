@@ -29,9 +29,6 @@ import {
 import { cn } from '@/lib/utils';
 import { defaultPerformanceConfig } from '@/lib/utils/performance';
 import { DuctProperties } from '@/components/ui/DrawingToolFAB';
-import { DuctGeometry } from '@/components/3d/geometry/DuctGeometry';
-import { ElbowGeometry } from '@/components/3d/geometry/ElbowGeometry';
-import { TransitionGeometry } from '@/components/3d/geometry/TransitionGeometry';
 
 interface DuctSegment {
   id: string;
@@ -659,15 +656,11 @@ const ConnectionMesh: React.FC<{
 
   return (
     <mesh position={center} rotation={rotation}>
-      {/* Modular geometry using DuctGeometry component for preview */}
-      <DuctGeometry
-        shape={shape}
-        width={sceneWidth}
-        height={sceneHeight}
-        diameter={sceneDiameter}
-        length={length}
-        wallThickness={0.05}
-      />
+      {shape === 'round' ? (
+        <cylinderGeometry args={[sceneDiameter / 2, sceneDiameter / 2, length, 8]} />
+      ) : (
+        <boxGeometry args={[sceneWidth, sceneHeight, length]} />
+      )}
       <meshStandardMaterial
         color={material}
         transparent={true}
@@ -784,19 +777,21 @@ const TransitionMesh: React.FC<{
       onPointerOver={() => setHovered(true)}
       onPointerOut={() => setHovered(false)}
     >
-      {/* Modular geometry using TransitionGeometry component */}
-      <TransitionGeometry
-        inletShape={fitting.inlet.shape}
-        outletShape={fitting.outlet.shape}
-        inletWidth={dimensions.inletWidth}
-        inletHeight={dimensions.inletHeight}
-        inletDiameter={dimensions.inletSize}
-        outletWidth={dimensions.outletWidth}
-        outletHeight={dimensions.outletHeight}
-        outletDiameter={dimensions.outletSize}
-        length={fitting.length}
-        wallThickness={0.1}
-      />
+      {/* Enhanced transition geometry using validated dimensions */}
+      {fitting.inlet.shape === 'round' && fitting.outlet.shape === 'round' ? (
+        // Round to round transition - tapered cylinder with actual dimensions
+        <cylinderGeometry args={[dimensions.outletSize / 2, dimensions.inletSize / 2, fitting.length, 16]} />
+      ) : fitting.inlet.shape === 'rectangular' && fitting.outlet.shape === 'rectangular' ? (
+        // Rectangular to rectangular transition - use box geometry with actual dimensions
+        <boxGeometry args={[
+          (dimensions.inletWidth + dimensions.outletWidth) / 2,
+          (dimensions.inletHeight + dimensions.outletHeight) / 2,
+          fitting.length
+        ]} />
+      ) : (
+        // Mixed transitions - use cylinder with validated average dimensions
+        <cylinderGeometry args={[dimensions.outletSize / 2, dimensions.inletSize / 2, fitting.length, 16]} />
+      )}
       <meshStandardMaterial
         color={getColor()}
         transparent={false}
@@ -864,16 +859,13 @@ const ElbowMesh: React.FC<{
       onPointerOut={() => setHovered(false)}
     >
       {/* Enhanced elbow geometry using validated dimensions */}
-      {/* Modular geometry using ElbowGeometry component */}
-      <ElbowGeometry
-        shape={fitting.inlet.shape}
-        width={elbowDimensions.ductWidth}
-        height={elbowDimensions.ductHeight}
-        diameter={elbowDimensions.ductSize}
-        angle={fitting.angle}
-        centerlineRadius={fitting.centerlineRadius}
-        wallThickness={0.1}
-      />
+      {fitting.inlet.shape === 'round' ? (
+        // Round elbow - torus segment with actual diameter
+        <torusGeometry args={[fitting.centerlineRadius, elbowDimensions.ductSize / 2, 8, 16, (fitting.angle * Math.PI) / 180]} />
+      ) : (
+        // Rectangular elbow - box geometry with actual width and height
+        <boxGeometry args={[elbowDimensions.ductWidth, elbowDimensions.ductHeight, fitting.centerlineRadius * 0.5]} />
+      )}
       <meshStandardMaterial
         color={getColor()}
         transparent={false}
@@ -1061,15 +1053,12 @@ const DuctMesh: React.FC<{
       onPointerOver={() => setHovered(true)}
       onPointerOut={() => setHovered(false)}
     >
-      {/* Modular geometry using DuctGeometry component */}
-      <DuctGeometry
-        shape={segment.shape}
-        width={sceneWidth}
-        height={sceneHeight}
-        diameter={sceneDiameter}
-        length={length}
-        wallThickness={0.1}
-      />
+      {/* Geometry based on duct shape */}
+      {segment.shape === 'round' ? (
+        <cylinderGeometry args={[sceneDiameter / 2, sceneDiameter / 2, length, 16]} />
+      ) : (
+        <boxGeometry args={[sceneWidth, sceneHeight, length]} />
+      )}
       <meshStandardMaterial
         color={getColor()}
         transparent={false}
@@ -1427,7 +1416,7 @@ const Scene3D: React.FC<{
 
   return (
     <>
-      {/* Invisible plane for click detection */}
+      {/* Invisible plane for click detection - increased size for better coverage */}
       <mesh
         position={[0, 0, 0]}
         rotation={[-Math.PI / 2, 0, 0]}
@@ -1435,7 +1424,7 @@ const Scene3D: React.FC<{
         onPointerMove={handleMouseMove}
         visible={false}
       >
-        <planeGeometry args={[100, 100]} />
+        <planeGeometry args={[1000, 1000]} />
         <meshBasicMaterial transparent opacity={0} />
       </mesh>
 

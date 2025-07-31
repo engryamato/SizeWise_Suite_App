@@ -554,12 +554,14 @@ class FittingGenerator {
     direction: Vector3
   ): ConnectionPoint {
     return {
+      id: `${segment.id}-cp-${Date.now()}`,
       position,
       direction,
       shape: segment.shape,
       width: segment.width,
       height: segment.height,
-      diameter: segment.diameter
+      diameter: segment.diameter,
+      status: 'available'
     };
   }
 }

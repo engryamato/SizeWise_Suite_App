@@ -1,6 +1,6 @@
 "use client";
 
-import React, { Suspense, useRef, useState, useCallback } from 'react';
+import React, { Suspense, useRef, useState, useCallback, useMemo } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import {
   OrbitControls,
@@ -718,49 +718,22 @@ const ElbowMesh: React.FC<{
   const meshRef = useRef<any>(null);
   const [hovered, setHovered] = useState(false);
 
-  // Enhanced dimension validation and calculation for elbow
-  const validateAndGetElbowDimensions = () => {
-    // Log inlet dimensions for debugging
-    console.log('ElbowMesh - Inlet dimensions:', {
-      shape: fitting.inlet.shape,
-      width: fitting.inlet.width,
-      height: fitting.inlet.height,
-      diameter: fitting.inlet.diameter
-    });
+  // Enhanced dimension validation and calculation for elbow - simplified approach
+  let ductSize: number;
+  let ductWidth: number;
+  let ductHeight: number;
 
-    let ductSize: number;
-    let ductWidth: number;
-    let ductHeight: number;
+  if (fitting.inlet.shape === 'round') {
+    ductSize = fitting.inlet.diameter || 12; // Default for missing diameter
+    ductWidth = ductSize;
+    ductHeight = ductSize;
+  } else {
+    ductWidth = fitting.inlet.width || 12; // Default width
+    ductHeight = fitting.inlet.height || 8; // Default height
+    ductSize = Math.max(ductWidth, ductHeight);
+  }
 
-    if (fitting.inlet.shape === 'round') {
-      if (!fitting.inlet.diameter) {
-        console.warn('ElbowMesh - Missing inlet diameter for round duct, using default 12');
-        ductSize = 12;
-      } else {
-        ductSize = fitting.inlet.diameter;
-      }
-      ductWidth = ductSize;
-      ductHeight = ductSize;
-    } else {
-      if (!fitting.inlet.width || !fitting.inlet.height) {
-        console.warn('ElbowMesh - Missing inlet width/height for rectangular duct, using defaults');
-        ductWidth = fitting.inlet.width || 12;
-        ductHeight = fitting.inlet.height || 8;
-      } else {
-        ductWidth = fitting.inlet.width;
-        ductHeight = fitting.inlet.height;
-      }
-      ductSize = Math.max(ductWidth, ductHeight);
-    }
-
-    console.log('ElbowMesh - Calculated dimensions:', {
-      ductSize, ductWidth, ductHeight
-    });
-
-    return { ductSize, ductWidth, ductHeight };
-  };
-
-  const elbowDimensions = validateAndGetElbowDimensions();
+  const elbowDimensions = { ductSize, ductWidth, ductHeight };
 
   const getColor = () => {
     if (isSelected) return '#3b82f6'; // Blue when selected

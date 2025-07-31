@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useCallback, useEffect, useRef } from 'react'
+import React, { useState, useCallback, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Vector3, Euler } from 'three'
 import { Canvas3D, Equipment } from '@/components/3d/Canvas3D'
@@ -17,6 +17,12 @@ import { StatusBar } from '@/components/ui/StatusBar'
 // Priority 5-7 Components
 import { WarningPanel, ValidationWarning } from '@/components/ui/WarningPanel'
 import { ViewCube, ViewType } from '@/components/ui/ViewCube'
+
+// Shared hooks and utilities
+import { useEquipmentPlacement } from '@/hooks/useEquipmentPlacement'
+import { useElementSelection } from '@/hooks/useElementSelection'
+import { useMockCalculations } from '@/hooks/useMockCalculations'
+
 import { BottomRightCorner } from '@/components/ui/BottomRightCorner'
 
 // 3D Duct Segment interface for Canvas3D
@@ -60,6 +66,7 @@ function AirDuctSizerPage() {
   const [selectedElement, setSelectedElement] = useState<ElementProperties | null>(null);
   const [ductSegments, setDuctSegments] = useState<DuctSegment[]>([]);
   const [ductFittings, setDuctFittings] = useState<DuctFitting[]>([]);
+  const [equipment, setEquipment] = useState<Equipment[]>([]);
 
   // Grid and view state
   const [gridEnabled, setGridEnabled] = useState(true);
@@ -77,7 +84,7 @@ function AirDuctSizerPage() {
 
   // Connection state
   const [isOnline, setIsOnline] = useState(true);
-  const [isConnectedToServer, setIsConnectedToServer] = useState(true);
+  const [isConnectedToServer] = useState(true);
 
   // Duct properties state
   const [ductProperties, setDuctProperties] = useState<DuctProperties>({
@@ -93,53 +100,8 @@ function AirDuctSizerPage() {
   // Hooks
   const toast = useToast();
 
-  // Track if demo data has been loaded to prevent infinite loop
-  const demoDataLoadedRef = useRef(false);
-
-  // Initialize with demo data (only once on mount)
-  useEffect(() => {
-    // Only load demo data once
-    if (demoDataLoadedRef.current) return;
-
-    // Demo data - defined inside useEffect to avoid dependency issues
-    const demoSegments: DuctSegment[] = [
-      {
-        id: 'demo-1',
-        start: new Vector3(0, 0, 0),
-        end: new Vector3(5, 0, 0),
-        width: 12,
-        height: 8,
-        shape: 'rectangular',
-        type: 'supply',
-        material: 'galvanized_steel',
-      },
-      {
-        id: 'demo-2',
-        start: new Vector3(5, 0, 0),
-        end: new Vector3(5, 0, 5),
-        width: 10,
-        height: 6,
-        shape: 'rectangular',
-        type: 'supply',
-        material: 'galvanized_steel',
-      },
-      {
-        id: 'demo-3',
-        start: new Vector3(0, 0, 0),
-        end: new Vector3(-3, 0, 0),
-        diameter: 12,
-        width: 12, // Keep for compatibility
-        height: 12, // Keep for compatibility
-        shape: 'round',
-        type: 'return',
-        material: 'galvanized_steel',
-      },
-    ];
-
-    setDuctSegments(demoSegments);
-    toast.info('Demo Data Loaded', 'Sample duct segments have been loaded for demonstration.');
-    demoDataLoadedRef.current = true;
-  }, []); // Empty dependency array - only run once on mount
+  // Application starts with clean, empty 3D canvas (no demo data auto-loading)
+  // Demo data constants are preserved in MockDataConstants.ts for manual calculations
 
   // Monitor online status
   useEffect(() => {
@@ -186,80 +148,15 @@ function AirDuctSizerPage() {
     setDrawingMode(mode);
   }, []);
 
-  const handleEquipmentPlace = useCallback((position: { x: number; y: number; z: number }) => {
-    // Create new equipment at the specified position
-    const baseEquipment: Equipment = {
-      id: `equipment-${Date.now()}`,
-      type: 'Fan',
-      position: new Vector3(position.x, position.y, position.z),
-      rotation: new Euler(0, 0, 0),
-      dimensions: {
-        width: 2,
-        height: 2,
-        depth: 2
-      },
-      properties: {
-        cfmCapacity: 1000,
-        staticPressureCapacity: 2.0,
-        model: 'Standard Fan',
-        manufacturer: 'Generic',
-        powerConsumption: 5.0
-      },
-      material: 'Steel',
-      connectionPoints: [] // Will be populated below
-    };
+  // Use shared equipment placement hook
+  const { handleEquipmentPlace } = useEquipmentPlacement(setEquipment);
 
-    // Enhanced: Automatically add connection points to new equipment
-    // Note: We need to import ConnectionPointUtils from Canvas3D or create a shared utility
-    // For now, we'll create connection points manually based on equipment type
-    const connectionPoints = [];
-
-    // Fan has inlet and outlet
-    connectionPoints.push(
-      {
-        id: `${baseEquipment.id}-inlet`,
-        position: new Vector3(position.x - baseEquipment.dimensions.width / 2, position.y, position.z),
-        direction: new Vector3(1, 0, 0),
-        shape: 'round' as const,
-        diameter: Math.min(baseEquipment.dimensions.width, baseEquipment.dimensions.height) * 0.8,
-        status: 'available' as const
-      },
-      {
-        id: `${baseEquipment.id}-outlet`,
-        position: new Vector3(position.x + baseEquipment.dimensions.width / 2, position.y, position.z),
-        direction: new Vector3(1, 0, 0),
-        shape: 'round' as const,
-        diameter: Math.min(baseEquipment.dimensions.width, baseEquipment.dimensions.height) * 0.8,
-        status: 'available' as const
-      }
-    );
-
-    const newEquipment: Equipment = {
-      ...baseEquipment,
-      connectionPoints
-    };
-
-    setEquipment(prev => [...prev, newEquipment]);
-    console.log('Equipment placed with connection points:', newEquipment);
-  }, []);
-
-  const handleElementSelect = useCallback((elementId: string, position: { x: number; y: number }) => {
-    // Create mock element data for demonstration
-    const mockElement: ElementProperties = {
-      id: elementId,
-      type: 'duct',
-      name: `Duct ${elementId.slice(0, 8)}`,
-      position: { x: position.x, y: position.y, z: 0 },
-      dimensions: { width: 8, height: 8 },
-      ductType: 'supply',
-      velocity: 1200,
-      pressureDrop: 0.1
-    };
-
-    setSelectedElement(mockElement);
-    setContextPanelPosition(position);
-    setShowContextPanel(true);
-  }, []);
+  // Use shared element selection hook
+  const { handleElementSelect } = useElementSelection(
+    setSelectedElement,
+    setContextPanelPosition,
+    setShowContextPanel
+  );
 
   const handleElementUpdate = useCallback((id: string, properties: Partial<ElementProperties>) => {
     if (selectedElement && selectedElement.id === id) {
@@ -279,97 +176,13 @@ function AirDuctSizerPage() {
     toast.success('Element copied', 'Element copied to clipboard');
   }, [toast]);
 
-  const handleRunCalculation = useCallback(async () => {
-    setIsCalculating(true);
-
-    try {
-      // Simulate calculation
-      await new Promise(resolve => setTimeout(resolve, 2000));
-
-      // Mock calculation results
-      const mockResults = [
-        {
-          id: '1',
-          elementId: 'duct-1',
-          elementName: 'Main Supply Duct',
-          type: 'duct' as const,
-          status: 'pass' as const,
-          value: 1150,
-          unit: 'FPM',
-          target: 1200,
-          tolerance: 50
-        },
-        {
-          id: '2',
-          elementId: 'duct-2',
-          elementName: 'Branch Duct A',
-          type: 'duct' as const,
-          status: 'warning' as const,
-          value: 1350,
-          unit: 'FPM',
-          target: 1200,
-          tolerance: 50
-        }
-      ];
-
-      setCalculationResults(mockResults);
-
-      // Mock warnings - Updated to match ValidationWarning interface
-      const mockWarnings: ValidationWarning[] = [
-        {
-          id: 'w1',
-          type: 'warning' as const,
-          category: 'SMACNA' as const,
-          severity: 'medium' as const,
-          title: 'Velocity Exceeds Recommended Range',
-          message: 'Duct segment DS-001 has a velocity of 1,350 FPM, which exceeds the recommended maximum of 1,200 FPM for supply ducts.',
-          elementId: 'duct-2',
-          elementType: 'duct',
-          suggestion: 'Consider increasing duct size to reduce velocity.',
-          standard: 'SMACNA',
-          timestamp: new Date(),
-          codeReference: 'SMACNA-2005 Table 5-1',
-          resolved: false
-        },
-        {
-          id: 'w2',
-          type: 'error' as const,
-          category: 'Safety' as const,
-          severity: 'critical' as const,
-          title: 'Critical Pressure Drop Exceeded',
-          message: 'System pressure drop of 2.5" WC exceeds maximum allowable limit of 2.0" WC.',
-          elementId: 'system-main',
-          elementType: 'system',
-          suggestion: 'Redesign duct layout or increase duct sizes to reduce pressure drop.',
-          standard: 'ASHRAE',
-          timestamp: new Date(),
-          codeReference: 'ASHRAE 90.1-2019 Section 6.5.3',
-          resolved: false
-        },
-        {
-          id: 'w3',
-          type: 'info' as const,
-          category: 'Performance' as const,
-          severity: 'low' as const,
-          title: 'Energy Efficiency Opportunity',
-          message: 'Current system design has potential for 15% energy savings with optimized duct sizing.',
-          suggestion: 'Consider implementing variable air volume (VAV) system.',
-          standard: 'ASHRAE',
-          timestamp: new Date(),
-          codeReference: 'ASHRAE 90.1-2019 Section 6.4',
-          resolved: false
-        }
-      ];
-
-      setWarnings(mockWarnings);
-      toast.success('Calculation complete', 'System analysis completed successfully');
-    } catch (error) {
-      console.error('Calculation error:', error);
-      toast.error('Calculation failed', 'Please check your inputs and try again');
-    } finally {
-      setIsCalculating(false);
-    }
-  }, [toast]);
+  // Use shared mock calculations hook
+  const { handleCalculate: handleRunCalculation } = useMockCalculations(
+    setCalculationResults,
+    setWarnings,
+    setIsCalculating,
+    toast
+  );
 
   const handleJumpToElement = useCallback((elementId: string) => {
     toast.info('Jumping to element', `Navigating to ${elementId}`);
@@ -424,14 +237,11 @@ function AirDuctSizerPage() {
     toast.success('Fitting Added', `${fitting.type === 'transition' ? 'Transition' : 'Elbow'} fitting automatically generated.`);
   }, [toast]);
 
-  // Equipment state and handlers
-  const [equipment, setEquipment] = useState<Equipment[]>([]);
-
+  // Equipment handlers - using shared hook functionality
   const handleEquipmentAdd = useCallback((equip: Equipment) => {
     setEquipment(prev => [...prev, equip]);
     setSaveStatus('unsaved');
-    toast.success('Equipment Added', `${equip.type} equipment added to the system.`);
-  }, [toast]);
+  }, []);
 
   // Priority 5-7 Component handlers
   const handleWarningClick = useCallback((warning: ValidationWarning) => {
@@ -636,7 +446,7 @@ function AirDuctSizerPage() {
         onViewChange={handleViewChange}
         onResetView={handleResetView}
         onFitToScreen={handleFitToScreen}
-        className="fixed top-20 right-6 z-30"
+        className="fixed top-20 right-6 z-[70]"
       />
 
       {/* Welcome Message - Positioned to not interfere with canvas */}

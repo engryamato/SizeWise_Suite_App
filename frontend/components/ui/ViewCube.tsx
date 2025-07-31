@@ -160,7 +160,6 @@ export const ViewCube: React.FC<ViewCubeProps> = ({
             isHovered && "shadow-xl"
           )}
           style={{
-            transform: isHovered ? 'scale(1.02)' : 'scale(1)',
             transformOrigin: 'center',
             perspective: '1000px'
           }}
@@ -190,12 +189,14 @@ export const ViewCube: React.FC<ViewCubeProps> = ({
                     ? "bg-blue-500/40 text-blue-100 border-blue-400/60" 
                     : "bg-white/20 dark:bg-neutral-800/20 text-neutral-700 dark:text-neutral-300"
                 )}
-                style={{ transform: face.position }}
+                style={{
+                  transform: face.position,
+                  transformStyle: 'preserve-3d'
+                }}
                 onClick={() => handleFaceClick(face)}
                 onMouseEnter={() => setHoveredFace(face.id)}
                 onMouseLeave={() => setHoveredFace(null)}
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
+                whileTap={{ scale: 0.99 }}
               >
                 {face.label}
               </motion.button>
@@ -216,14 +217,13 @@ export const ViewCube: React.FC<ViewCubeProps> = ({
                 )}
                 style={{
                   transform: view.position,
-                  top: index === 0 ? '10%' : index === 1 ? '5%' : '85%',
-                  right: index === 0 ? '10%' : index === 1 ? '5%' : '5%'
+                  top: index === 0 ? '15%' : index === 1 ? '5%' : '85%',
+                  right: index === 0 ? '15%' : index === 1 ? '5%' : '5%'
                 }}
                 onClick={() => handleFaceClick(view)}
                 onMouseEnter={() => setHoveredFace(view.id)}
                 onMouseLeave={() => setHoveredFace(null)}
-                whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.95 }}
+                whileTap={{ scale: 0.98 }}
                 title={`${view.label} View`}
               >
                 {view.label}
@@ -256,7 +256,6 @@ export const ViewCube: React.FC<ViewCubeProps> = ({
           {/* Home/Reset View */}
           <motion.button
             onClick={handleReset}
-            whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             className={cn(
               "w-10 h-10 rounded-lg flex items-center justify-center",
@@ -273,7 +272,6 @@ export const ViewCube: React.FC<ViewCubeProps> = ({
           {/* Fit to Screen */}
           <motion.button
             onClick={onFitToScreen}
-            whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             className={cn(
               "w-10 h-10 rounded-lg flex items-center justify-center",

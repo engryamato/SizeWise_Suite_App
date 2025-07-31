@@ -42,10 +42,6 @@ export const InternationalizationDashboard: React.FC = () => {
     date: new Date()
   });
 
-  useEffect(() => {
-    loadI18nData();
-  }, [loadI18nData]);
-
   const loadI18nData = useCallback(async () => {
     setLoading(true);
     try {
@@ -70,6 +66,10 @@ export const InternationalizationDashboard: React.FC = () => {
       setLoading(false);
     }
   }, [currentLocale]);
+
+  useEffect(() => {
+    loadI18nData();
+  }, [loadI18nData]);
 
   const changeLocale = async (localeKey: string) => {
     try {

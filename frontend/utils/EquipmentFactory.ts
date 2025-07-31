@@ -3,7 +3,7 @@ import { Vector3, Euler } from 'three';
 // Equipment interfaces (imported from Canvas3D)
 export interface Equipment {
   id: string;
-  type: 'Fan' | 'AHU' | 'VAV' | 'Damper' | 'Filter' | 'Coil';
+  type: 'Fan' | 'AHU' | 'VAV Box' | 'Damper' | 'Filter' | 'Coil' | 'Custom';
   position: Vector3;
   rotation: Euler;
   dimensions: {
@@ -14,9 +14,9 @@ export interface Equipment {
   properties: {
     cfmCapacity: number;
     staticPressureCapacity: number;
-    model: string;
-    manufacturer: string;
-    powerConsumption: number;
+    model?: string;
+    manufacturer?: string;
+    powerConsumption?: number;
   };
   material: string;
   connectionPoints: ConnectionPoint[];
@@ -75,10 +75,11 @@ export class EquipmentFactory {
     const dimensionMap = {
       'Fan': { width: 2, height: 2, depth: 2 },
       'AHU': { width: 4, height: 3, depth: 2 },
-      'VAV': { width: 1.5, height: 1.5, depth: 1 },
+      'VAV Box': { width: 1.5, height: 1.5, depth: 1 },
       'Damper': { width: 1, height: 1, depth: 0.5 },
       'Filter': { width: 2, height: 2, depth: 0.5 },
-      'Coil': { width: 2, height: 2, depth: 1 }
+      'Coil': { width: 2, height: 2, depth: 1 },
+      'Custom': { width: 2, height: 2, depth: 2 }
     };
     return dimensionMap[type];
   }
@@ -102,7 +103,7 @@ export class EquipmentFactory {
         manufacturer: 'Generic',
         powerConsumption: 25.0
       },
-      'VAV': {
+      'VAV Box': {
         cfmCapacity: 500,
         staticPressureCapacity: 1.0,
         model: 'Standard VAV',
@@ -129,6 +130,13 @@ export class EquipmentFactory {
         model: 'Standard Coil',
         manufacturer: 'Generic',
         powerConsumption: 15.0
+      },
+      'Custom': {
+        cfmCapacity: 1000,
+        staticPressureCapacity: 1.0,
+        model: 'Custom Equipment',
+        manufacturer: 'Generic',
+        powerConsumption: 5.0
       }
     };
     return propertiesMap[type];
@@ -200,8 +208,8 @@ export class EquipmentFactory {
         );
         break;
 
-      case 'VAV':
-        // VAV has inlet and outlet
+      case 'VAV Box':
+        // VAV Box has inlet and outlet
         connectionPoints.push(
           {
             id: `${id}-inlet`,
@@ -269,6 +277,19 @@ export class EquipmentFactory {
             status: 'available'
           }
         );
+        break;
+
+      case 'Custom':
+        // Custom equipment with single connection point
+        connectionPoints.push({
+          id: `${id}-connection`,
+          position: new Vector3(position.x, position.y, position.z + dimensions.depth / 2),
+          direction: new Vector3(0, 0, 1),
+          shape: 'rectangular',
+          width: dimensions.width * 0.5,
+          height: dimensions.height * 0.5,
+          status: 'available'
+        });
         break;
     }
 

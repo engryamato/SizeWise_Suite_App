@@ -1,6 +1,11 @@
 import { useRef, useCallback, useEffect } from 'react';
 import { Camera, Vector3, PerspectiveCamera, OrthographicCamera } from 'three';
-import { ViewType } from '@/components/ui/ViewCube';
+import { ViewCubeOrientation } from '@/components/ui/ViewCube';
+import { VIEWCUBE_ORIENTATIONS } from '@/lib/viewcube/orientations';
+import { calculateCameraPosition } from '@/lib/viewcube/utils';
+
+// Legacy ViewType for backward compatibility
+export type ViewType = ViewCubeOrientation;
 
 export interface CameraPosition {
   position: Vector3;
@@ -37,55 +42,33 @@ export const useCameraController = (
   const targetLookAt = useRef<Vector3>(new Vector3());
   const animationStartTime = useRef<number>(0);
 
-  // Predefined camera positions for different views
+  // Get camera position for any ViewCube orientation
   const getViewPosition = useCallback((view: ViewType): CameraPosition => {
     const distance = 50;
-    const positions: Record<ViewType, CameraPosition> = {
-      front: {
-        position: new Vector3(0, 0, distance),
-        target: new Vector3(0, 0, 0)
-      },
-      back: {
-        position: new Vector3(0, 0, -distance),
-        target: new Vector3(0, 0, 0)
-      },
-      left: {
-        position: new Vector3(-distance, 0, 0),
-        target: new Vector3(0, 0, 0)
-      },
-      right: {
-        position: new Vector3(distance, 0, 0),
-        target: new Vector3(0, 0, 0)
-      },
-      top: {
-        position: new Vector3(0, distance, 0),
-        target: new Vector3(0, 0, 0),
-        up: new Vector3(0, 0, -1)
-      },
-      bottom: {
-        position: new Vector3(0, -distance, 0),
-        target: new Vector3(0, 0, 0),
-        up: new Vector3(0, 0, 1)
-      },
-      isometric: {
-        position: new Vector3(distance * 0.7, distance * 0.7, distance * 0.7),
-        target: new Vector3(0, 0, 0)
-      },
-      'isometric-top': {
-        position: new Vector3(distance * 0.5, distance * 0.9, distance * 0.5),
-        target: new Vector3(0, 0, 0)
-      },
-      'isometric-bottom': {
-        position: new Vector3(distance * 0.5, -distance * 0.9, distance * 0.5),
-        target: new Vector3(0, 0, 0)
-      },
-      perspective: {
-        position: new Vector3(distance * 0.8, distance * 0.6, distance * 0.8),
-        target: new Vector3(0, 0, 0)
-      }
-    };
+    const orientationData = VIEWCUBE_ORIENTATIONS[view];
 
-    return positions[view] || positions.isometric;
+    if (!orientationData) {
+      // Fallback to isometric if orientation not found
+      const isoData = VIEWCUBE_ORIENTATIONS['isometric'];
+      return {
+        position: isoData.position.clone().multiplyScalar(distance),
+        target: new Vector3(0, 0, 0)
+      };
+    }
+
+    // Use the orientation's predefined position scaled to our distance
+    const position = orientationData.position.clone().multiplyScalar(distance);
+    const target = new Vector3(0, 0, 0);
+
+    // Special handling for top/bottom views to maintain proper up vector
+    let up: Vector3 | undefined;
+    if (view === 'top') {
+      up = new Vector3(0, 0, -1);
+    } else if (view === 'bottom') {
+      up = new Vector3(0, 0, 1);
+    }
+
+    return { position, target, up };
   }, []);
 
   // Smooth camera animation
@@ -239,8 +222,8 @@ export const useCameraController = (
       Math.abs(position.y) > isometricThreshold &&
       Math.abs(position.z) > isometricThreshold
     ) {
-      if (position.y > 0.6) return 'isometric-top';
-      if (position.y < -0.6) return 'isometric-bottom';
+      if (position.y > 0.6) return 'front-top-right';
+      if (position.y < -0.6) return 'front-bottom-right';
       return 'isometric';
     }
 

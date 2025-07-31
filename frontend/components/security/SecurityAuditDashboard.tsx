@@ -25,23 +25,6 @@ export const SecurityAuditDashboard: React.FC<SecurityAuditDashboardProps> = ({ 
   const [filter, setFilter] = useState<'all' | 'critical' | 'high' | 'medium' | 'low'>('all');
   const [timeRange, setTimeRange] = useState<'24h' | '7d' | '30d' | '90d'>('7d');
 
-  useEffect(() => {
-    loadSecurityData();
-  }, [loadSecurityData]);
-
-  const loadSecurityData = useCallback(async () => {
-    setLoading(true);
-    try {
-      const securityEvents = await securityService.getSecurityEvents(100);
-      setEvents(securityEvents);
-      calculateMetrics(securityEvents);
-    } catch (error) {
-      console.error('Failed to load security data:', error);
-    } finally {
-      setLoading(false);
-    }
-  }, [calculateMetrics]);
-
   const calculateMetrics = useCallback((events: SecurityEvent[]) => {
     const now = new Date();
     const timeRangeHours = {
@@ -66,6 +49,25 @@ export const SecurityAuditDashboard: React.FC<SecurityAuditDashboardProps> = ({ 
 
     setMetrics(metrics);
   }, [timeRange]);
+
+  const loadSecurityData = useCallback(async () => {
+    setLoading(true);
+    try {
+      const securityEvents = await securityService.getSecurityEvents(100);
+      setEvents(securityEvents);
+      calculateMetrics(securityEvents);
+    } catch (error) {
+      console.error('Failed to load security data:', error);
+    } finally {
+      setLoading(false);
+    }
+  }, [calculateMetrics]);
+
+  useEffect(() => {
+    loadSecurityData();
+  }, [loadSecurityData]);
+
+
 
   const getFilteredEvents = () => {
     if (filter === 'all') return events;

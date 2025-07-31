@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { 
   Wifi, 
@@ -20,7 +20,9 @@ import {
   Info,
   GitBranch,
   Cloud,
-  CloudOff
+  CloudOff,
+  ChevronDown,
+  Ruler
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -55,7 +57,11 @@ interface StatusBarProps {
   calculationStatus?: 'idle' | 'running' | 'complete' | 'error';
   warningCount?: number;
   errorCount?: number;
-  
+
+  // Units selection
+  currentUnits: 'imperial' | 'metric';
+  onUnitsChange: (units: 'imperial' | 'metric') => void;
+
   className?: string;
 }
 
@@ -137,6 +143,87 @@ const ActionButton: React.FC<{
   </button>
 );
 
+const UnitsSelector: React.FC<{
+  currentUnits: 'imperial' | 'metric';
+  onUnitsChange: (units: 'imperial' | 'metric') => void;
+}> = ({ currentUnits, onUnitsChange }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+
+    if (isOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [isOpen]);
+
+  const units = [
+    { value: 'imperial' as const, label: 'Imperial', description: 'ft, in, °F' },
+    { value: 'metric' as const, label: 'Metric', description: 'm, mm, °C' }
+  ];
+
+  const currentUnit = units.find(unit => unit.value === currentUnits);
+
+  return (
+    <div className="relative" ref={dropdownRef}>
+      <button
+        type="button"
+        onClick={() => setIsOpen(!isOpen)}
+        className={cn(
+          "flex items-center space-x-2 px-3 py-1 rounded-lg border transition-colors",
+          "hover:bg-white/10 dark:hover:bg-white/5",
+          "text-neutral-600 dark:text-neutral-400 bg-neutral-500/10 border-neutral-500/20"
+        )}
+        title="Change measurement units"
+      >
+        <Ruler className="w-4 h-4" />
+        <span className="text-xs font-medium">{currentUnit?.label}</span>
+        <ChevronDown className={cn(
+          "w-3 h-3 transition-transform",
+          isOpen && "rotate-180"
+        )} />
+      </button>
+
+      {isOpen && (
+        <div className="absolute bottom-full left-0 mb-2 w-48 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-50">
+          <div className="p-2">
+            {units.map((unit) => (
+              <button
+                key={unit.value}
+                type="button"
+                onClick={() => {
+                  onUnitsChange(unit.value);
+                  setIsOpen(false);
+                }}
+                className={cn(
+                  "w-full flex items-center justify-between p-2 rounded-md transition-colors text-left",
+                  "hover:bg-gray-100 dark:hover:bg-gray-700",
+                  currentUnits === unit.value && "bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400"
+                )}
+              >
+                <div>
+                  <div className="font-medium text-sm">{unit.label}</div>
+                  <div className="text-xs text-gray-500 dark:text-gray-400">{unit.description}</div>
+                </div>
+                {currentUnits === unit.value && (
+                  <CheckCircle className="w-4 h-4" />
+                )}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
 export const StatusBar: React.FC<StatusBarProps> = ({
   isOnline,
   isConnectedToServer,
@@ -157,6 +244,8 @@ export const StatusBar: React.FC<StatusBarProps> = ({
   calculationStatus,
   warningCount = 0,
   errorCount = 0,
+  currentUnits,
+  onUnitsChange,
   className
 }) => {
   const [currentTime, setCurrentTime] = useState(new Date());
@@ -338,6 +427,12 @@ export const StatusBar: React.FC<StatusBarProps> = ({
               tooltip="Reset zoom (0)"
             />
           </div>
+
+          {/* Units Selection */}
+          <UnitsSelector
+            currentUnits={currentUnits}
+            onUnitsChange={onUnitsChange}
+          />
         </div>
 
         {/* Right Section - Status Indicators */}

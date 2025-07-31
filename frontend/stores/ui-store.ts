@@ -53,6 +53,9 @@ interface UIState {
   }>;
   isLoading: boolean;
 
+  // Units preference
+  units: 'imperial' | 'metric';
+
   // Canvas state
   viewport: Viewport;
   grid: Grid;
@@ -75,6 +78,7 @@ interface UIState {
   addNotification: (notification: Omit<UIState['notifications'][0], 'id' | 'timestamp'>) => void;
   removeNotification: (id: string) => void;
   setLoading: (loading: boolean) => void;
+  setUnits: (units: 'imperial' | 'metric') => void;
 
   // Canvas actions
   setViewport: (viewport: Partial<Viewport>) => void;
@@ -115,6 +119,7 @@ export const useUIStore = create<UIState>((set, get) => ({
   theme: 'system',
   notifications: [],
   isLoading: false,
+  units: 'imperial', // Default to imperial units
 
   // Canvas state
   viewport: {
@@ -191,6 +196,10 @@ export const useUIStore = create<UIState>((set, get) => ({
 
   setLoading: (loading: boolean) => {
     set({ isLoading: loading });
+  },
+
+  setUnits: (units: 'imperial' | 'metric') => {
+    set({ units });
   },
 
   // Canvas actions

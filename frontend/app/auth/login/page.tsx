@@ -11,6 +11,7 @@ import React, { useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuthStore } from '@/stores/auth-store';
 import { LoginPage } from '@/components/auth/LoginPage';
+import { AUTH_REDIRECTS } from '@/components/auth/config';
 import { motion } from 'framer-motion';
 
 // =============================================================================
@@ -24,14 +25,15 @@ export default function AuthLoginPage() {
   const [isRedirecting, setIsRedirecting] = React.useState(false);
 
   // Get return URL from query parameters
-  const returnUrl = searchParams.get('returnUrl') || '/';
+  const returnUrlParam = searchParams.get('returnUrl');
+  const returnUrl = returnUrlParam && returnUrlParam !== '/' ? returnUrlParam : AUTH_REDIRECTS.afterLogin;
 
   // =============================================================================
   // Authentication Check Effect
   // =============================================================================
 
   useEffect(() => {
-    // If user is already authenticated, redirect to return URL or home
+    // If user is already authenticated, redirect to return URL or dashboard
     if (isAuthenticated && user && !isRedirecting) {
       console.log('User already authenticated, redirecting to:', returnUrl);
       setIsRedirecting(true);
@@ -45,14 +47,14 @@ export default function AuthLoginPage() {
 
   const handleLoginSuccess = (user: any) => {
     console.log('Login successful:', user);
-    
+
     // Redirect to return URL or appropriate page based on user type
     if (user.tier === 'super_admin' || user.is_super_admin) {
       // Super admin can go to admin panel or return URL
       const adminReturnUrl = returnUrl.startsWith('/admin') ? returnUrl : '/admin';
       router.push(adminReturnUrl);
     } else {
-      // Regular users go to return URL or home
+      // Regular users go to return URL or dashboard
       router.push(returnUrl);
     }
   };

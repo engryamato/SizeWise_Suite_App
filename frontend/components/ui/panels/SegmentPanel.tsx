@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react'
 import { Segment } from '@/types/air-duct-sizer'
 import { useProjectStore } from '@/stores/project-store'
 import { useCalculationStore, useDebouncedCalculation } from '@/stores/calculation-store'
+import { useUnitsDisplay } from '@/hooks/useUnitsDisplay'
 
 interface SegmentPanelProps {
   segment: Segment
@@ -13,6 +14,7 @@ export const SegmentPanel: React.FC<SegmentPanelProps> = ({ segment }) => {
   const { updateSegment } = useProjectStore()
   const { materials, calculateVelocity, calculateEquivalentDiameter } = useCalculationStore()
   const debouncedCalculate = useDebouncedCalculation()
+  const { formatLength, formatFlow, getUnitLabel } = useUnitsDisplay()
   
   const [isEditing, setIsEditing] = useState(false)
   const [formData, setFormData] = useState({
@@ -150,7 +152,7 @@ export const SegmentPanel: React.FC<SegmentPanelProps> = ({ segment }) => {
           
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Length (ft)
+              Length ({getUnitLabel('length')})
             </label>
             {isEditing ? (
               <input
@@ -176,7 +178,7 @@ export const SegmentPanel: React.FC<SegmentPanelProps> = ({ segment }) => {
           // Round duct
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Diameter (in)
+              Diameter ({getUnitLabel('length', true)})
             </label>
             {isEditing ? (
               <input
@@ -199,7 +201,7 @@ export const SegmentPanel: React.FC<SegmentPanelProps> = ({ segment }) => {
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Width (in)
+                Width ({getUnitLabel('length', true)})
               </label>
               {isEditing ? (
                 <input
@@ -220,7 +222,7 @@ export const SegmentPanel: React.FC<SegmentPanelProps> = ({ segment }) => {
             
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Height (in)
+                Height ({getUnitLabel('length', true)})
               </label>
               {isEditing ? (
                 <input
@@ -256,7 +258,7 @@ export const SegmentPanel: React.FC<SegmentPanelProps> = ({ segment }) => {
         <h3 className="text-lg font-medium text-gray-900 mb-4">Airflow</h3>
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
-            Airflow (CFM)
+            Airflow ({getUnitLabel('flow')})
           </label>
           {isEditing ? (
             <input
@@ -267,7 +269,7 @@ export const SegmentPanel: React.FC<SegmentPanelProps> = ({ segment }) => {
               min="0"
             />
           ) : (
-            <p className="text-gray-900">{segment.airflow || 'Not specified'} CFM</p>
+            <p className="text-gray-900">{segment.airflow ? formatFlow(segment.airflow, 0) : 'Not specified'}</p>
           )}
         </div>
         

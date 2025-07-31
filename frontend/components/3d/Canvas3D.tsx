@@ -29,6 +29,9 @@ import {
 import { cn } from '@/lib/utils';
 import { defaultPerformanceConfig } from '@/lib/utils/performance';
 import { DuctProperties } from '@/components/ui/DrawingToolFAB';
+import { DuctGeometry } from '@/components/3d/geometry/DuctGeometry';
+import { ElbowGeometry } from '@/components/3d/geometry/ElbowGeometry';
+import { TransitionGeometry } from '@/components/3d/geometry/TransitionGeometry';
 
 interface DuctSegment {
   id: string;
@@ -348,7 +351,7 @@ class SMACNAStandards {
     const angleDeg = Math.abs(angle * 180 / Math.PI);
 
     // Find closest allowed angle
-    let closest = this.ALLOWED_ANGLES[0];
+    let closest: 30 | 45 | 90 = this.ALLOWED_ANGLES[0];
     let minDiff = Math.abs(angleDeg - closest);
 
     for (const allowedAngle of this.ALLOWED_ANGLES) {
@@ -421,6 +424,7 @@ class ConnectivityAnalyzer {
 class FittingGenerator {
   /**
    * Generate transition fitting between two segments
+   * FIXED: Proper surface-to-surface alignment for mesh connections
    */
   static generateTransition(
     segment1: DuctSegment,
@@ -443,12 +447,21 @@ class FittingGenerator {
     const sizeDiff = this.calculateSizeDifference(segment1, segment2);
     const length = SMACNAStandards.calculateTransitionLength(sizeDiff);
 
-    // Calculate position and rotation
+    // Calculate direction between segments
     const direction = new Vector3().subVectors(segment2.start, segment1.end).normalize();
-    const position = new Vector3().addVectors(connectionPoint, direction.clone().multiplyScalar(length / 2));
+
+    // CRITICAL FIX: Position fitting so surfaces align with duct segment endpoints
+    // Place fitting center at the midpoint between segment endpoints for proper surface alignment
+    const midPoint = new Vector3().addVectors(segment1.end, segment2.start).multiplyScalar(0.5);
+    const position = midPoint;
+
     const rotation = new Euler().setFromQuaternion(
       new Quaternion().setFromUnitVectors(new Vector3(0, 0, 1), direction)
     );
+
+    // Create connection points at actual surface positions
+    const inletSurfacePosition = segment1.end.clone();
+    const outletSurfacePosition = segment2.start.clone();
 
     return {
       id: `transition-${Date.now()}`,
@@ -459,13 +472,14 @@ class FittingGenerator {
       length,
       slopeRatio: SMACNAStandards.TRANSITION_SLOPE_RATIO,
       material: segment1.material,
-      inlet: this.createConnectionPoint(segment1, connectionPoint, direction.clone().negate()),
-      outlet: this.createConnectionPoint(segment2, connectionPoint, direction)
+      inlet: this.createConnectionPoint(segment1, inletSurfacePosition, direction.clone().negate()),
+      outlet: this.createConnectionPoint(segment2, outletSurfacePosition, direction)
     };
   }
 
   /**
    * Generate elbow fitting between two segments
+   * FIXED: Proper surface-to-surface alignment for mesh connections
    */
   static generateElbow(
     segment1: DuctSegment,
@@ -479,14 +493,24 @@ class FittingGenerator {
     const elbowSize = this.getLargerDuctSize(segment1, segment2);
     const centerlineRadius = SMACNAStandards.calculateElbowRadius(segment1.shape, elbowSize);
 
-    // Calculate elbow position and rotation
+    // Calculate segment directions
     const dir1 = new Vector3().subVectors(segment1.end, segment1.start).normalize();
     const dir2 = new Vector3().subVectors(segment2.end, segment2.start).normalize();
     const bisector = new Vector3().addVectors(dir1, dir2).normalize();
 
+    // CRITICAL FIX: Position elbow so inlet/outlet surfaces align with segment endpoints
+    // Calculate elbow center position based on centerline radius and angle
+    const halfAngleRad = (snappedAngle * Math.PI / 180) / 2;
+    const offsetDistance = centerlineRadius / Math.cos(halfAngleRad);
+    const elbowCenter = connectionPoint.clone().add(bisector.clone().multiplyScalar(offsetDistance));
+
     const rotation = new Euler().setFromQuaternion(
       new Quaternion().setFromUnitVectors(new Vector3(0, 0, 1), bisector)
     );
+
+    // Create connection points at actual surface positions for proper alignment
+    const inletSurfacePosition = segment1.end.clone();
+    const outletSurfacePosition = segment2.start.clone();
 
     return {
       id: `elbow-${Date.now()}`,
@@ -494,11 +518,11 @@ class FittingGenerator {
       elbowType: segment1.shape,
       angle: snappedAngle,
       centerlineRadius,
-      position: connectionPoint,
+      position: elbowCenter,
       rotation,
       material: segment1.material,
-      inlet: this.createConnectionPoint(segment1, connectionPoint, dir1.clone().negate()),
-      outlet: this.createConnectionPoint(segment2, connectionPoint, dir2)
+      inlet: this.createConnectionPoint(segment1, inletSurfacePosition, dir1.clone().negate()),
+      outlet: this.createConnectionPoint(segment2, outletSurfacePosition, dir2)
     };
   }
 
@@ -554,15 +578,106 @@ class FittingGenerator {
     direction: Vector3
   ): ConnectionPoint {
     return {
+      id: `${segment.id}-connection-${Date.now()}`,
       position,
       direction,
       shape: segment.shape,
       width: segment.width,
       height: segment.height,
-      diameter: segment.diameter
+      diameter: segment.diameter,
+      status: 'available'
     };
   }
+
+  /**
+   * MESH CONNECTION FIX: Calculate exact surface position for duct segment
+   * This ensures proper surface-to-surface alignment
+   */
+  static getDuctSurfacePosition(segment: DuctSegment, isStart: boolean): Vector3 {
+    return isStart ? segment.start.clone() : segment.end.clone();
+  }
+
+  /**
+   * MESH CONNECTION FIX: Calculate exact surface position for fitting inlet/outlet
+   * This ensures proper surface-to-surface alignment with duct segments
+   */
+  static getFittingSurfacePosition(fitting: DuctFitting, isInlet: boolean): Vector3 {
+    if (fitting.type === 'transition') {
+      const transitionFitting = fitting as TransitionFitting;
+      const halfLength = transitionFitting.length / 2;
+      const offset = isInlet ? -halfLength : halfLength;
+      const direction = new Vector3(0, 0, 1).applyEuler(fitting.rotation);
+      return fitting.position.clone().add(direction.multiplyScalar(offset));
+    } else if (fitting.type === 'elbow') {
+      const elbowFitting = fitting as ElbowFitting;
+      // For elbows, inlet and outlet are at the connection points
+      return isInlet ? elbowFitting.inlet.position.clone() : elbowFitting.outlet.position.clone();
+    }
+    return fitting.position.clone();
+  }
+
+  /**
+   * MESH CONNECTION FIX: Validate that two surfaces are properly aligned
+   * Returns true if surfaces are within acceptable tolerance
+   */
+  static validateSurfaceAlignment(position1: Vector3, position2: Vector3, tolerance: number = 0.01): boolean {
+    return position1.distanceTo(position2) <= tolerance;
+  }
 }
+
+// MESH CONNECTION FIX: Connection Mesh Component to bridge gaps between components
+const ConnectionMesh: React.FC<{
+  startPosition: Vector3;
+  endPosition: Vector3;
+  shape: 'rectangular' | 'round';
+  dimensions: { width?: number; height?: number; diameter?: number };
+  material?: string;
+}> = ({ startPosition, endPosition, shape, dimensions, material = '#595959' }) => {
+  // Calculate connection mesh geometry
+  const direction = new Vector3().subVectors(endPosition, startPosition);
+  const length = direction.length();
+  const center = new Vector3().addVectors(startPosition, endPosition).multiplyScalar(0.5);
+
+  // Calculate rotation to align with direction - moved before early return to fix React hook rule
+  const rotation = React.useMemo(() => {
+    if (length > 0) {
+      const normalizedDirection = direction.clone().normalize();
+      const yRotation = Math.atan2(normalizedDirection.x, normalizedDirection.z);
+      const xRotation = -Math.asin(normalizedDirection.y) + (shape === 'round' ? Math.PI / 2 : 0);
+      return [xRotation, yRotation, 0] as [number, number, number];
+    }
+    return [0, 0, 0] as [number, number, number];
+  }, [direction, length, shape]);
+
+  // Convert dimensions to scene units
+  const sceneWidth = dimensions.width ? dimensions.width / 12 : 1;
+  const sceneHeight = dimensions.height ? dimensions.height / 12 : 1;
+  const sceneDiameter = dimensions.diameter ? dimensions.diameter / 12 : 1;
+
+  // Only render if there's a gap to bridge (moved after hooks)
+  if (length < 0.01) return null;
+
+  return (
+    <mesh position={center} rotation={rotation}>
+      {/* Modular geometry using DuctGeometry component for preview */}
+      <DuctGeometry
+        shape={shape}
+        width={sceneWidth}
+        height={sceneHeight}
+        diameter={sceneDiameter}
+        length={length}
+        wallThickness={0.05}
+      />
+      <meshStandardMaterial
+        color={material}
+        transparent={true}
+        opacity={0.8}
+        metalness={0.3}
+        roughness={0.6}
+      />
+    </mesh>
+  );
+};
 
 // Enhanced 3D Transition Fitting Component with Proper Dimension Handling
 const TransitionMesh: React.FC<{
@@ -669,21 +784,19 @@ const TransitionMesh: React.FC<{
       onPointerOver={() => setHovered(true)}
       onPointerOut={() => setHovered(false)}
     >
-      {/* Enhanced transition geometry using validated dimensions */}
-      {fitting.inlet.shape === 'round' && fitting.outlet.shape === 'round' ? (
-        // Round to round transition - tapered cylinder with actual dimensions
-        <cylinderGeometry args={[dimensions.outletSize / 2, dimensions.inletSize / 2, fitting.length, 16]} />
-      ) : fitting.inlet.shape === 'rectangular' && fitting.outlet.shape === 'rectangular' ? (
-        // Rectangular to rectangular transition - use box geometry with actual dimensions
-        <boxGeometry args={[
-          (dimensions.inletWidth + dimensions.outletWidth) / 2,
-          (dimensions.inletHeight + dimensions.outletHeight) / 2,
-          fitting.length
-        ]} />
-      ) : (
-        // Mixed transitions - use cylinder with validated average dimensions
-        <cylinderGeometry args={[dimensions.outletSize / 2, dimensions.inletSize / 2, fitting.length, 16]} />
-      )}
+      {/* Modular geometry using TransitionGeometry component */}
+      <TransitionGeometry
+        inletShape={fitting.inlet.shape}
+        outletShape={fitting.outlet.shape}
+        inletWidth={dimensions.inletWidth}
+        inletHeight={dimensions.inletHeight}
+        inletDiameter={dimensions.inletSize}
+        outletWidth={dimensions.outletWidth}
+        outletHeight={dimensions.outletHeight}
+        outletDiameter={dimensions.outletSize}
+        length={fitting.length}
+        wallThickness={0.1}
+      />
       <meshStandardMaterial
         color={getColor()}
         transparent={false}
@@ -751,13 +864,16 @@ const ElbowMesh: React.FC<{
       onPointerOut={() => setHovered(false)}
     >
       {/* Enhanced elbow geometry using validated dimensions */}
-      {fitting.inlet.shape === 'round' ? (
-        // Round elbow - torus segment with actual diameter
-        <torusGeometry args={[fitting.centerlineRadius, elbowDimensions.ductSize / 2, 8, 16, (fitting.angle * Math.PI) / 180]} />
-      ) : (
-        // Rectangular elbow - box geometry with actual width and height
-        <boxGeometry args={[elbowDimensions.ductWidth, elbowDimensions.ductHeight, fitting.centerlineRadius * 0.5]} />
-      )}
+      {/* Modular geometry using ElbowGeometry component */}
+      <ElbowGeometry
+        shape={fitting.inlet.shape}
+        width={elbowDimensions.ductWidth}
+        height={elbowDimensions.ductHeight}
+        diameter={elbowDimensions.ductSize}
+        angle={fitting.angle}
+        centerlineRadius={fitting.centerlineRadius}
+        wallThickness={0.1}
+      />
       <meshStandardMaterial
         color={getColor()}
         transparent={false}
@@ -945,12 +1061,15 @@ const DuctMesh: React.FC<{
       onPointerOver={() => setHovered(true)}
       onPointerOut={() => setHovered(false)}
     >
-      {/* Geometry based on duct shape */}
-      {segment.shape === 'round' ? (
-        <cylinderGeometry args={[sceneDiameter / 2, sceneDiameter / 2, length, 16]} />
-      ) : (
-        <boxGeometry args={[sceneWidth, sceneHeight, length]} />
-      )}
+      {/* Modular geometry using DuctGeometry component */}
+      <DuctGeometry
+        shape={segment.shape}
+        width={sceneWidth}
+        height={sceneHeight}
+        diameter={sceneDiameter}
+        length={length}
+        wallThickness={0.1}
+      />
       <meshStandardMaterial
         color={getColor()}
         transparent={false}
@@ -1021,7 +1140,7 @@ const EquipmentMesh: React.FC<{
   isSelected: boolean;
   onSelect: () => void;
 }> = ({ equipment, isSelected, onSelect }) => {
-  const meshRef = useRef<any>();
+  const meshRef = useRef<any>(null);
   const [hovered, setHovered] = useState(false);
 
   // Professional color scheme for HVAC equipment
@@ -1400,6 +1519,43 @@ const Scene3D: React.FC<{
           );
         }
         return null;
+      })}
+
+      {/* MESH CONNECTION FIX: Connection Meshes to bridge gaps between ducts and fittings */}
+      {fittings.map((fitting) => {
+        const connectionMeshes: React.ReactNode[] = [];
+
+        // Find connected segments for this fitting
+        const connectedSegments = segments.filter(segment =>
+          segment.id === fitting.inlet.connectedTo || segment.id === fitting.outlet.connectedTo
+        );
+
+        connectedSegments.forEach((segment, index) => {
+          // Determine if this segment connects to inlet or outlet
+          const isInletConnection = segment.id === fitting.inlet.connectedTo;
+          const fittingSurfacePos = FittingGenerator.getFittingSurfacePosition(fitting, isInletConnection);
+          const segmentSurfacePos = FittingGenerator.getDuctSurfacePosition(segment, false); // Use end position
+
+          // Only create connection mesh if surfaces are not aligned
+          if (!FittingGenerator.validateSurfaceAlignment(fittingSurfacePos, segmentSurfacePos, 0.1)) {
+            connectionMeshes.push(
+              <ConnectionMesh
+                key={`connection-${fitting.id}-${segment.id}`}
+                startPosition={segmentSurfacePos}
+                endPosition={fittingSurfacePos}
+                shape={segment.shape}
+                dimensions={{
+                  width: segment.width,
+                  height: segment.height,
+                  diameter: segment.diameter
+                }}
+                material="#4a5568" // Slightly darker for connection meshes
+              />
+            );
+          }
+        });
+
+        return connectionMeshes;
       })}
 
       {/* Equipment */}

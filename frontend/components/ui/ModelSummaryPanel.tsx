@@ -23,6 +23,7 @@ import {
   RotateCcw
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useUnitsDisplay } from '@/hooks/useUnitsDisplay';
 
 interface CalculationResult {
   id: string;
@@ -204,6 +205,8 @@ export const ModelSummaryPanel: React.FC<ModelSummaryPanelProps> = ({
   onJumpToElement,
   className
 }) => {
+  const { formatFlow, formatPressure, formatVelocity, formatPower } = useUnitsDisplay();
+
   const errorCount = warnings.filter(w => w.type === 'error').length;
   const warningCount = warnings.filter(w => w.type === 'warning').length;
   const infoCount = warnings.filter(w => w.type === 'info').length;
@@ -314,29 +317,29 @@ export const ModelSummaryPanel: React.FC<ModelSummaryPanelProps> = ({
                 <MetricCard
                   icon={<Wind className="w-4 h-4" />}
                   label="Total Airflow"
-                  value={systemSummary.totalAirflow}
-                  unit="CFM"
+                  value={formatFlow(systemSummary.totalAirflow, 0)}
+                  unit=""
                   status="pass"
                 />
                 <MetricCard
                   icon={<Thermometer className="w-4 h-4" />}
                   label="Pressure Drop"
-                  value={systemSummary.totalPressureDrop.toFixed(2)}
-                  unit="in. w.g."
+                  value={formatPressure(systemSummary.totalPressureDrop, 2)}
+                  unit=""
                   status="warning"
                 />
                 <MetricCard
                   icon={<TrendingUp className="w-4 h-4" />}
                   label="Max Velocity"
-                  value={systemSummary.maxVelocity}
-                  unit="FPM"
+                  value={formatVelocity(systemSummary.maxVelocity, 0)}
+                  unit=""
                   status="pass"
                 />
                 <MetricCard
                   icon={<Zap className="w-4 h-4" />}
                   label="Energy Use"
-                  value={systemSummary.energyConsumption.toFixed(1)}
-                  unit="kW"
+                  value={formatPower(systemSummary.energyConsumption, 1)}
+                  unit=""
                   status="pass"
                 />
               </div>

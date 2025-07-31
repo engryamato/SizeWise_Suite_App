@@ -9,6 +9,7 @@ import {
   Fan
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useUnitsDisplay } from '@/hooks/useUnitsDisplay';
 
 export type DrawingMode = 'off' | 'duct' | 'equipment' | 'drawing';
 
@@ -43,6 +44,7 @@ export const DrawingToolFAB: React.FC<DrawingToolFABProps> = ({
   onDuctPropertiesChange,
   onEquipmentPlace
 }) => {
+  const { getUnitLabel } = useUnitsDisplay();
   const [showPropertyPanel, setShowPropertyPanel] = useState(false);
 
   const handleMainButtonClick = useCallback(() => {
@@ -188,7 +190,7 @@ export const DrawingToolFAB: React.FC<DrawingToolFABProps> = ({
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">
-                      Width (in)
+                      Width ({getUnitLabel('length', true)})
                     </label>
                     <input
                       type="number"
@@ -200,7 +202,7 @@ export const DrawingToolFAB: React.FC<DrawingToolFABProps> = ({
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">
-                      Height (in)
+                      Height ({getUnitLabel('length', true)})
                     </label>
                     <input
                       type="number"
@@ -214,7 +216,7 @@ export const DrawingToolFAB: React.FC<DrawingToolFABProps> = ({
               ) : (
                 <div>
                   <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">
-                    Diameter (in)
+                    Diameter ({getUnitLabel('length', true)})
                   </label>
                   <input
                     type="number"

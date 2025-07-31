@@ -1,5 +1,33 @@
 import { create } from 'zustand';
 
+// Cookie utilities for token storage
+const setCookie = (name: string, value: string, days: number = 7) => {
+  if (typeof document !== 'undefined') {
+    const expires = new Date();
+    expires.setTime(expires.getTime() + (days * 24 * 60 * 60 * 1000));
+    document.cookie = `${name}=${value};expires=${expires.toUTCString()};path=/;SameSite=Lax`;
+  }
+};
+
+const getCookie = (name: string): string | null => {
+  if (typeof document !== 'undefined') {
+    const nameEQ = name + "=";
+    const ca = document.cookie.split(';');
+    for (let i = 0; i < ca.length; i++) {
+      let c = ca[i];
+      while (c.charAt(0) === ' ') c = c.substring(1, c.length);
+      if (c.indexOf(nameEQ) === 0) return c.substring(nameEQ.length, c.length);
+    }
+  }
+  return null;
+};
+
+const deleteCookie = (name: string) => {
+  if (typeof document !== 'undefined') {
+    document.cookie = `${name}=;expires=Thu, 01 Jan 1970 00:00:00 UTC;path=/;`;
+  }
+};
+
 interface User {
   id: string;
   email: string;
@@ -40,15 +68,52 @@ interface AuthState {
   canPerformAction: (action: string, context?: any) => Promise<boolean>;
 }
 
-export const useAuthStore = create<AuthState>((set, get) => ({
-  user: null,
-  isAuthenticated: false,
-  isLoading: false,
-  token: null,
-  isOnline: true,
-  lastSync: null,
-  tierStatus: null,
-  canEditComputationalProperties: false,
+export const useAuthStore = create<AuthState>((set, get) => {
+  // Initialize auth state from cookie if available
+  const initializeAuth = () => {
+    const existingToken = getCookie('auth-token');
+    if (existingToken) {
+      // For mock authentication, create a mock user if token exists
+      const mockUser: User = {
+        id: '1',
+        email: 'user@example.com',
+        name: 'Test User',
+        tier: 'pro',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      };
+
+      const mockTierStatus: TierStatus = {
+        tier: mockUser.tier,
+        features: { unlimited: mockUser.tier === 'enterprise' },
+        usage: { projects: 1 },
+        limits: { projects: mockUser.tier === 'free' ? 3 : 100 }
+      };
+
+      set({
+        user: mockUser,
+        isAuthenticated: true,
+        token: existingToken,
+        tierStatus: mockTierStatus,
+        canEditComputationalProperties: mockUser.tier === 'pro' || mockUser.tier === 'enterprise' || mockUser.tier === 'super_admin'
+      });
+    }
+  };
+
+  // Initialize on store creation
+  if (typeof window !== 'undefined') {
+    setTimeout(initializeAuth, 0);
+  }
+
+  return {
+    user: null,
+    isAuthenticated: false,
+    isLoading: false,
+    token: null,
+    isOnline: true,
+    lastSync: null,
+    tierStatus: null,
+    canEditComputationalProperties: false,
 
   login: async (email: string, password: string): Promise<boolean> => {
     set({ isLoading: true });
@@ -74,6 +139,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         usage: { projects: 1 },
         limits: { projects: mockUser.tier === 'free' ? 3 : 100 }
       };
+
+      // Store token in cookie for middleware access
+      setCookie('auth-token', mockToken, 7);
 
       set({
         user: mockUser,
@@ -136,6 +204,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
 
   logout: () => {
+    // Remove token from cookie
+    deleteCookie('auth-token');
+
     set({
       user: null,
       isAuthenticated: false,
@@ -225,4 +296,5 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         return true;
     }
   }
-}));
+  };
+});

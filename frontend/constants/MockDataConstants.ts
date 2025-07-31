@@ -31,9 +31,9 @@ export interface ValidationWarning {
 
 export interface ElementProperties {
   id: string;
-  type: 'duct' | 'fitting' | 'equipment';
+  type: 'room' | 'duct' | 'equipment' | 'annotation' | 'group';
   name: string;
-  position: { x: number; y: number; z: number };
+  position: { x: number; y: number; z?: number };
   dimensions: { width: number; height: number };
   ductType?: 'supply' | 'return' | 'exhaust';
   velocity?: number;

@@ -3,25 +3,28 @@
 import React, { useState, useCallback, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Vector3, Euler } from 'three'
-import { Canvas3D, Equipment } from '@/components/3d/Canvas3D'
+import { Canvas3D } from '@/components/3d/Canvas3D'
 import { useToast } from '@/lib/hooks/useToaster'
 import { withAirDuctSizerAccess } from '@/components/hoc/withToolAccess'
+import { Equipment } from '@/utils/EquipmentFactory'
 
 // V1 Components
 import { ProjectPropertiesManager } from '@/components/managers/ProjectPropertiesManager'
 import { DrawingToolFAB, DrawingMode, DuctProperties } from '@/components/ui/DrawingToolFAB'
-import { ContextPropertyPanel, ElementProperties } from '@/components/ui/ContextPropertyPanel'
+import { ContextPropertyPanel } from '@/components/ui/ContextPropertyPanel'
+import { ElementProperties } from '@/constants/MockDataConstants'
 import { ModelSummaryPanel } from '@/components/ui/ModelSummaryPanel'
 import { StatusBar } from '@/components/ui/StatusBar'
 
 // Priority 5-7 Components
 import { WarningPanel, ValidationWarning } from '@/components/ui/WarningPanel'
-import { ViewCube, ViewType } from '@/components/ui/ViewCube'
+import { ViewCube, ViewCubeOrientation } from '@/components/ui/ViewCube'
 
 // Shared hooks and utilities
 import { useEquipmentPlacement } from '@/hooks/useEquipmentPlacement'
 import { useElementSelection } from '@/hooks/useElementSelection'
 import { useMockCalculations } from '@/hooks/useMockCalculations'
+import { useUIStore } from '@/stores/ui-store'
 
 import { BottomRightCorner } from '@/components/ui/BottomRightCorner'
 
@@ -38,12 +41,26 @@ interface DuctSegment {
   material: string;
 }
 
-// Import fitting types from Canvas3D
+// Import fitting types from Canvas3D - matching Canvas3D interface
+interface ConnectionPoint {
+  id: string;
+  position: Vector3;
+  direction: Vector3;
+  shape: 'rectangular' | 'round';
+  width?: number;
+  height?: number;
+  diameter?: number;
+  status: 'available' | 'connected' | 'blocked';
+  connectedTo?: string;
+}
+
 interface DuctFitting {
   id: string;
   type: 'transition' | 'elbow';
   position: Vector3;
   rotation: Euler;
+  inlet: ConnectionPoint;
+  outlet: ConnectionPoint;
   material: string;
 }
 
@@ -57,7 +74,7 @@ function AirDuctSizerPage() {
   const [contextPanelPosition, setContextPanelPosition] = useState({ x: 0, y: 0 });
 
   // Priority 5-7 Component state
-  const [currentView, setCurrentView] = useState<ViewType>('isometric');
+  const [currentView, setCurrentView] = useState<ViewCubeOrientation>('isometric');
   const [cameraController, setCameraController] = useState<any>(null);
   const [showWelcomeMessage, setShowWelcomeMessage] = useState(true);
 
@@ -81,6 +98,9 @@ function AirDuctSizerPage() {
   const [warnings, setWarnings] = useState<any[]>([]);
   const [saveStatus, setSaveStatus] = useState<'saved' | 'saving' | 'unsaved' | 'error'>('saved');
   const [lastSaved, setLastSaved] = useState<Date>(new Date());
+
+  // UI store for units selection
+  const { units, setUnits } = useUIStore();
 
   // Connection state
   const [isOnline, setIsOnline] = useState(true);
@@ -263,7 +283,7 @@ function AirDuctSizerPage() {
     toast.info('Warning Dismissed', 'Warning has been dismissed');
   }, [toast]);
 
-  const handleViewChange = useCallback((view: ViewType) => {
+  const handleViewChange = useCallback((view: ViewCubeOrientation) => {
     setCurrentView(view);
     if (cameraController) {
       cameraController.setView(view, true);
@@ -404,6 +424,8 @@ function AirDuctSizerPage() {
         calculationStatus={calculationStatus}
         warningCount={warnings.filter(w => w.type === 'warning' && !w.resolved).length}
         errorCount={warnings.filter(w => w.type === 'error' && !w.resolved).length}
+        currentUnits={units}
+        onUnitsChange={setUnits}
       />
 
       {/* Priority 5: Warning Panel */}

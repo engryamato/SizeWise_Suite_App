@@ -4,6 +4,7 @@ import React, { useState } from 'react'
 import { Room } from '@/types/air-duct-sizer'
 import { useProjectStore } from '@/stores/project-store'
 import { useCalculationStore } from '@/stores/calculation-store'
+import { useUnitsDisplay } from '@/hooks/useUnitsDisplay'
 
 interface RoomPanelProps {
   room: Room
@@ -12,6 +13,7 @@ interface RoomPanelProps {
 export const RoomPanel: React.FC<RoomPanelProps> = ({ room }) => {
   const { updateRoom } = useProjectStore()
   const { calculateArea } = useCalculationStore()
+  const { formatLength, formatArea, formatFlow, getUnitLabel } = useUnitsDisplay()
   
   const [isEditing, setIsEditing] = useState(false)
   const [formData, setFormData] = useState({
@@ -118,7 +120,7 @@ export const RoomPanel: React.FC<RoomPanelProps> = ({ room }) => {
         <div className="grid grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Length (ft)
+              Length ({getUnitLabel('length')})
             </label>
             {isEditing ? (
               <input
@@ -139,7 +141,7 @@ export const RoomPanel: React.FC<RoomPanelProps> = ({ room }) => {
           
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Width (ft)
+              Width ({getUnitLabel('length')})
             </label>
             {isEditing ? (
               <input
@@ -160,7 +162,7 @@ export const RoomPanel: React.FC<RoomPanelProps> = ({ room }) => {
           
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Height (ft)
+              Height ({getUnitLabel('length')})
             </label>
             {isEditing ? (
               <input
@@ -181,10 +183,10 @@ export const RoomPanel: React.FC<RoomPanelProps> = ({ room }) => {
           
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Area (sq ft)
+              Area ({getUnitLabel('area')})
             </label>
             <p className="text-gray-900 font-medium">
-              {(room.dimensions.length * room.dimensions.width).toFixed(1)}
+              {formatArea(room.dimensions.length * room.dimensions.width, 1)}
             </p>
           </div>
         </div>

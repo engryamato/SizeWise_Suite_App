@@ -65,10 +65,6 @@ export const ProjectPanelContainer: React.FC<Omit<ProjectPanelProps, 'data' | 'u
   // Initialization and Data Loading
   // =============================================================================
 
-  useEffect(() => {
-    loadUserTierInfo();
-  }, [loadUserTierInfo]);
-
   const loadUserTierInfo = useCallback(async () => {
     if (!user || !tier.service) return;
 
@@ -85,6 +81,71 @@ export const ProjectPanelContainer: React.FC<Omit<ProjectPanelProps, 'data' | 'u
       toast.error('Failed to load user tier information');
     }
   }, [user, tier, toast]);
+
+  useEffect(() => {
+    loadUserTierInfo();
+  }, [loadUserTierInfo]);
+
+  // =============================================================================
+  // Validation Functions
+  // =============================================================================
+
+  const validateProjectUpdates = useCallback((updates: Partial<Project>) => {
+    const errors: Record<string, string> = {};
+
+    // Validate project name
+    if (updates.project_name !== undefined) {
+      if (!updates.project_name.trim()) {
+        errors.project_name = 'Project name is required';
+      } else if (updates.project_name.length > 100) {
+        errors.project_name = 'Project name must be less than 100 characters';
+      }
+    }
+
+    // Validate room count against tier limits
+    if (updates.rooms !== undefined) {
+      if (updates.rooms.length > tierLimits.maxRooms) {
+        errors.rooms = `Maximum ${tierLimits.maxRooms} rooms allowed for ${userTier} tier`;
+      }
+    }
+
+    // Validate segment count against tier limits
+    if (updates.segments !== undefined) {
+      if (updates.segments.length > tierLimits.maxSegments) {
+        errors.segments = `Maximum ${tierLimits.maxSegments} segments allowed for ${userTier} tier`;
+      }
+    }
+
+    // Validate computational properties access
+    if (updates.computational_properties !== undefined && !tierLimits.canEditComputationalProperties) {
+      errors.computational_properties = 'Computational properties editing requires Pro tier';
+    }
+
+    return {
+      isValid: Object.keys(errors).length === 0,
+      errors
+    };
+  }, [tierLimits, userTier]);
+
+  const validateExportOptions = useCallback((options: ExportOptions) => {
+    // Check if format is allowed for current tier
+    const allowedFormats = userTier === 'free' ? ['pdf', 'json'] : ['pdf', 'json', 'excel', 'bom'];
+
+    if (!allowedFormats.includes(options.format)) {
+      return {
+        isValid: false,
+        message: `${options.format.toUpperCase()} export requires Pro tier`
+      };
+    }
+
+    // Check watermark requirements
+    if (userTier === 'free' && !tierLimits.canExportWithoutWatermark) {
+      // Force watermark for free tier
+      options.includeDrawing = true; // Ensure watermark is applied
+    }
+
+    return { isValid: true, message: '' };
+  }, [userTier, tierLimits]);
 
   // =============================================================================
   // Project Operations
@@ -182,62 +243,7 @@ export const ProjectPanelContainer: React.FC<Omit<ProjectPanelProps, 'data' | 'u
   // Validation Functions
   // =============================================================================
 
-  const validateProjectUpdates = useCallback((updates: Partial<Project>) => {
-    const errors: Record<string, string> = {};
 
-    // Validate project name
-    if (updates.project_name !== undefined) {
-      if (!updates.project_name.trim()) {
-        errors.project_name = 'Project name is required';
-      } else if (updates.project_name.length > 100) {
-        errors.project_name = 'Project name must be less than 100 characters';
-      }
-    }
-
-    // Validate room count against tier limits
-    if (updates.rooms !== undefined) {
-      if (updates.rooms.length > tierLimits.maxRooms) {
-        errors.rooms = `Maximum ${tierLimits.maxRooms} rooms allowed for ${userTier} tier`;
-      }
-    }
-
-    // Validate segment count against tier limits
-    if (updates.segments !== undefined) {
-      if (updates.segments.length > tierLimits.maxSegments) {
-        errors.segments = `Maximum ${tierLimits.maxSegments} segments allowed for ${userTier} tier`;
-      }
-    }
-
-    // Validate computational properties access
-    if (updates.computational_properties !== undefined && !tierLimits.canEditComputationalProperties) {
-      errors.computational_properties = 'Computational properties editing requires Pro tier';
-    }
-
-    return {
-      isValid: Object.keys(errors).length === 0,
-      errors
-    };
-  }, [tierLimits, userTier]);
-
-  const validateExportOptions = useCallback((options: ExportOptions) => {
-    // Check if format is allowed for current tier
-    const allowedFormats = userTier === 'free' ? ['pdf', 'json'] : ['pdf', 'json', 'excel', 'bom'];
-    
-    if (!allowedFormats.includes(options.format)) {
-      return {
-        isValid: false,
-        message: `${options.format.toUpperCase()} export requires Pro tier`
-      };
-    }
-
-    // Check watermark requirements
-    if (userTier === 'free' && !tierLimits.canExportWithoutWatermark) {
-      // Force watermark for free tier
-      options.includeDrawing = true; // Ensure watermark is applied
-    }
-
-    return { isValid: true, message: '' };
-  }, [userTier, tierLimits]);
 
   // =============================================================================
   // Auto-save functionality

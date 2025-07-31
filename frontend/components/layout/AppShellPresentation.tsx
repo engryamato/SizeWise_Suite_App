@@ -218,6 +218,8 @@ export const AppShellPresentation: React.FC<AppShellPresentationProps> = ({
           calculationStatus="idle"
           warningCount={0}
           errorCount={0}
+          currentUnits="imperial" // TODO: Connect to UI store
+          onUnitsChange={() => {}} // TODO: Connect to UI store
         />
       </footer>
 

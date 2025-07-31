@@ -417,6 +417,8 @@ function AirDuctSizerPage() {
         onZoomIn={handleZoomIn}
         onZoomOut={handleZoomOut}
         onZoomReset={handleZoomReset}
+        summaryOpen={showModelSummary}
+        onSummaryToggle={() => setShowModelSummary(prev => !prev)}
         userName="Demo User"
         projectName="Air Duct Sizer"
         currentBranch="main"
@@ -440,27 +442,6 @@ function AirDuctSizerPage() {
       {/* Priority 6: Bottom Right Corner - Chat & Help */}
       <BottomRightCorner className="fixed bottom-6 right-6 z-50" />
 
-      {/* Model Summary Trigger Button (floating) */}
-      <motion.button
-        type="button"
-        onClick={() => setShowModelSummary(!showModelSummary)}
-        className="fixed top-20 left-4 z-[60] flex items-center space-x-2 px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg shadow-lg transition-colors"
-        whileHover={{ scale: 1.05 }}
-        whileTap={{ scale: 0.95 }}
-      >
-        <motion.div
-          animate={{ rotate: isCalculating ? 360 : 0 }}
-          transition={{ duration: 1, repeat: isCalculating ? Infinity : 0, ease: "linear" }}
-        >
-          📊
-        </motion.div>
-        <span className="text-sm font-medium">Model Summary</span>
-        {warnings.filter(w => !w.resolved).length > 0 && (
-          <span className="px-2 py-1 bg-red-500 text-white text-xs rounded-full">
-            {warnings.filter(w => !w.resolved).length}
-          </span>
-        )}
-      </motion.button>
 
       {/* Priority 7: ViewCube 3D Navigation */}
       <ViewCube

@@ -213,6 +213,8 @@ export const AppShellPresentation: React.FC<AppShellPresentationProps> = ({
           onZoomIn={() => {}}
           onZoomOut={() => {}}
           onZoomReset={() => {}}
+          summaryOpen={false}
+          onSummaryToggle={() => {}}
           userName={user?.name}
           projectName="Current Project" // This would come from project state
           calculationStatus="idle"

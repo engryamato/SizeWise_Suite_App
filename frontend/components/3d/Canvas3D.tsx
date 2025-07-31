@@ -12,7 +12,15 @@ import {
   Line,
   Box
 } from '@react-three/drei';
-import { Vector3, Vector2, Raycaster, Quaternion, Euler } from 'three';
+import {
+  Vector3,
+  Vector2,
+  Raycaster,
+  Quaternion,
+  Euler,
+  BufferGeometry,
+  Float32BufferAttribute
+} from 'three';
 import { useCameraController } from '@/lib/hooks/useCameraController';
 import { useUIStore } from '@/stores/ui-store';
 import { motion } from 'framer-motion';
@@ -103,7 +111,7 @@ interface TransitionFitting extends DuctFitting {
 // Elbow fitting for direction changes
 interface ElbowFitting extends DuctFitting {
   type: 'elbow';
-  elbowType: 'rectangular' | 'round';
+  elbowType: 'rectangular' | 'round' | 'rect-to-round' | 'round-to-rect';
   angle: 30 | 45 | 90; // Restricted angles for snapping
   centerlineRadius: number; // Based on SMACNA guidelines
 }
@@ -488,10 +496,21 @@ class FittingGenerator {
       new Quaternion().setFromUnitVectors(new Vector3(0, 0, 1), bisector)
     );
 
+    let elbowType: ElbowFitting['elbowType'];
+    if (segment1.shape === 'rectangular' && segment2.shape === 'round') {
+      elbowType = 'rect-to-round';
+    } else if (segment1.shape === 'round' && segment2.shape === 'rectangular') {
+      elbowType = 'round-to-rect';
+    } else if (segment1.shape === 'round') {
+      elbowType = 'round';
+    } else {
+      elbowType = 'rectangular';
+    }
+
     return {
       id: `elbow-${Date.now()}`,
       type: 'elbow',
-      elbowType: segment1.shape,
+      elbowType,
       angle: snappedAngle,
       centerlineRadius,
       position: connectionPoint,
@@ -718,20 +737,84 @@ const ElbowMesh: React.FC<{
   const meshRef = useRef<any>(null);
   const [hovered, setHovered] = useState(false);
 
-  // Enhanced dimension validation and calculation for elbow - simplified approach
-  let ductSize: number;
-  let ductWidth: number;
-  let ductHeight: number;
+  const createRectRoundElbowGeometry = (
+    width: number,
+    height: number,
+    diameter: number,
+    radius: number,
+    angle: number
+  ) => {
+    const radialSegments = 8;
+    const tubularSegments = 16;
+    const angleRad = (angle * Math.PI) / 180;
+    const positions: number[] = [];
+    const indices: number[] = [];
 
-  if (fitting.inlet.shape === 'round') {
-    ductSize = fitting.inlet.diameter || 12; // Default for missing diameter
-    ductWidth = ductSize;
-    ductHeight = ductSize;
-  } else {
-    ductWidth = fitting.inlet.width || 12; // Default width
-    ductHeight = fitting.inlet.height || 8; // Default height
-    ductSize = Math.max(ductWidth, ductHeight);
+    const rectRadius = (phi: number) =>
+      1 /
+      (Math.abs(Math.cos(phi)) / (width / 2) +
+        Math.abs(Math.sin(phi)) / (height / 2));
+
+    for (let i = 0; i <= tubularSegments; i++) {
+      const t = i / tubularSegments;
+      const theta = angleRad * t;
+      const sinT = Math.sin(theta);
+      const cosT = Math.cos(theta);
+      const cx = radius * cosT;
+      const cy = radius * sinT;
+      for (let j = 0; j <= radialSegments; j++) {
+        const phi = (j / radialSegments) * Math.PI * 2;
+        const r0 = rectRadius(phi);
+        const r1 = diameter / 2;
+        const r = r0 * (1 - t) + r1 * t;
+        const x = r * Math.cos(phi);
+        const y = r * Math.sin(phi);
+        const px = cx + x * cosT;
+        const py = cy + x * sinT;
+        const pz = y;
+        positions.push(px, py, pz);
+      }
+    }
+
+    const segCount = radialSegments + 1;
+    for (let i = 0; i < tubularSegments; i++) {
+      for (let j = 0; j < radialSegments; j++) {
+        const a = i * segCount + j;
+        const b = a + segCount;
+        const c = b + 1;
+        const d = a + 1;
+        indices.push(a, b, d, b, c, d);
+      }
+    }
+
+    const geometry = new BufferGeometry();
+    geometry.setAttribute('position', new Float32BufferAttribute(positions, 3));
+    geometry.setIndex(indices);
+    geometry.computeVertexNormals();
+    return geometry;
+  };
+
+  // Enhanced dimension validation and calculation for elbow - simplified approach
+  let ductSize: number = 12;
+  let ductWidth: number = 12;
+  let ductHeight: number = 12;
+
+  if (fitting.inlet.shape === 'rectangular' || fitting.outlet.shape === 'rectangular') {
+    const rect = fitting.inlet.shape === 'rectangular' ? fitting.inlet : fitting.outlet;
+    ductWidth = rect.width || 12;
+    ductHeight = rect.height || 8;
   }
+
+  if (fitting.inlet.shape === 'round' || fitting.outlet.shape === 'round') {
+    const round = fitting.inlet.shape === 'round' ? fitting.inlet : fitting.outlet;
+    ductSize = round.diameter || 12;
+    if (fitting.inlet.shape !== 'rectangular' && fitting.outlet.shape !== 'rectangular') {
+      ductWidth = ductSize;
+      ductHeight = ductSize;
+    }
+  }
+
+  ductSize = Math.max(ductSize, ductWidth, ductHeight);
 
   const elbowDimensions = { ductSize, ductWidth, ductHeight };
 
@@ -751,12 +834,49 @@ const ElbowMesh: React.FC<{
       onPointerOut={() => setHovered(false)}
     >
       {/* Enhanced elbow geometry using validated dimensions */}
-      {fitting.inlet.shape === 'round' ? (
+      {fitting.inlet.shape === 'round' && fitting.outlet.shape === 'round' ? (
         // Round elbow - torus segment with actual diameter
-        <torusGeometry args={[fitting.centerlineRadius, elbowDimensions.ductSize / 2, 8, 16, (fitting.angle * Math.PI) / 180]} />
-      ) : (
+        <torusGeometry
+          args={[
+            fitting.centerlineRadius,
+            elbowDimensions.ductSize / 2,
+            8,
+            16,
+            (fitting.angle * Math.PI) / 180,
+          ]}
+        />
+      ) : fitting.inlet.shape === 'rectangular' &&
+        fitting.outlet.shape === 'rectangular' ? (
         // Rectangular elbow - box geometry with actual width and height
-        <boxGeometry args={[elbowDimensions.ductWidth, elbowDimensions.ductHeight, fitting.centerlineRadius * 0.5]} />
+        <boxGeometry
+          args={[
+            elbowDimensions.ductWidth,
+            elbowDimensions.ductHeight,
+            fitting.centerlineRadius * 0.5,
+          ]}
+        />
+      ) : (
+        // Rect-to-round elbow using custom lofted geometry
+        <primitive
+          object={useMemo(
+            () =>
+              createRectRoundElbowGeometry(
+                elbowDimensions.ductWidth,
+                elbowDimensions.ductHeight,
+                fitting.outlet.diameter || elbowDimensions.ductSize,
+                fitting.centerlineRadius,
+                fitting.angle,
+              ),
+            [
+              elbowDimensions.ductWidth,
+              elbowDimensions.ductHeight,
+              fitting.outlet.diameter,
+              fitting.centerlineRadius,
+              fitting.angle,
+            ],
+          )}
+          attach="geometry"
+        />
       )}
       <meshStandardMaterial
         color={getColor()}

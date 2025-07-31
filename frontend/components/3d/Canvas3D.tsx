@@ -12,7 +12,15 @@ import {
   Line,
   Box
 } from '@react-three/drei';
-import { Vector3, Vector2, Raycaster, Quaternion, Euler } from 'three';
+import {
+  Vector3,
+  Vector2,
+  Raycaster,
+  Quaternion,
+  Euler,
+  BufferGeometry,
+  Float32BufferAttribute
+} from 'three';
 import { useCameraController } from '@/lib/hooks/useCameraController';
 import { useUIStore } from '@/stores/ui-store';
 import { motion } from 'framer-motion';
@@ -445,9 +453,16 @@ class FittingGenerator {
 
     // Calculate position and rotation
     const direction = new Vector3().subVectors(segment2.start, segment1.end).normalize();
-    const position = new Vector3().addVectors(connectionPoint, direction.clone().multiplyScalar(length / 2));
+    const position = new Vector3().addVectors(
+      connectionPoint,
+      direction.clone().multiplyScalar(length / 2)
+    );
     const rotation = new Euler().setFromQuaternion(
       new Quaternion().setFromUnitVectors(new Vector3(0, 0, 1), direction)
+    );
+
+    const outletPosition = connectionPoint.clone().add(
+      direction.clone().multiplyScalar(length)
     );
 
     return {
@@ -459,8 +474,12 @@ class FittingGenerator {
       length,
       slopeRatio: SMACNAStandards.TRANSITION_SLOPE_RATIO,
       material: segment1.material,
-      inlet: this.createConnectionPoint(segment1, connectionPoint, direction.clone().negate()),
-      outlet: this.createConnectionPoint(segment2, connectionPoint, direction)
+      inlet: this.createConnectionPoint(
+        segment1,
+        connectionPoint,
+        direction.clone().negate()
+      ),
+      outlet: this.createConnectionPoint(segment2, outletPosition, direction)
     };
   }
 
@@ -564,6 +583,85 @@ class FittingGenerator {
   }
 }
 
+// Utility to create a BufferGeometry blending a rectangular cross-section to a
+// round one along the Z axis. Used for rect-to-round and round-to-rect fittings.
+function createRectRoundGeometry(
+  inletWidth: number,
+  inletHeight: number,
+  outletDiameter: number,
+  length: number,
+  radialSegments = 16,
+  lengthSegments = 8
+): BufferGeometry {
+  const segs = radialSegments;
+  const lenSegs = lengthSegments;
+
+  const rectPoints: Vector3[] = [];
+  const circlePoints: Vector3[] = [];
+
+  for (let i = 0; i < segs; i++) {
+    const angle = (i / segs) * Math.PI * 2;
+    const cos = Math.cos(angle);
+    const sin = Math.sin(angle);
+
+    const absCos = Math.abs(cos);
+    const absSin = Math.abs(sin);
+
+    let x: number;
+    let y: number;
+    if (absCos > absSin) {
+      x = (inletWidth / 2) * Math.sign(cos);
+      y = (inletHeight / 2) * (sin / absCos);
+    } else {
+      x = (inletWidth / 2) * (cos / absSin);
+      y = (inletHeight / 2) * Math.sign(sin);
+    }
+    rectPoints.push(new Vector3(x, y, 0));
+
+    circlePoints.push(
+      new Vector3(
+        (outletDiameter / 2) * cos,
+        (outletDiameter / 2) * sin,
+        length
+      )
+    );
+  }
+
+  const vertices: number[] = [];
+  const indices: number[] = [];
+
+  for (let j = 0; j <= lenSegs; j++) {
+    const t = j / lenSegs;
+    for (let i = 0; i < segs; i++) {
+      const start = rectPoints[i];
+      const end = circlePoints[i];
+      const v = start.clone().lerp(end, t);
+      v.z = length * t;
+      vertices.push(v.x, v.y, v.z);
+    }
+  }
+
+  for (let j = 0; j < lenSegs; j++) {
+    const ring = j * segs;
+    const nextRing = (j + 1) * segs;
+    for (let i = 0; i < segs; i++) {
+      const a = ring + i;
+      const b = ring + ((i + 1) % segs);
+      const c = nextRing + i;
+      const d = nextRing + ((i + 1) % segs);
+      indices.push(a, b, c);
+      indices.push(b, d, c);
+    }
+  }
+
+  const geometry = new BufferGeometry();
+  geometry.setAttribute('position', new Float32BufferAttribute(vertices, 3));
+  geometry.setIndex(indices);
+  geometry.computeVertexNormals();
+
+  return geometry;
+}
+
 // Enhanced 3D Transition Fitting Component with Proper Dimension Handling
 const TransitionMesh: React.FC<{
   fitting: TransitionFitting;
@@ -660,6 +758,20 @@ const TransitionMesh: React.FC<{
     return '#595959'; // Match duct color for visual consistency
   };
 
+  // Build custom geometry for mixed transitions
+  const mixedGeometry = useMemo(() => {
+    if (
+      (fitting.inlet.shape === 'rectangular' && fitting.outlet.shape === 'round') ||
+      (fitting.inlet.shape === 'round' && fitting.outlet.shape === 'rectangular')
+    ) {
+      const startWidth = fitting.inlet.shape === 'rectangular' ? dimensions.inletWidth : dimensions.outletWidth;
+      const startHeight = fitting.inlet.shape === 'rectangular' ? dimensions.inletHeight : dimensions.outletHeight;
+      const endDiameter = fitting.inlet.shape === 'round' ? dimensions.inletSize : dimensions.outletSize;
+      return createRectRoundGeometry(startWidth, startHeight, endDiameter, fitting.length);
+    }
+    return undefined;
+  }, [fitting, dimensions]);
+
   return (
     <mesh
       ref={meshRef}
@@ -681,8 +793,8 @@ const TransitionMesh: React.FC<{
           fitting.length
         ]} />
       ) : (
-        // Mixed transitions - use cylinder with validated average dimensions
-        <cylinderGeometry args={[dimensions.outletSize / 2, dimensions.inletSize / 2, fitting.length, 16]} />
+        // Mixed transitions - use custom BufferGeometry
+        mixedGeometry ? <primitive object={mixedGeometry} /> : null
       )}
       <meshStandardMaterial
         color={getColor()}

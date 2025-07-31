@@ -21,6 +21,7 @@ SizeWise Suite is specifically crafted for:
 - **Plugin-Ready Architecture**: Highly scalable with minimal integration overhead
 - **Glassmorphism UI**: Beautiful glass-effect components with backdrop blur and animations
 - **3D Workspace**: Interactive Three.js-based 3D environment for duct system design
+- **Rectangular Elbow Throat Options**: Set `throatType` to `radius` (default) or `square` for 3D elbows
 - **PDF Integration**: Import and overlay PDF plans in the 3D workspace
 - **Modern Architecture**: Next.js with TypeScript for type safety and performance
 

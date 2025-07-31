@@ -42,6 +42,10 @@ interface StatusBarProps {
   onZoomIn: () => void;
   onZoomOut: () => void;
   onZoomReset: () => void;
+
+  // Model summary
+  summaryOpen: boolean;
+  onSummaryToggle: () => void;
   
   // User and project info
   userName?: string;
@@ -150,6 +154,8 @@ export const StatusBar: React.FC<StatusBarProps> = ({
   onZoomIn,
   onZoomOut,
   onZoomReset,
+  summaryOpen,
+  onSummaryToggle,
   userName,
   projectName,
   currentBranch,
@@ -310,12 +316,20 @@ export const StatusBar: React.FC<StatusBarProps> = ({
             tooltip="Toggle grid (G)"
           />
           
-          <ToggleButton
+        <ToggleButton
             icon={<Settings className="w-4 h-4" />}
             label="Snap"
             isActive={snapEnabled}
             onClick={onSnapToggle}
             tooltip="Toggle snap to grid (Shift+G)"
+          />
+
+          <ToggleButton
+            icon={<Info className="w-4 h-4" />}
+            label="Summary"
+            isActive={summaryOpen}
+            onClick={onSummaryToggle}
+            tooltip="Toggle model summary (S)"
           />
           
           <div className="flex items-center space-x-1 px-3 py-1 bg-neutral-500/10 rounded-lg border border-neutral-500/20">

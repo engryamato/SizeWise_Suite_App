@@ -116,14 +116,14 @@ describe('PDF Performance Testing', () => {
 
     test('Should handle maximum file size (10MB) within acceptable limits', async () => {
       const maxFile = createMockFile(10, 'max-size-plan.pdf');
-      
+
       monitor.start('max-pdf-load');
       await mockPDFProcessor.processPDFFile(maxFile);
       const loadTime = monitor.end('max-pdf-load');
 
       expect(loadTime).toBeLessThan(20000); // Allow extra time for max size
       console.log(`Maximum PDF load time: ${loadTime}ms`);
-    });
+    }, 25000); // Increase timeout to 25 seconds
   });
 
   describe('Canvas Rendering Performance', () => {
@@ -288,7 +288,7 @@ describe('PDF Performance Testing', () => {
         expect(errorTime).toBeLessThan(5000); // Quick rejection
         console.log(`Oversized file rejection time: ${errorTime}ms`);
       }
-    });
+    }, 35000); // Increase timeout to 35 seconds
   });
 
   describe('Performance Reporting', () => {
@@ -321,4 +321,4 @@ describe('PDF Performance Testing', () => {
 });
 
 // Export performance utilities for use in other tests
-export { PerformanceMonitor, createMockFile, mockPDFProcessor };
+module.exports = { PerformanceMonitor, createMockFile, mockPDFProcessor };

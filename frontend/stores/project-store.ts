@@ -29,6 +29,7 @@ interface ProjectState {
 
   // Plan actions
   setPlanScale: (scale: number) => void;
+  setPlanPDF: (pdfData: string) => void;
   updateComputationalProperties: (properties: Partial<ComputationalProperties>) => void;
 
   // Getter actions
@@ -240,6 +241,18 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
         currentProject: {
           ...state.currentProject,
           plan_scale: scale
+        }
+      };
+    });
+  },
+
+  setPlanPDF: (pdfData: string) => {
+    set((state) => {
+      if (!state.currentProject) return state;
+      return {
+        currentProject: {
+          ...state.currentProject,
+          plan_pdf: pdfData
         }
       };
     });

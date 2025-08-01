@@ -255,17 +255,20 @@ describe('LocalUserRepository', () => {
     test('should create default features when user tier is set', async () => {
       const enterpriseUser = { ...mockUser, id: '550e8400-e29b-41d4-a716-446655440010', tier: 'enterprise' as UserTier };
       await repository.saveUser(enterpriseUser);
-      
+
       // Trigger feature flag creation by updating tier
       await repository.updateUserTier(enterpriseUser.id, 'enterprise');
-      
+
       // Check that enterprise features are created
       const db = dbManager.getConnection();
       const flags = db.prepare('SELECT * FROM feature_flags WHERE user_id = ?').all(enterpriseUser.id);
-      
+
       expect(flags.length).toBeGreaterThan(0);
-      
+
       const featureNames = flags.map((f: any) => f.feature_name);
+
+
+
       expect(featureNames).toContain('custom_templates');
       expect(featureNames).toContain('bim_export');
     });

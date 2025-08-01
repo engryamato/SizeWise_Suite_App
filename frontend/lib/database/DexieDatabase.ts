@@ -50,6 +50,19 @@ export interface SpatialDataLayer {
   syncStatus: 'local' | 'synced' | 'pending' | 'conflict';
 }
 
+export interface ProjectSegment {
+  id?: number;
+  uuid: string;
+  projectUuid: string;
+  segmentType: 'duct' | 'fitting' | 'equipment' | 'terminal';
+  name: string;
+  calculationData: any; // Segment-specific calculations
+  geometryData: any; // 3D positioning and dimensions
+  validationResults: any; // Compliance check results
+  lastModified: Date;
+  syncStatus: 'local' | 'synced' | 'pending' | 'conflict';
+}
+
 export interface CacheEntry {
   key: string;
   value: any;
@@ -64,7 +77,7 @@ export interface CacheEntry {
 export interface SyncOperation {
   id?: number;
   uuid: string;
-  entityType: 'project' | 'calculation' | 'spatial' | 'user';
+  entityType: 'project' | 'calculation' | 'spatial' | 'user' | 'segment';
   entityUuid: string;
   operation: 'create' | 'update' | 'delete';
   data: any;
@@ -88,6 +101,7 @@ export interface UserPreference {
 export class SizeWiseDatabase extends Dexie {
   // Tables
   projects!: Table<SizeWiseProject>;
+  projectSegments!: Table<ProjectSegment>;
   calculations!: Table<SizeWiseCalculation>;
   spatialData!: Table<SpatialDataLayer>;
   syncOperations!: Table<SyncOperation>;
@@ -100,6 +114,17 @@ export class SizeWiseDatabase extends Dexie {
     // Define schema versions
     this.version(1).stores({
       projects: '++id, uuid, lastModified, syncStatus, project_name',
+      calculations: '++id, uuid, projectUuid, timestamp, calculationType, syncStatus',
+      spatialData: '++id, uuid, projectUuid, layerType, lastModified, syncStatus',
+      syncOperations: '++id, uuid, entityType, entityUuid, timestamp, status',
+      userPreferences: '++id, key, lastModified',
+      cacheEntries: 'key, timestamp, lastAccessed, ttl'
+    });
+
+    // Enhanced schema for segments storage
+    this.version(2).stores({
+      projects: '++id, uuid, lastModified, syncStatus, project_name',
+      projectSegments: '++id, uuid, projectUuid, segmentType, lastModified, syncStatus',
       calculations: '++id, uuid, projectUuid, timestamp, calculationType, syncStatus',
       spatialData: '++id, uuid, projectUuid, layerType, lastModified, syncStatus',
       syncOperations: '++id, uuid, entityType, entityUuid, timestamp, status',
@@ -133,6 +158,19 @@ export class SizeWiseDatabase extends Dexie {
     });
 
     this.spatialData.hook('updating', (modifications, primKey, obj, trans) => {
+      (modifications as any).lastModified = new Date();
+      if (obj.syncStatus === 'synced') {
+        (modifications as any).syncStatus = 'pending';
+      }
+    });
+
+    // Add hooks for projectSegments table
+    this.projectSegments.hook('creating', (primKey, obj, trans) => {
+      obj.lastModified = new Date();
+      obj.syncStatus = 'local';
+    });
+
+    this.projectSegments.hook('updating', (modifications, primKey, obj, trans) => {
       (modifications as any).lastModified = new Date();
       if (obj.syncStatus === 'synced') {
         (modifications as any).syncStatus = 'pending';
@@ -341,6 +379,79 @@ export class SizeWiseDatabase extends Dexie {
       .where('projectUuid')
       .equals(projectUuid)
       .sortBy('lastModified');
+  }
+
+  // =============================================================================
+  // Project Segments Operations
+  // =============================================================================
+
+  async saveProjectSegment(segment: Omit<ProjectSegment, 'id' | 'lastModified' | 'syncStatus'>): Promise<number> {
+    return await this.transaction('rw', this.projectSegments, this.syncOperations, async () => {
+      const id = await this.projectSegments.add({
+        ...segment,
+        lastModified: new Date(),
+        syncStatus: 'local'
+      });
+
+      await this.queueSyncOperation('segment', segment.uuid, 'create', segment);
+
+      return id;
+    });
+  }
+
+  async updateProjectSegment(uuid: string, updates: Partial<ProjectSegment>): Promise<void> {
+    await this.transaction('rw', this.projectSegments, this.syncOperations, async () => {
+      await this.projectSegments
+        .where('uuid')
+        .equals(uuid)
+        .modify({
+          ...updates,
+          lastModified: new Date(),
+          syncStatus: 'local'
+        });
+
+      await this.queueSyncOperation('segment', uuid, 'update', updates);
+    });
+  }
+
+  async getProjectSegments(projectUuid: string): Promise<ProjectSegment[]> {
+    return await this.projectSegments
+      .where('projectUuid')
+      .equals(projectUuid)
+      .sortBy('lastModified');
+  }
+
+  async getProjectSegmentsByType(projectUuid: string, segmentType: ProjectSegment['segmentType']): Promise<ProjectSegment[]> {
+    return await this.projectSegments
+      .where(['projectUuid', 'segmentType'])
+      .equals([projectUuid, segmentType])
+      .sortBy('lastModified');
+  }
+
+  async deleteProjectSegment(uuid: string): Promise<void> {
+    await this.transaction('rw', this.projectSegments, this.syncOperations, async () => {
+      await this.projectSegments.where('uuid').equals(uuid).delete();
+      await this.queueSyncOperation('segment', uuid, 'delete', null);
+    });
+  }
+
+  async bulkSaveProjectSegments(segments: Omit<ProjectSegment, 'id' | 'lastModified' | 'syncStatus'>[]): Promise<number[]> {
+    return await this.transaction('rw', this.projectSegments, this.syncOperations, async () => {
+      const segmentsWithMeta = segments.map(segment => ({
+        ...segment,
+        lastModified: new Date(),
+        syncStatus: 'local' as const
+      }));
+
+      const ids = await this.projectSegments.bulkAdd(segmentsWithMeta, { allKeys: true });
+
+      // Queue sync operations for all segments
+      for (const segment of segments) {
+        await this.queueSyncOperation('segment', segment.uuid, 'create', segment);
+      }
+
+      return ids as number[];
+    });
   }
 
   async getSpatialLayersByType(projectUuid: string, layerType: string): Promise<SpatialDataLayer[]> {

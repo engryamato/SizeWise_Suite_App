@@ -80,11 +80,9 @@ export const SUPER_ADMIN_CONFIG = {
  * Generate a secure password for the super admin account
  */
 function generateSecurePassword(): string {
-  // For Phase 1 offline mode, use a strong but memorable password
+  // For Phase 1 offline mode, use a fixed strong password for testing
   // In Phase 2, this would be generated more securely and stored in environment variables
-  const timestamp = Date.now().toString().slice(-6);
-  const randomPart = crypto.randomBytes(4).toString('hex').toUpperCase();
-  return `SizeWise2024!${randomPart}${timestamp}`;
+  return 'SizeWise2024!Admin123';
 }
 
 /**

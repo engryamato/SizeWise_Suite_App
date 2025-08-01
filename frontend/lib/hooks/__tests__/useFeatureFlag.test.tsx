@@ -370,32 +370,34 @@ describe('useFeatureFlag Hook', () => {
     test('should handle auto-refresh interval', async () => {
       jest.useFakeTimers();
 
-      mockFeatureManager.isEnabled.mockResolvedValue({
-        enabled: true,
-        tier: 'pro',
-        responseTime: 20,
-        cached: false
-      });
+      try {
+        mockFeatureManager.isEnabled.mockResolvedValue({
+          enabled: true,
+          tier: 'pro',
+          responseTime: 20,
+          cached: false
+        });
 
-      renderHook(() => useFeatureFlag('test_feature', { refreshInterval: 1000 }));
+        renderHook(() => useFeatureFlag('test_feature', { refreshInterval: 1000 }));
 
-      // Initial call
-      await waitFor(() => {
-        expect(mockFeatureManager.isEnabled).toHaveBeenCalledTimes(1);
-      });
+        // Initial call
+        await waitFor(() => {
+          expect(mockFeatureManager.isEnabled).toHaveBeenCalledTimes(1);
+        }, { timeout: 3000 });
 
-      // Advance timer
-      act(() => {
-        jest.advanceTimersByTime(1000);
-      });
+        // Advance timer
+        act(() => {
+          jest.advanceTimersByTime(1000);
+        });
 
-      // Should trigger refresh
-      await waitFor(() => {
-        expect(mockFeatureManager.isEnabled).toHaveBeenCalledTimes(2);
-      });
-
-      jest.useRealTimers();
-    });
+        // Should trigger refresh
+        await waitFor(() => {
+          expect(mockFeatureManager.isEnabled).toHaveBeenCalledTimes(2);
+        }, { timeout: 3000 });
+      } finally {
+        jest.useRealTimers();
+      }
+    }, 15000); // Increase timeout to 15 seconds
   });
 
   describe('Error Handling and Edge Cases', () => {

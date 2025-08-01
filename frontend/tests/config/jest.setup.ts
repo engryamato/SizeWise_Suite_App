@@ -12,6 +12,7 @@ import '@testing-library/jest-dom';
 import 'jest-extended';
 import { configure } from '@testing-library/react';
 import { expect, beforeAll, beforeEach, afterEach, afterAll, jest } from '@jest/globals';
+import 'fake-indexeddb/auto';
 // import { server } from '../utils/mock-server';
 
 // Configure React Testing Library
@@ -187,6 +188,13 @@ Object.defineProperty(window, 'sessionStorage', {
 
 // Mock fetch
 (global as any).fetch = jest.fn();
+
+// Polyfill structuredClone for Node.js environments
+if (typeof global.structuredClone === 'undefined') {
+  global.structuredClone = (obj: any) => {
+    return JSON.parse(JSON.stringify(obj));
+  };
+}
 
 // Mock crypto - commented out due to TypeScript issues
 /*

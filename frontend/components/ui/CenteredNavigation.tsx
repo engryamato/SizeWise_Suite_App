@@ -299,6 +299,39 @@ export const CenteredNavigation: React.FC<CenteredNavigationProps> = ({
     return item.href ? pathname.startsWith(item.href) : false;
   };
 
+  // NavigationItem component - missing component that was causing test failures
+  const NavigationItemComponent: React.FC<{
+    item: NavigationItem;
+    isActive: boolean;
+    userRole?: string;
+  }> = ({ item, isActive, userRole }) => {
+    const router = useRouter();
+
+    const handleClick = () => {
+      if (item.href) {
+        router.push(item.href);
+      } else if (item.onClick) {
+        item.onClick();
+      }
+    };
+
+    return (
+      <motion.button
+        onClick={handleClick}
+        className={cn(
+          "relative flex items-center justify-center p-2 rounded-lg transition-all duration-200",
+          "hover:bg-white/10 hover:backdrop-blur-sm",
+          isActive && "bg-white/20 backdrop-blur-sm"
+        )}
+        whileHover={{ scale: 1.05 }}
+        whileTap={{ scale: 0.95 }}
+      >
+        <item.icon className="w-5 h-5" />
+        <span className="sr-only">{item.label}</span>
+      </motion.button>
+    );
+  };
+
   // Create navigation items with dynamic logout handler
   const navItemsWithLogout = MAIN_NAV_ITEMS.map(item => {
     if (item.id === 'profile' && item.dropdown) {
@@ -382,7 +415,7 @@ export const CenteredNavigation: React.FC<CenteredNavigationProps> = ({
           {/* Navigation Items */}
           <div className="flex items-center space-x-0.5 sm:space-x-1">
             {filteredNavItems.map((item) => (
-              <NavigationItem
+              <NavigationItemComponent
                 key={item.id}
                 item={item}
                 isActive={isActive(item)}

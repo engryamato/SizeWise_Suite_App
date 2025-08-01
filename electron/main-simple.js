@@ -31,8 +31,8 @@ function createWindow() {
   });
 
   // Load the app
-  const startUrl = isDev 
-    ? 'http://localhost:3000' 
+  const startUrl = isDev
+    ? 'http://localhost:3003'
     : `file://${path.join(__dirname, '../frontend/out/index.html')}`;
   
   console.log('🚀 SizeWise Suite starting...');
@@ -59,7 +59,7 @@ function createWindow() {
   mainWindow.webContents.on('will-navigate', (event, navigationUrl) => {
     const parsedUrl = new URL(navigationUrl);
     
-    if (parsedUrl.origin !== 'http://localhost:3000' && parsedUrl.origin !== 'file://') {
+    if (parsedUrl.origin !== 'http://localhost:3003' && parsedUrl.origin !== 'file://') {
       event.preventDefault();
     }
   });

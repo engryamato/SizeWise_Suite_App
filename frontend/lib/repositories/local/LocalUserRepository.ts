@@ -129,6 +129,11 @@ export class LocalUserRepository implements UserRepository {
 
         // Log change for cloud sync
         this.logChange(user.id, 'user', user.id, existingUser ? 'UPDATE' : 'INSERT', user);
+
+        // Initialize feature flags for new users or when tier changes
+        if (!existingUser || existingUser.tier !== user.tier) {
+          this.updateFeatureFlagsForTier(user.id, user.tier);
+        }
       });
 
       transaction();
@@ -348,9 +353,10 @@ export class LocalUserRepository implements UserRepository {
       INSERT OR IGNORE INTO feature_flags (id, user_id, feature_name, enabled, tier_required)
       VALUES (?, ?, ?, 1, ?)
     `);
-    
+
     for (const feature of defaultFeatures) {
-      insertStmt.run(uuidv4(), userId, feature, tierValue);
+      const featureTierRequired = this.getFeatureTierRequired(feature);
+      insertStmt.run(uuidv4(), userId, feature, featureTierRequired);
     }
   }
 
@@ -359,19 +365,45 @@ export class LocalUserRepository implements UserRepository {
    */
   private getDefaultFeaturesForTier(tier: UserTier): string[] {
     const features: string[] = [];
-    
+
     // Free tier features
     features.push('basic_calculations', 'project_creation', 'pdf_export');
-    
+
     if (tier === 'pro' || tier === 'enterprise') {
       features.push('unlimited_projects', 'high_res_export', 'advanced_calculations');
     }
-    
+
     if (tier === 'enterprise') {
       features.push('custom_templates', 'bim_export', 'priority_support', 'api_access');
     }
-    
+
     return features;
+  }
+
+  /**
+   * Helper: Get the tier required for a specific feature
+   */
+  private getFeatureTierRequired(featureName: string): number {
+    // Free tier features (tier_required = 1)
+    const freeFeatures = ['basic_calculations', 'project_creation', 'pdf_export'];
+    if (freeFeatures.includes(featureName)) {
+      return 1;
+    }
+
+    // Pro tier features (tier_required = 2)
+    const proFeatures = ['unlimited_projects', 'high_res_export', 'advanced_calculations'];
+    if (proFeatures.includes(featureName)) {
+      return 2;
+    }
+
+    // Enterprise tier features (tier_required = 3)
+    const enterpriseFeatures = ['custom_templates', 'bim_export', 'priority_support', 'api_access'];
+    if (enterpriseFeatures.includes(featureName)) {
+      return 3;
+    }
+
+    // Default to free tier if unknown
+    return 1;
   }
 
   /**

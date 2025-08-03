@@ -297,8 +297,6 @@ export class AuthenticationManager {
       }, 'medium');
     }
   }
-    }
-  }
 
   // ========================================
   // SUPER ADMIN AUTHENTICATION METHODS

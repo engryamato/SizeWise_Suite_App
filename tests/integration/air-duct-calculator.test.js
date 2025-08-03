@@ -1,13 +1,21 @@
 /**
  * Air Duct Calculator Integration Tests
+ *
+ * ENHANCED: Comprehensive integration testing for HVAC component interactions
+ * Following the post-implementation bridging plan for 75% integration coverage
+ *
+ * @see docs/post-implementation-bridging-plan.md Task 1.1
  */
+
+// Mock fetch globally
+global.fetch = jest.fn();
 
 describe('Air Duct Calculator Integration', () => {
   const API_BASE_URL = 'http://127.0.0.1:5000/api';
-  
+
   beforeEach(() => {
     // Reset fetch mock
-    fetch.mockClear();
+    global.fetch.mockClear();
   });
   
   describe('API Integration', () => {

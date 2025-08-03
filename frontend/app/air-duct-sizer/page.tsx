@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useCallback, useEffect, Suspense, lazy } from 'react'
+import React, { useState, useCallback, useEffect, Suspense, lazy, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Vector3, Euler } from 'three'
 import { useToast } from '@/lib/hooks/useToaster'
@@ -64,7 +64,7 @@ const WarningPanel = lazy(() =>
 
 // Import types separately (not lazy loaded)
 import type { DrawingMode, DuctProperties } from '@/components/ui/DrawingToolFAB'
-import type { ElementProperties } from '@/constants/MockDataConstants'
+import type { ElementProperties } from '@/components/ui/ContextPropertyPanel'
 import type { ValidationWarning } from '@/components/ui/WarningPanel'
 
 // Dynamic import for ViewCube (3D navigation component)
@@ -78,7 +78,7 @@ import type { ViewCubeOrientation } from '@/components/ui/ViewCube'
 // Shared hooks and utilities
 import { useEquipmentPlacement } from '@/hooks/useEquipmentPlacement'
 import { useElementSelection } from '@/hooks/useElementSelection'
-import { useMockCalculations } from '@/hooks/useMockCalculations'
+import { useCalculationStore } from '@/stores/calculation-store'
 import { useUIStore } from '@/stores/ui-store'
 
 import { BottomRightCorner } from '@/components/ui/BottomRightCorner'
@@ -251,13 +251,93 @@ function AirDuctSizerPage() {
     toast.success('Element copied', 'Element copied to clipboard');
   }, [toast]);
 
-  // Use shared mock calculations hook
-  const { handleCalculate: handleRunCalculation } = useMockCalculations(
-    setCalculationResults,
-    setWarnings,
-    setIsCalculating,
-    toast
-  );
+  // Use real calculation store instead of mock calculations
+  const { performCalculation, isCalculating: storeIsCalculating } = useCalculationStore();
+
+  const handleRunCalculation = useCallback(async () => {
+    if (!ductSegments.length) {
+      toast.error('No ductwork found', 'Please draw some ductwork before running calculations');
+      return;
+    }
+
+    setIsCalculating(true);
+    setCalculationResults([]);
+    setWarnings([]);
+
+    try {
+      // For demonstration, use default airflow values based on duct size
+      // In a real application, this would come from user input or room calculations
+      const results = [];
+      const allWarnings = [];
+
+      for (const segment of ductSegments) {
+        // Calculate estimated airflow based on duct cross-sectional area
+        let estimatedAirflow = 0;
+        if (segment.shape === 'round' && segment.diameter) {
+          const area = Math.PI * Math.pow(segment.diameter / 2, 2) / 144; // sq ft
+          estimatedAirflow = area * 1200; // Assume 1200 FPM velocity
+        } else if (segment.shape === 'rectangular' && segment.width && segment.height) {
+          const area = (segment.width * segment.height) / 144; // sq ft
+          estimatedAirflow = area * 1200; // Assume 1200 FPM velocity
+        }
+
+        if (estimatedAirflow > 0) {
+          const inputData = {
+            airflow: estimatedAirflow,
+            velocity: 1200, // Target velocity
+            material: segment.material || 'galvanized_steel',
+            segmentId: segment.id
+          };
+
+          const result = await performCalculation('air_duct_sizing', inputData);
+
+          if (result.success && result.results) {
+            // Convert calculation result to display format
+            results.push({
+              id: segment.id,
+              elementId: segment.id,
+              elementName: `Duct Segment ${segment.id.slice(0, 8)}`,
+              type: 'duct' as const,
+              status: result.warnings.length > 0 ? 'warning' as const : 'pass' as const,
+              value: result.results.velocity || 0,
+              unit: 'FPM',
+              target: inputData.velocity,
+              tolerance: 100
+            });
+
+            // Add any warnings from the calculation
+            allWarnings.push(...result.warnings.map(warning => ({
+              id: `${segment.id}-${Date.now()}`,
+              type: 'warning' as const,
+              category: 'SMACNA' as const,
+              severity: 'medium' as const,
+              title: 'Calculation Warning',
+              message: warning,
+              suggestion: 'Review duct sizing parameters',
+              standard: 'SMACNA',
+              timestamp: new Date(),
+              codeReference: 'SMACNA HVAC Duct Construction Standards',
+              resolved: false
+            })));
+          }
+        }
+      }
+
+      setCalculationResults(results);
+      setWarnings(allWarnings);
+
+      if (results.length > 0) {
+        toast.success('Calculation complete', `Analyzed ${results.length} duct segments successfully`);
+      } else {
+        toast.warning('No calculations performed', 'Draw ductwork with valid dimensions to perform calculations');
+      }
+    } catch (error) {
+      console.error('Calculation error:', error);
+      toast.error('Calculation failed', 'Please check your inputs and try again');
+    } finally {
+      setIsCalculating(false);
+    }
+  }, [ductSegments, performCalculation, toast]);
 
   const handleJumpToElement = useCallback((elementId: string) => {
     toast.info('Jumping to element', `Navigating to ${elementId}`);
@@ -373,21 +453,50 @@ function AirDuctSizerPage() {
     toast.success('Camera Ready', '3D navigation controls are now active');
   }, [toast]);
 
-  // System summary data
-  const systemSummary = {
-    totalRooms: 0,
-    totalDucts: ductSegments.length,
-    totalEquipment: equipment.length,
-    totalAirflow: 5000,
-    totalPressureDrop: 1.2,
-    maxVelocity: 1350,
-    energyConsumption: 15.5,
-    compliance: {
-      smacna: true,
-      ashrae: true,
-      local: false
-    }
-  };
+  // System summary data - calculated from actual user-drawn elements
+  const systemSummary = useMemo(() => {
+    // Calculate estimated total airflow based on duct dimensions
+    const totalAirflow = ductSegments.reduce((sum, segment) => {
+      let segmentAirflow = 0;
+      if (segment.shape === 'round' && segment.diameter) {
+        const area = Math.PI * Math.pow(segment.diameter / 2, 2) / 144; // sq ft
+        segmentAirflow = area * 1200; // Assume 1200 FPM velocity
+      } else if (segment.shape === 'rectangular' && segment.width && segment.height) {
+        const area = (segment.width * segment.height) / 144; // sq ft
+        segmentAirflow = area * 1200; // Assume 1200 FPM velocity
+      }
+      return sum + segmentAirflow;
+    }, 0);
+
+    // Calculate estimated pressure drop (simplified calculation)
+    const totalPressureDrop = ductSegments.length * 0.08; // Rough estimate: 0.08" w.g. per segment
+
+    // Estimated velocity based on typical HVAC design
+    const maxVelocity = ductSegments.length > 0 ? 1200 : 0; // Default design velocity
+
+    // Calculate energy consumption based on actual equipment data
+    const energyConsumption = equipment.reduce((sum, item) => {
+      return sum + (item.properties?.powerConsumption || 0);
+    }, 0);
+
+    // Determine compliance based on estimated values
+    const compliance = {
+      smacna: maxVelocity <= 2500 && totalPressureDrop <= 2.0, // SMACNA velocity and pressure limits
+      ashrae: energyConsumption > 0 ? energyConsumption <= 50 : ductSegments.length === 0, // ASHRAE energy efficiency
+      local: false // Local codes would need specific implementation
+    };
+
+    return {
+      totalRooms: 0, // Rooms not implemented yet
+      totalDucts: ductSegments.length,
+      totalEquipment: equipment.length,
+      totalAirflow: Math.round(totalAirflow),
+      totalPressureDrop: Math.round(totalPressureDrop * 100) / 100,
+      maxVelocity,
+      energyConsumption: Math.round(energyConsumption * 10) / 10,
+      compliance
+    };
+  }, [ductSegments, equipment]);
 
   // Calculate status for StatusBar
   const getCalculationStatus = () => {

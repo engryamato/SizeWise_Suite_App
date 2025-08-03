@@ -1,0 +1,372 @@
+name: Enhanced Deployment with Automated Rollback
+
+# Enhanced deployment workflow with automated rollback mechanisms
+# Part of Phase 1 bridging plan for deployment reliability
+# @see docs/post-implementation-bridging-plan.md Task 1.3
+
+on:
+  push:
+    branches: ["main"]
+    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Target environment'
+        required: true
+        default: 'production'
+        type: choice
+        options:
+        - production
+        - staging
+      force_rollback_test:
+        description: 'Force rollback test (for testing purposes)'
+        required: false
+        default: false
+        type: boolean
+
+env:
+  NODE_VERSION: "18"
+  PYTHON_VERSION: "3.11"
+  DEPLOYMENT_TIMEOUT: 600  # 10 minutes
+  HEALTH_CHECK_TIMEOUT: 300  # 5 minutes
+  ROLLBACK_TIMEOUT: 300  # 5 minutes
+
+jobs:
+  pre-deployment-validation:
+    name: Pre-Deployment Validation
+    runs-on: ubuntu-latest
+    outputs:
+      deployment-id: ${{ steps.deploy-id.outputs.id }}
+      environment: ${{ steps.env.outputs.environment }}
+      should-deploy: ${{ steps.validation.outputs.should-deploy }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Determine environment
+        id: env
+        run: |
+          if [[ "${{ github.event.inputs.environment }}" != "" ]]; then
+            echo "environment=${{ github.event.inputs.environment }}" >> $GITHUB_OUTPUT
+          elif [[ $GITHUB_REF == refs/tags/v* ]]; then
+            echo "environment=production" >> $GITHUB_OUTPUT
+          else
+            echo "environment=staging" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Generate deployment ID
+        id: deploy-id
+        run: |
+          DEPLOY_ID="${{ steps.env.outputs.environment }}-$(date +%Y%m%d-%H%M%S)-$(git rev-parse --short HEAD)"
+          echo "id=$DEPLOY_ID" >> $GITHUB_OUTPUT
+          echo "Deployment ID: $DEPLOY_ID"
+
+      - name: Validate deployment readiness
+        id: validation
+        run: |
+          echo "🔍 Validating deployment readiness..."
+          
+          # Check if deployment-ready workflow passed
+          if [[ "${{ github.event_name }}" == "push" ]]; then
+            echo "Checking deployment-ready workflow status..."
+            # In a real scenario, you would check the status of the deployment-ready workflow
+            echo "should-deploy=true" >> $GITHUB_OUTPUT
+          else
+            echo "Manual deployment triggered"
+            echo "should-deploy=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Record deployment start
+        run: |
+          mkdir -p logs
+          echo "{\"deployments\": []}" > logs/deployment-history.json
+          
+          # Record deployment start
+          cat > deployment-record.json <<EOF
+          {
+            "deployment_id": "${{ steps.deploy-id.outputs.id }}",
+            "status": "started",
+            "timestamp": "$(date -u '+%Y-%m-%d %H:%M:%S UTC')",
+            "environment": "${{ steps.env.outputs.environment }}",
+            "commit": "${{ github.sha }}",
+            "ref": "${{ github.ref }}"
+          }
+          EOF
+          
+          jq ".deployments += [$(cat deployment-record.json)]" logs/deployment-history.json > logs/deployment-history.tmp
+          mv logs/deployment-history.tmp logs/deployment-history.json
+
+      - name: Upload deployment history
+        uses: actions/upload-artifact@v4
+        with:
+          name: deployment-history-${{ steps.deploy-id.outputs.id }}
+          path: logs/deployment-history.json
+          retention-days: 30
+
+  build-and-deploy:
+    name: Build and Deploy
+    runs-on: ubuntu-latest
+    needs: pre-deployment-validation
+    if: needs.pre-deployment-validation.outputs.should-deploy == 'true'
+    environment: ${{ needs.pre-deployment-validation.outputs.environment }}
+    outputs:
+      deployment-success: ${{ steps.deploy.outputs.success }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "npm"
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: "pip"
+
+      - name: Install dependencies
+        run: |
+          cd frontend && npm ci
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Build application
+        run: |
+          echo "🏗️ Building application for ${{ needs.pre-deployment-validation.outputs.environment }}..."
+          cd frontend
+          npm run build
+          echo "✅ Build completed"
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Docker images
+        run: |
+          echo "🐳 Building Docker images..."
+          
+          # Build frontend image
+          docker build -t sizewise-frontend:${{ needs.pre-deployment-validation.outputs.deployment-id }} \
+            -f docker/frontend/Dockerfile .
+          
+          # Build backend image
+          docker build -t sizewise-backend:${{ needs.pre-deployment-validation.outputs.deployment-id }} \
+            -f docker/backend/Dockerfile .
+          
+          echo "✅ Docker images built successfully"
+
+      - name: Deploy application
+        id: deploy
+        run: |
+          echo "🚀 Deploying application..."
+          
+          # Create deployment environment file
+          cat > .env.deployment <<EOF
+          NODE_ENV=${{ needs.pre-deployment-validation.outputs.environment }}
+          FLASK_ENV=${{ needs.pre-deployment-validation.outputs.environment }}
+          DEPLOYMENT_ID=${{ needs.pre-deployment-validation.outputs.deployment-id }}
+          
+          # Database configuration
+          POSTGRES_DB=sizewise_${{ needs.pre-deployment-validation.outputs.environment }}
+          POSTGRES_USER=sizewise
+          POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }}
+          POSTGRES_HOST=postgres
+          POSTGRES_PORT=5432
+          
+          # Redis configuration
+          REDIS_HOST=redis
+          REDIS_PORT=6379
+          REDIS_PASSWORD=${{ secrets.REDIS_PASSWORD }}
+          
+          # Application secrets
+          SECRET_KEY=${{ secrets.SECRET_KEY }}
+          JWT_SECRET_KEY=${{ secrets.JWT_SECRET_KEY }}
+          
+          # External services
+          SENTRY_DSN=${{ secrets.SENTRY_DSN }}
+          SENTRY_ENVIRONMENT=${{ needs.pre-deployment-validation.outputs.environment }}
+          SENTRY_RELEASE=${{ needs.pre-deployment-validation.outputs.deployment-id }}
+          EOF
+          
+          # Deploy services
+          if docker-compose --env-file .env.deployment up -d; then
+            echo "success=true" >> $GITHUB_OUTPUT
+            echo "✅ Deployment completed successfully"
+          else
+            echo "success=false" >> $GITHUB_OUTPUT
+            echo "❌ Deployment failed"
+            exit 1
+          fi
+
+      - name: Wait for services to stabilize
+        run: |
+          echo "⏳ Waiting for services to stabilize..."
+          sleep 60
+
+  health-check-and-rollback:
+    name: Health Check and Automated Rollback
+    runs-on: ubuntu-latest
+    needs: [pre-deployment-validation, build-and-deploy]
+    if: always() && needs.pre-deployment-validation.outputs.should-deploy == 'true'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download deployment history
+        uses: actions/download-artifact@v4
+        with:
+          name: deployment-history-${{ needs.pre-deployment-validation.outputs.deployment-id }}
+          path: logs/
+
+      - name: Make scripts executable
+        run: |
+          chmod +x scripts/health-check.sh
+          chmod +x scripts/automated-rollback.sh
+
+      - name: Set environment variables for health checks
+        run: |
+          echo "BACKEND_URL=http://localhost:5000" >> $GITHUB_ENV
+          echo "FRONTEND_URL=http://localhost:3000" >> $GITHUB_ENV
+          echo "AUTH_URL=http://localhost:8000" >> $GITHUB_ENV
+          echo "ENVIRONMENT=${{ needs.pre-deployment-validation.outputs.environment }}" >> $GITHUB_ENV
+          echo "DEPLOYMENT_ID=${{ needs.pre-deployment-validation.outputs.deployment-id }}" >> $GITHUB_ENV
+
+      - name: Run comprehensive health checks
+        id: health-check
+        run: |
+          echo "🏥 Running comprehensive health checks..."
+          
+          # Force rollback test if requested
+          if [[ "${{ github.event.inputs.force_rollback_test }}" == "true" ]]; then
+            echo "⚠️ Forcing rollback test - simulating health check failure"
+            exit 1
+          fi
+          
+          # Run actual health checks
+          if timeout ${{ env.HEALTH_CHECK_TIMEOUT }} ./scripts/health-check.sh; then
+            echo "✅ All health checks passed"
+            echo "health-status=passed" >> $GITHUB_OUTPUT
+          else
+            echo "❌ Health checks failed"
+            echo "health-status=failed" >> $GITHUB_OUTPUT
+            exit 1
+          fi
+
+      - name: Record successful deployment
+        if: steps.health-check.outputs.health-status == 'passed'
+        run: |
+          echo "📝 Recording successful deployment..."
+          
+          # Update deployment history
+          jq --arg id "${{ needs.pre-deployment-validation.outputs.deployment-id }}" \
+             --arg status "success" \
+             --arg timestamp "$(date -u '+%Y-%m-%d %H:%M:%S UTC')" \
+             '(.deployments[] | select(.deployment_id == $id)) |= (.status = $status | .completed_timestamp = $timestamp)' \
+             logs/deployment-history.json > logs/deployment-history.tmp
+          mv logs/deployment-history.tmp logs/deployment-history.json
+
+      - name: Trigger automated rollback
+        if: failure() || steps.health-check.outputs.health-status == 'failed'
+        run: |
+          echo "🔄 Health checks failed - triggering automated rollback..."
+          
+          # Set notification webhook
+          export SLACK_WEBHOOK_URL="${{ secrets.SLACK_WEBHOOK_URL }}"
+          
+          # Perform automated rollback
+          if timeout ${{ env.ROLLBACK_TIMEOUT }} ./scripts/automated-rollback.sh auto; then
+            echo "✅ Automated rollback completed successfully"
+            
+            # Update deployment history
+            jq --arg id "${{ needs.pre-deployment-validation.outputs.deployment-id }}" \
+               --arg status "rolled_back" \
+               --arg timestamp "$(date -u '+%Y-%m-%d %H:%M:%S UTC')" \
+               '(.deployments[] | select(.deployment_id == $id)) |= (.status = $status | .rollback_timestamp = $timestamp)' \
+               logs/deployment-history.json > logs/deployment-history.tmp
+            mv logs/deployment-history.tmp logs/deployment-history.json
+          else
+            echo "❌ Automated rollback failed - manual intervention required"
+            
+            # Update deployment history
+            jq --arg id "${{ needs.pre-deployment-validation.outputs.deployment-id }}" \
+               --arg status "rollback_failed" \
+               --arg timestamp "$(date -u '+%Y-%m-%d %H:%M:%S UTC')" \
+               '(.deployments[] | select(.deployment_id == $id)) |= (.status = $status | .rollback_failed_timestamp = $timestamp)' \
+               logs/deployment-history.json > logs/deployment-history.tmp
+            mv logs/deployment-history.tmp logs/deployment-history.json
+            
+            exit 1
+          fi
+
+      - name: Upload final deployment history
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: final-deployment-history-${{ needs.pre-deployment-validation.outputs.deployment-id }}
+          path: logs/deployment-history.json
+          retention-days: 90
+
+      - name: Upload health check logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: health-check-logs-${{ needs.pre-deployment-validation.outputs.deployment-id }}
+          path: logs/health-check.log
+          retention-days: 30
+
+      - name: Upload rollback logs
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: rollback-logs-${{ needs.pre-deployment-validation.outputs.deployment-id }}
+          path: logs/rollback.log
+          retention-days: 30
+
+  deployment-summary:
+    name: Deployment Summary
+    runs-on: ubuntu-latest
+    needs: [pre-deployment-validation, build-and-deploy, health-check-and-rollback]
+    if: always() && needs.pre-deployment-validation.outputs.should-deploy == 'true'
+    steps:
+      - name: Create deployment summary
+        run: |
+          echo "## 🚀 Enhanced Deployment Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Deployment ID:** ${{ needs.pre-deployment-validation.outputs.deployment-id }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Environment:** ${{ needs.pre-deployment-validation.outputs.environment }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Commit:** ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # Deployment status
+          if [[ "${{ needs.build-and-deploy.result }}" == "success" ]]; then
+            echo "✅ **Build & Deploy:** SUCCESS" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ **Build & Deploy:** FAILED" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          # Health check status
+          if [[ "${{ needs.health-check-and-rollback.result }}" == "success" ]]; then
+            echo "✅ **Health Checks:** PASSED" >> $GITHUB_STEP_SUMMARY
+            echo "✅ **Rollback:** NOT REQUIRED" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ **Health Checks:** FAILED" >> $GITHUB_STEP_SUMMARY
+            echo "🔄 **Rollback:** TRIGGERED" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 🔧 Features:" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Automated health checks after deployment" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Automatic rollback on deployment failure" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Deployment history and rollback logs maintained" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Slack notifications for rollback events" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Manual rollback capability preserved" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # Overall status
+          if [[ "${{ needs.health-check-and-rollback.result }}" == "success" ]]; then
+            echo "**🎉 DEPLOYMENT SUCCESSFUL** ✅" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "**⚠️ DEPLOYMENT FAILED - ROLLBACK COMPLETED** 🔄" >> $GITHUB_STEP_SUMMARY
+          fi

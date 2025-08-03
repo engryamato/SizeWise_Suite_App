@@ -1,0 +1,328 @@
+name: Accessibility Testing Automation
+
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - "frontend/**"
+      - "tests/**"
+      - ".github/workflows/accessibility-testing.yml"
+  pull_request:
+    branches: [main, develop]
+    paths:
+      - "frontend/**"
+      - "tests/**"
+      - ".github/workflows/accessibility-testing.yml"
+  schedule:
+    # Run accessibility tests daily at 2 AM UTC
+    - cron: "0 2 * * *"
+  workflow_dispatch:
+    inputs:
+      wcag_level:
+        description: "WCAG compliance level to test"
+        required: true
+        default: "AA"
+        type: choice
+        options:
+          - A
+          - AA
+          - AAA
+      generate_reports:
+        description: "Generate detailed HTML reports"
+        required: false
+        default: true
+        type: boolean
+      test_scope:
+        description: "Scope of accessibility testing"
+        required: true
+        default: "all"
+        type: choice
+        options:
+          - all
+          - core-components
+          - forms-only
+          - navigation-only
+
+env:
+  NODE_VERSION: "18"
+  WCAG_LEVEL: ${{ github.event.inputs.wcag_level || 'AA' }}
+  GENERATE_REPORTS: ${{ github.event.inputs.generate_reports || 'true' }}
+  TEST_SCOPE: ${{ github.event.inputs.test_scope || 'all' }}
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  accessibility-testing:
+    name: WCAG 2.1 Compliance Testing
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    strategy:
+      matrix:
+        test-suite:
+          - core-components
+          - forms-validation
+          - navigation-keyboard
+          - data-tables
+          - modal-dialogs
+        include:
+          - test-suite: core-components
+            test-pattern: "tests/accessibility/automated-wcag-compliance.test.ts"
+            description: "Core HVAC components accessibility"
+          - test-suite: forms-validation
+            test-pattern: "tests/accessibility/*form*.test.ts"
+            description: "Form accessibility and validation"
+          - test-suite: navigation-keyboard
+            test-pattern: "tests/accessibility/*navigation*.test.ts"
+            description: "Navigation and keyboard accessibility"
+          - test-suite: data-tables
+            test-pattern: "tests/accessibility/*table*.test.ts"
+            description: "Data table accessibility"
+          - test-suite: modal-dialogs
+            test-pattern: "tests/accessibility/*modal*.test.ts"
+            description: "Modal dialog accessibility"
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: |
+          cd frontend
+          npm ci
+          # Install additional accessibility testing dependencies
+          npm install --save-dev @axe-core/playwright axe-playwright
+
+      - name: Create test results directory
+        run: |
+          mkdir -p test-results/accessibility
+          mkdir -p test-results/accessibility/reports
+          mkdir -p test-results/accessibility/artifacts
+
+      - name: Run accessibility tests - ${{ matrix.description }}
+        env:
+          NODE_ENV: test
+          CI: true
+          WCAG_LEVEL: ${{ env.WCAG_LEVEL }}
+          GENERATE_REPORTS: ${{ env.GENERATE_REPORTS }}
+        run: |
+          cd frontend
+          echo "🔍 Running accessibility tests for: ${{ matrix.description }}"
+          echo "📋 WCAG Level: ${{ env.WCAG_LEVEL }}"
+          echo "📊 Generate Reports: ${{ env.GENERATE_REPORTS }}"
+          
+          # Run the specific test suite
+          npm test -- ${{ matrix.test-pattern }} \
+            --testTimeout=30000 \
+            --verbose \
+            --coverage=false \
+            --passWithNoTests \
+            --detectOpenHandles \
+            --forceExit \
+            --json \
+            --outputFile="../test-results/accessibility/${{ matrix.test-suite }}-results.json"
+
+      - name: Process accessibility test results
+        if: always()
+        run: |
+          cd frontend
+          echo "📊 Processing accessibility test results..."
+          
+          # Check if results file exists
+          if [ -f "../test-results/accessibility/${{ matrix.test-suite }}-results.json" ]; then
+            echo "✅ Test results found for ${{ matrix.test-suite }}"
+            
+            # Extract key metrics from test results
+            node -e "
+              const fs = require('fs');
+              const results = JSON.parse(fs.readFileSync('../test-results/accessibility/${{ matrix.test-suite }}-results.json', 'utf8'));
+              
+              console.log('Test Suite: ${{ matrix.test-suite }}');
+              console.log('Total Tests:', results.numTotalTests);
+              console.log('Passed Tests:', results.numPassedTests);
+              console.log('Failed Tests:', results.numFailedTests);
+              console.log('Success Rate:', ((results.numPassedTests / results.numTotalTests) * 100).toFixed(2) + '%');
+              
+              // Create summary for GitHub Actions
+              const summary = {
+                suite: '${{ matrix.test-suite }}',
+                total: results.numTotalTests,
+                passed: results.numPassedTests,
+                failed: results.numFailedTests,
+                success_rate: ((results.numPassedTests / results.numTotalTests) * 100).toFixed(2)
+              };
+              
+              fs.writeFileSync('../test-results/accessibility/${{ matrix.test-suite }}-summary.json', JSON.stringify(summary, null, 2));
+            "
+          else
+            echo "⚠️ No test results found for ${{ matrix.test-suite }}"
+          fi
+
+      - name: Upload accessibility test artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: accessibility-results-${{ matrix.test-suite }}
+          path: |
+            test-results/accessibility/
+            frontend/test-results/accessibility/
+          retention-days: 30
+
+      - name: Generate accessibility badge
+        if: always()
+        run: |
+          cd test-results/accessibility
+          
+          # Create accessibility compliance badge
+          if [ -f "${{ matrix.test-suite }}-summary.json" ]; then
+            SUCCESS_RATE=$(jq -r '.success_rate' ${{ matrix.test-suite }}-summary.json)
+            
+            if (( $(echo "$SUCCESS_RATE >= 95" | bc -l) )); then
+              BADGE_COLOR="brightgreen"
+              BADGE_STATUS="excellent"
+            elif (( $(echo "$SUCCESS_RATE >= 85" | bc -l) )); then
+              BADGE_COLOR="green"
+              BADGE_STATUS="good"
+            elif (( $(echo "$SUCCESS_RATE >= 70" | bc -l) )); then
+              BADGE_COLOR="yellow"
+              BADGE_STATUS="fair"
+            else
+              BADGE_COLOR="red"
+              BADGE_STATUS="poor"
+            fi
+            
+            echo "ACCESSIBILITY_BADGE_COLOR=$BADGE_COLOR" >> $GITHUB_ENV
+            echo "ACCESSIBILITY_BADGE_STATUS=$BADGE_STATUS" >> $GITHUB_ENV
+            echo "ACCESSIBILITY_SUCCESS_RATE=$SUCCESS_RATE" >> $GITHUB_ENV
+          fi
+
+      - name: Comment on PR with accessibility results
+        if: github.event_name == 'pull_request' && always()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const path = 'test-results/accessibility/${{ matrix.test-suite }}-summary.json';
+            
+            if (fs.existsSync(path)) {
+              const summary = JSON.parse(fs.readFileSync(path, 'utf8'));
+              
+              const comment = `
+              ## 🔍 Accessibility Test Results - ${{ matrix.description }}
+              
+              | Metric | Value |
+              |--------|-------|
+              | **WCAG Level** | ${{ env.WCAG_LEVEL }} |
+              | **Total Tests** | ${summary.total} |
+              | **Passed** | ✅ ${summary.passed} |
+              | **Failed** | ❌ ${summary.failed} |
+              | **Success Rate** | ${summary.success_rate}% |
+              
+              ${summary.success_rate >= 95 ? '🎉 Excellent accessibility compliance!' : 
+                summary.success_rate >= 85 ? '✅ Good accessibility compliance' :
+                summary.success_rate >= 70 ? '⚠️ Fair accessibility compliance - consider improvements' :
+                '🚨 Poor accessibility compliance - immediate attention required'}
+              
+              [View detailed accessibility report](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
+              `;
+              
+              github.rest.issues.createComment({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: comment
+              });
+            }
+
+  accessibility-summary:
+    name: Accessibility Testing Summary
+    runs-on: ubuntu-latest
+    needs: accessibility-testing
+    if: always()
+    
+    steps:
+      - name: Download all accessibility artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: accessibility-results-*
+          merge-multiple: true
+          path: accessibility-results
+
+      - name: Generate comprehensive accessibility report
+        run: |
+          echo "📊 Generating comprehensive accessibility report..."
+          
+          # Create comprehensive summary
+          cat > accessibility-comprehensive-report.md << 'EOF'
+          # SizeWise Suite - Accessibility Testing Report
+          
+          ## Summary
+          
+          **Test Date:** $(date -u +"%Y-%m-%d %H:%M:%S UTC")
+          **WCAG Level:** ${{ env.WCAG_LEVEL }}
+          **Environment:** CI/CD Pipeline
+          
+          ## Test Results by Component
+          
+          EOF
+          
+          # Process each test suite result
+          for file in accessibility-results/*-summary.json; do
+            if [ -f "$file" ]; then
+              SUITE_NAME=$(basename "$file" -summary.json)
+              echo "Processing $SUITE_NAME..."
+              
+              TOTAL=$(jq -r '.total' "$file")
+              PASSED=$(jq -r '.passed' "$file")
+              FAILED=$(jq -r '.failed' "$file")
+              SUCCESS_RATE=$(jq -r '.success_rate' "$file")
+              
+              cat >> accessibility-comprehensive-report.md << EOF
+          ### $SUITE_NAME
+          - **Total Tests:** $TOTAL
+          - **Passed:** ✅ $PASSED
+          - **Failed:** ❌ $FAILED
+          - **Success Rate:** $SUCCESS_RATE%
+          
+          EOF
+            fi
+          done
+          
+          # Add recommendations
+          cat >> accessibility-comprehensive-report.md << 'EOF'
+          
+          ## Recommendations
+          
+          - Maintain WCAG 2.1 AA compliance across all components
+          - Address any failing tests before merging to main branch
+          - Consider implementing automated accessibility testing in development workflow
+          - Regular accessibility audits for new features
+          
+          ## Resources
+          
+          - [WCAG 2.1 Guidelines](https://www.w3.org/WAI/WCAG21/quickref/)
+          - [axe-core Documentation](https://github.com/dequelabs/axe-core)
+          - [SizeWise Suite Accessibility Guidelines](docs/accessibility-guidelines.md)
+          EOF
+
+      - name: Upload comprehensive accessibility report
+        uses: actions/upload-artifact@v4
+        with:
+          name: accessibility-comprehensive-report
+          path: accessibility-comprehensive-report.md
+          retention-days: 90
+
+      - name: Set workflow status
+        run: |
+          echo "🎯 Accessibility testing workflow completed"
+          echo "📄 Comprehensive report generated"
+          echo "🔍 Check artifacts for detailed results"

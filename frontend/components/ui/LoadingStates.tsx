@@ -350,7 +350,7 @@ export const useLoadingState = (): LoadingStateHook => {
     setError(null);
   }, []);
 
-  const withLoading = useCallback(async <T>(fn: () => Promise<T>): Promise<T> => {
+  const withLoading = useCallback(async <T,>(fn: () => Promise<T>): Promise<T> => {
     setLoading(true);
     try {
       const result = await fn();
@@ -527,7 +527,7 @@ export function useErrorReporting() {
     return errorId;
   }, []);
 
-  const reportAsyncOperation = React.useCallback(async <T>(
+  const reportAsyncOperation = React.useCallback(async <T,>(
     operation: () => Promise<T>,
     context?: Record<string, any>,
     options?: {

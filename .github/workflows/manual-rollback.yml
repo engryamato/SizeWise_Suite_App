@@ -1,0 +1,394 @@
+name: Manual Rollback
+
+# Manual rollback workflow for emergency situations
+# Part of Phase 1 bridging plan for deployment reliability
+# @see docs/post-implementation-bridging-plan.md Task 1.3
+
+on:
+  workflow_dispatch:
+    inputs:
+      target_deployment:
+        description: 'Target deployment ID to rollback to'
+        required: true
+        type: string
+      environment:
+        description: 'Target environment'
+        required: true
+        default: 'production'
+        type: choice
+        options:
+        - production
+        - staging
+        - preview
+      rollback_type:
+        description: 'Type of rollback to perform'
+        required: true
+        default: 'auto'
+        type: choice
+        options:
+        - auto
+        - docker
+        - git
+      reason:
+        description: 'Reason for rollback (for audit trail)'
+        required: true
+        type: string
+      skip_health_checks:
+        description: 'Skip health checks after rollback (emergency only)'
+        required: false
+        default: false
+        type: boolean
+
+env:
+  ROLLBACK_TIMEOUT: 300  # 5 minutes
+  HEALTH_CHECK_TIMEOUT: 180  # 3 minutes
+
+jobs:
+  validate-rollback-request:
+    name: Validate Rollback Request
+    runs-on: ubuntu-latest
+    outputs:
+      is-valid: ${{ steps.validation.outputs.is-valid }}
+      target-deployment: ${{ steps.validation.outputs.target-deployment }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate rollback request
+        id: validation
+        run: |
+          echo "🔍 Validating rollback request..."
+          echo "Target deployment: ${{ github.event.inputs.target_deployment }}"
+          echo "Environment: ${{ github.event.inputs.environment }}"
+          echo "Rollback type: ${{ github.event.inputs.rollback_type }}"
+          echo "Reason: ${{ github.event.inputs.reason }}"
+          
+          # Basic validation
+          if [[ -z "${{ github.event.inputs.target_deployment }}" ]]; then
+            echo "❌ Target deployment ID is required"
+            echo "is-valid=false" >> $GITHUB_OUTPUT
+            exit 1
+          fi
+          
+          if [[ -z "${{ github.event.inputs.reason }}" ]]; then
+            echo "❌ Rollback reason is required for audit trail"
+            echo "is-valid=false" >> $GITHUB_OUTPUT
+            exit 1
+          fi
+          
+          # Validate deployment ID format
+          if [[ ! "${{ github.event.inputs.target_deployment }}" =~ ^[a-zA-Z0-9-]+$ ]]; then
+            echo "❌ Invalid deployment ID format"
+            echo "is-valid=false" >> $GITHUB_OUTPUT
+            exit 1
+          fi
+          
+          echo "✅ Rollback request validation passed"
+          echo "is-valid=true" >> $GITHUB_OUTPUT
+          echo "target-deployment=${{ github.event.inputs.target_deployment }}" >> $GITHUB_OUTPUT
+
+      - name: Create rollback audit record
+        run: |
+          echo "📝 Creating rollback audit record..."
+          
+          mkdir -p logs
+          
+          # Create audit record
+          cat > rollback-audit.json <<EOF
+          {
+            "rollback_id": "manual-$(date +%Y%m%d-%H%M%S)",
+            "target_deployment": "${{ github.event.inputs.target_deployment }}",
+            "environment": "${{ github.event.inputs.environment }}",
+            "rollback_type": "${{ github.event.inputs.rollback_type }}",
+            "reason": "${{ github.event.inputs.reason }}",
+            "initiated_by": "${{ github.actor }}",
+            "initiated_at": "$(date -u '+%Y-%m-%d %H:%M:%S UTC')",
+            "workflow_run_id": "${{ github.run_id }}",
+            "status": "initiated"
+          }
+          EOF
+          
+          echo "Audit record created:"
+          cat rollback-audit.json
+
+      - name: Upload audit record
+        uses: actions/upload-artifact@v4
+        with:
+          name: rollback-audit-${{ github.run_id }}
+          path: rollback-audit.json
+          retention-days: 365  # Keep audit records for 1 year
+
+  perform-manual-rollback:
+    name: Perform Manual Rollback
+    runs-on: ubuntu-latest
+    needs: validate-rollback-request
+    if: needs.validate-rollback-request.outputs.is-valid == 'true'
+    environment: ${{ github.event.inputs.environment }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download audit record
+        uses: actions/download-artifact@v4
+        with:
+          name: rollback-audit-${{ github.run_id }}
+          path: logs/
+
+      - name: Setup environment
+        run: |
+          echo "🔧 Setting up rollback environment..."
+          
+          # Set environment variables
+          echo "ENVIRONMENT=${{ github.event.inputs.environment }}" >> $GITHUB_ENV
+          echo "TARGET_DEPLOYMENT=${{ github.event.inputs.target_deployment }}" >> $GITHUB_ENV
+          echo "ROLLBACK_TYPE=${{ github.event.inputs.rollback_type }}" >> $GITHUB_ENV
+          echo "SLACK_WEBHOOK_URL=${{ secrets.SLACK_WEBHOOK_URL }}" >> $GITHUB_ENV
+          
+          # Create logs directory
+          mkdir -p logs
+          
+          # Make scripts executable
+          chmod +x scripts/health-check.sh
+          chmod +x scripts/automated-rollback.sh
+
+      - name: Send rollback start notification
+        run: |
+          echo "📢 Sending rollback start notification..."
+          
+          if [[ -n "${{ secrets.SLACK_WEBHOOK_URL }}" ]]; then
+            curl -X POST -H 'Content-type: application/json' \
+              --data '{
+                "text": "🚨 Manual Rollback Initiated",
+                "attachments": [
+                  {
+                    "color": "warning",
+                    "fields": [
+                      {
+                        "title": "Environment",
+                        "value": "${{ github.event.inputs.environment }}",
+                        "short": true
+                      },
+                      {
+                        "title": "Target Deployment",
+                        "value": "${{ github.event.inputs.target_deployment }}",
+                        "short": true
+                      },
+                      {
+                        "title": "Initiated By",
+                        "value": "${{ github.actor }}",
+                        "short": true
+                      },
+                      {
+                        "title": "Reason",
+                        "value": "${{ github.event.inputs.reason }}",
+                        "short": false
+                      }
+                    ]
+                  }
+                ]
+              }' \
+              "${{ secrets.SLACK_WEBHOOK_URL }}" || echo "Failed to send Slack notification"
+          fi
+
+      - name: Execute rollback
+        id: rollback
+        run: |
+          echo "🔄 Executing manual rollback..."
+          echo "Target: ${{ github.event.inputs.target_deployment }}"
+          echo "Type: ${{ github.event.inputs.rollback_type }}"
+          
+          # Execute rollback with timeout
+          if timeout ${{ env.ROLLBACK_TIMEOUT }} ./scripts/automated-rollback.sh \
+            "${{ github.event.inputs.rollback_type }}" \
+            "${{ github.event.inputs.target_deployment }}"; then
+            echo "✅ Rollback executed successfully"
+            echo "rollback-status=success" >> $GITHUB_OUTPUT
+          else
+            echo "❌ Rollback execution failed"
+            echo "rollback-status=failed" >> $GITHUB_OUTPUT
+            exit 1
+          fi
+
+      - name: Post-rollback health checks
+        id: health-check
+        if: github.event.inputs.skip_health_checks != 'true'
+        run: |
+          echo "🏥 Running post-rollback health checks..."
+          
+          # Set health check URLs based on environment
+          case "${{ github.event.inputs.environment }}" in
+            "production")
+              echo "BACKEND_URL=https://api.sizewise.app" >> $GITHUB_ENV
+              echo "FRONTEND_URL=https://sizewise.app" >> $GITHUB_ENV
+              echo "AUTH_URL=https://auth.sizewise.app" >> $GITHUB_ENV
+              ;;
+            "staging")
+              echo "BACKEND_URL=https://staging-api.sizewise.app" >> $GITHUB_ENV
+              echo "FRONTEND_URL=https://staging.sizewise.app" >> $GITHUB_ENV
+              echo "AUTH_URL=https://staging-auth.sizewise.app" >> $GITHUB_ENV
+              ;;
+            *)
+              echo "BACKEND_URL=http://localhost:5000" >> $GITHUB_ENV
+              echo "FRONTEND_URL=http://localhost:3000" >> $GITHUB_ENV
+              echo "AUTH_URL=http://localhost:8000" >> $GITHUB_ENV
+              ;;
+          esac
+          
+          # Wait for services to stabilize after rollback
+          echo "⏳ Waiting for services to stabilize..."
+          sleep 60
+          
+          # Run health checks
+          if timeout ${{ env.HEALTH_CHECK_TIMEOUT }} ./scripts/health-check.sh; then
+            echo "✅ Post-rollback health checks passed"
+            echo "health-status=passed" >> $GITHUB_OUTPUT
+          else
+            echo "❌ Post-rollback health checks failed"
+            echo "health-status=failed" >> $GITHUB_OUTPUT
+            exit 1
+          fi
+
+      - name: Update audit record
+        if: always()
+        run: |
+          echo "📝 Updating audit record..."
+          
+          # Determine final status
+          if [[ "${{ steps.rollback.outputs.rollback-status }}" == "success" ]] && \
+             ([[ "${{ github.event.inputs.skip_health_checks }}" == "true" ]] || \
+              [[ "${{ steps.health-check.outputs.health-status }}" == "passed" ]]); then
+            final_status="completed"
+          else
+            final_status="failed"
+          fi
+          
+          # Update audit record
+          jq --arg status "$final_status" \
+             --arg completed_at "$(date -u '+%Y-%m-%d %H:%M:%S UTC')" \
+             --arg rollback_status "${{ steps.rollback.outputs.rollback-status }}" \
+             --arg health_status "${{ steps.health-check.outputs.health-status }}" \
+             '. + {
+               "status": $status,
+               "completed_at": $completed_at,
+               "rollback_execution_status": $rollback_status,
+               "health_check_status": $health_status
+             }' \
+             logs/rollback-audit.json > logs/rollback-audit.tmp
+          mv logs/rollback-audit.tmp logs/rollback-audit.json
+
+      - name: Send rollback completion notification
+        if: always()
+        run: |
+          echo "📢 Sending rollback completion notification..."
+          
+          # Determine notification color and status
+          if [[ "${{ steps.rollback.outputs.rollback-status }}" == "success" ]] && \
+             ([[ "${{ github.event.inputs.skip_health_checks }}" == "true" ]] || \
+              [[ "${{ steps.health-check.outputs.health-status }}" == "passed" ]]); then
+            color="good"
+            status="✅ COMPLETED SUCCESSFULLY"
+          else
+            color="danger"
+            status="❌ FAILED"
+          fi
+          
+          if [[ -n "${{ secrets.SLACK_WEBHOOK_URL }}" ]]; then
+            curl -X POST -H 'Content-type: application/json' \
+              --data "{
+                \"text\": \"🔄 Manual Rollback $status\",
+                \"attachments\": [
+                  {
+                    \"color\": \"$color\",
+                    \"fields\": [
+                      {
+                        \"title\": \"Environment\",
+                        \"value\": \"${{ github.event.inputs.environment }}\",
+                        \"short\": true
+                      },
+                      {
+                        \"title\": \"Target Deployment\",
+                        \"value\": \"${{ github.event.inputs.target_deployment }}\",
+                        \"short\": true
+                      },
+                      {
+                        \"title\": \"Rollback Status\",
+                        \"value\": \"${{ steps.rollback.outputs.rollback-status }}\",
+                        \"short\": true
+                      },
+                      {
+                        \"title\": \"Health Check Status\",
+                        \"value\": \"${{ steps.health-check.outputs.health-status || 'skipped' }}\",
+                        \"short\": true
+                      },
+                      {
+                        \"title\": \"Completed At\",
+                        \"value\": \"$(date -u '+%Y-%m-%d %H:%M:%S UTC')\",
+                        \"short\": false
+                      }
+                    ]
+                  }
+                ]
+              }" \
+              "${{ secrets.SLACK_WEBHOOK_URL }}" || echo "Failed to send Slack notification"
+          fi
+
+      - name: Upload final audit record
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: final-rollback-audit-${{ github.run_id }}
+          path: logs/rollback-audit.json
+          retention-days: 365
+
+      - name: Upload rollback logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: manual-rollback-logs-${{ github.run_id }}
+          path: |
+            logs/rollback.log
+            logs/health-check.log
+          retention-days: 90
+
+  rollback-summary:
+    name: Rollback Summary
+    runs-on: ubuntu-latest
+    needs: [validate-rollback-request, perform-manual-rollback]
+    if: always() && needs.validate-rollback-request.outputs.is-valid == 'true'
+    steps:
+      - name: Create rollback summary
+        run: |
+          echo "## 🔄 Manual Rollback Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Target Deployment:** ${{ github.event.inputs.target_deployment }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Environment:** ${{ github.event.inputs.environment }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Rollback Type:** ${{ github.event.inputs.rollback_type }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Initiated By:** ${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Reason:** ${{ github.event.inputs.reason }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # Status indicators
+          if [[ "${{ needs.perform-manual-rollback.result }}" == "success" ]]; then
+            echo "✅ **Rollback Status:** SUCCESS" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ **Rollback Status:** FAILED" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          if [[ "${{ github.event.inputs.skip_health_checks }}" == "true" ]]; then
+            echo "⚠️ **Health Checks:** SKIPPED (Emergency Mode)" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "🏥 **Health Checks:** PERFORMED" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 📋 Audit Trail:" >> $GITHUB_STEP_SUMMARY
+          echo "- Rollback request validated and approved" >> $GITHUB_STEP_SUMMARY
+          echo "- Audit record created and maintained" >> $GITHUB_STEP_SUMMARY
+          echo "- Notifications sent to configured channels" >> $GITHUB_STEP_SUMMARY
+          echo "- Logs and artifacts preserved for review" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # Final status
+          if [[ "${{ needs.perform-manual-rollback.result }}" == "success" ]]; then
+            echo "**🎉 MANUAL ROLLBACK COMPLETED SUCCESSFULLY** ✅" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "**⚠️ MANUAL ROLLBACK FAILED - REVIEW LOGS** ❌" >> $GITHUB_STEP_SUMMARY
+          fi

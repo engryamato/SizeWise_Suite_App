@@ -67,42 +67,96 @@ export const useCalculationStore = create<CalculationState>((set, get) => ({
   
   performCalculation: async (type: string, inputData: any): Promise<CalculationResult> => {
     set({ isCalculating: true, lastError: null });
-    
+
     try {
-      // Mock calculation for testing
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
+      // Validate input data
+      if (!inputData || typeof inputData !== 'object') {
+        throw new Error('Invalid input data provided');
+      }
+
+      // Perform actual calculation based on type and input data
+      let calculationResults: any = {};
+      const warnings: string[] = [];
+      const errors: string[] = [];
+
+      if (type === 'air_duct_sizing' && inputData.airflow && inputData.velocity) {
+        // Calculate actual duct dimensions using engineering formulas
+        const airflow = parseFloat(inputData.airflow);
+        const targetVelocity = parseFloat(inputData.velocity) || 1200; // Default to 1200 FPM
+
+        if (airflow <= 0) {
+          errors.push('Airflow must be greater than 0 CFM');
+        } else {
+          // Calculate area needed: Area (sq ft) = CFM / Velocity (FPM)
+          const areaNeeded = airflow / targetVelocity; // sq ft
+          const areaNeededInches = areaNeeded * 144; // sq in
+
+          // For rectangular duct, assume optimal aspect ratio of 1.4:1 (SMACNA recommendation)
+          const height = Math.sqrt(areaNeededInches / 1.4);
+          const width = height * 1.4;
+
+          // Round to standard duct sizes (nearest inch)
+          const standardWidth = Math.round(width);
+          const standardHeight = Math.round(height);
+          const actualArea = (standardWidth * standardHeight) / 144; // sq ft
+          const actualVelocity = actualArea > 0 ? airflow / actualArea : 0;
+
+          // Calculate equivalent diameter for round duct comparison
+          const equivalentDiameter = 1.3 * Math.pow((standardWidth * standardHeight), 0.625) / Math.pow((standardWidth + standardHeight), 0.25);
+
+          // Basic pressure loss calculation (simplified Darcy-Weisbach)
+          const frictionFactor = 0.02; // Typical for galvanized steel
+          const velocityPressure = Math.pow(actualVelocity / 4005, 2); // in. w.g.
+          const pressureLoss = frictionFactor * velocityPressure; // per 100 ft
+
+          calculationResults = {
+            width: standardWidth,
+            height: standardHeight,
+            area: actualArea,
+            velocity: Math.round(actualVelocity),
+            pressure_loss: Math.round(pressureLoss * 1000) / 1000, // Round to 3 decimal places
+            equivalent_diameter: Math.round(equivalentDiameter * 10) / 10
+          };
+
+          // Add warnings for non-optimal conditions
+          if (actualVelocity > 2500) {
+            warnings.push('Velocity exceeds SMACNA recommended maximum of 2500 FPM');
+          }
+          if (actualVelocity < 500) {
+            warnings.push('Velocity below SMACNA recommended minimum of 500 FPM');
+          }
+          if (standardWidth / standardHeight > 4 || standardHeight / standardWidth > 4) {
+            warnings.push('Aspect ratio exceeds recommended 4:1 maximum');
+          }
+        }
+      } else {
+        errors.push(`Calculation type '${type}' requires valid airflow and velocity parameters`);
+      }
+
       const result: CalculationResult = {
-        success: true,
+        success: errors.length === 0,
         input_data: inputData,
-        results: {
-          width: 12,
-          height: 8,
-          area: 12 * 8,
-          velocity: 1200,
-          pressure_loss: 0.08,
-          equivalent_diameter: 9.6
-        },
-        warnings: [],
-        errors: [],
+        results: calculationResults,
+        warnings,
+        errors,
         metadata: {
           calculationType: type,
           timestamp: new Date(),
           inputParameters: inputData
         }
       };
-      
-      set({ 
-        currentCalculation: result, 
-        isCalculating: false 
+
+      set({
+        currentCalculation: result,
+        isCalculating: false
       });
-      
+
       return result;
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Calculation failed';
-      set({ 
-        lastError: errorMessage, 
-        isCalculating: false 
+      set({
+        lastError: errorMessage,
+        isCalculating: false
       });
       throw error;
     }

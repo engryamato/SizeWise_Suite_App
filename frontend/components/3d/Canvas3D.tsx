@@ -16,6 +16,8 @@ import {
 import { cn } from '@/lib/utils';
 import { defaultPerformanceConfig } from '@/lib/utils/performance';
 import { DuctProperties } from '@/components/ui/DrawingToolFAB';
+import { useRealTimeCalculations, useSystemCalculationStatus } from '@/lib/hooks/useRealTimeCalculations';
+import { SystemValidationOverlay } from './validation/SystemValidationOverlay';
 
 // Import modular components
 import { Canvas3DCore } from './core/Canvas3DCore';
@@ -59,7 +61,6 @@ const defaultLightingConfig: LightingConfig = {
   enableShadows: true,
   shadowMapSize: 2048
 };
-}
 
 // Main Canvas3D Component - Refactored to use modular architecture
 export const Canvas3D: React.FC<Canvas3DProps> = ({
@@ -88,6 +89,59 @@ export const Canvas3D: React.FC<Canvas3DProps> = ({
     hoveredId: null,
     multiSelect: false
   });
+
+  // Real-time calculation integration
+  const [calculationState, calculationActions] = useRealTimeCalculations({
+    autoCalculate: true,
+    debounceDelay: 300,
+    enableValidation: true,
+    onCalculationStart: (elementId) => {
+      console.log(`Starting calculation for element: ${elementId}`);
+    },
+    onCalculationComplete: (result) => {
+      console.log(`Calculation complete for ${result.elementId}:`, result);
+    },
+    onSystemCalculationComplete: (results) => {
+      console.log('System calculation complete:', results);
+    },
+    onCalculationError: (elementId, error) => {
+      console.error(`Calculation error for ${elementId}:`, error);
+    },
+    onValidationUpdate: (errors, warnings) => {
+      if (errors.length > 0) {
+        console.warn('Validation errors:', errors);
+      }
+      if (warnings.length > 0) {
+        console.warn('Validation warnings:', warnings);
+      }
+    }
+  });
+
+  // System calculation status
+  const systemStatus = useSystemCalculationStatus(calculationState);
+
+  // Sync segments with real-time calculation system
+  useEffect(() => {
+    // Add existing segments to the calculation system
+    segments.forEach(segment => {
+      calculationActions.addSegment(segment);
+    });
+
+    // Add existing equipment to the calculation system
+    equipment.forEach(equip => {
+      calculationActions.addEquipment(equip);
+    });
+
+    // Add existing fittings to the calculation system
+    fittings.forEach(fitting => {
+      calculationActions.addFitting(fitting);
+    });
+
+    // Trigger initial system calculation
+    if (segments.length > 0 || equipment.length > 0 || fittings.length > 0) {
+      calculationActions.triggerSystemCalculation();
+    }
+  }, [segments, equipment, fittings, calculationActions]);
 
   // Performance monitoring
   const [performanceMetrics, setPerformanceMetrics] = useState({
@@ -120,7 +174,10 @@ export const Canvas3D: React.FC<Canvas3DProps> = ({
       : [segmentId];
 
     handleSelectionChange(newSelection);
-  }, [enableDrawing, selectionState, handleSelectionChange]);
+
+    // Trigger calculation for the clicked segment
+    calculationActions.triggerCalculation(segmentId);
+  }, [enableDrawing, selectionState, handleSelectionChange, calculationActions]);
 
   const handleSegmentHover = useCallback((segmentId: string | null, event: any) => {
     setHoveredId(segmentId);
@@ -184,6 +241,24 @@ export const Canvas3D: React.FC<Canvas3DProps> = ({
           onSegmentHover={handleSegmentHover}
         />
       </Canvas3DCore>
+
+      {/* System Validation Overlay */}
+      <SystemValidationOverlay
+        calculationState={calculationState}
+        systemAnalysis={calculationState.systemAnalysis}
+        position="top-left"
+        displayOptions={{
+          showCalculationStatus: true,
+          showFlowAnalysis: true,
+          showValidationErrors: true,
+          showValidationWarnings: true,
+          autoHide: false
+        }}
+        onValidationClick={(elementId) => {
+          console.log('Validation clicked for element:', elementId);
+          // Could highlight the element in the 3D view
+        }}
+      />
 
       {/* Performance overlay */}
       {process.env.NODE_ENV === 'development' && (

@@ -13,6 +13,7 @@ import {
   Box
 } from '@react-three/drei';
 import { Vector3, Vector2, Raycaster, Quaternion, Euler } from 'three';
+import { createRectangularElbowGeometry } from '@/utils/geometry';
 import { useCameraController } from '@/lib/hooks/useCameraController';
 import { useUIStore } from '@/stores/ui-store';
 import { motion } from 'framer-motion';
@@ -104,6 +105,11 @@ interface TransitionFitting extends DuctFitting {
 interface ElbowFitting extends DuctFitting {
   type: 'elbow';
   elbowType: 'rectangular' | 'round';
+  /**
+   * Throat type for rectangular elbows. Defaults to 'radius'.
+   * 'square' produces a sharp L-shaped profile.
+   */
+  throatType?: 'radius' | 'square';
   angle: 30 | 45 | 90; // Restricted angles for snapping
   centerlineRadius: number; // Based on SMACNA guidelines
 }
@@ -481,7 +487,8 @@ class FittingGenerator {
   static generateElbow(
     segment1: DuctSegment,
     segment2: DuctSegment,
-    connectionPoint: Vector3
+    connectionPoint: Vector3,
+    throatType: 'radius' | 'square' = 'radius'
   ): ElbowFitting {
     const angle = ConnectivityAnalyzer.calculateAngle(segment1, segment2);
     const snappedAngle = SMACNAStandards.snapAngle(angle);
@@ -513,6 +520,7 @@ class FittingGenerator {
       id: `elbow-${Date.now()}`,
       type: 'elbow',
       elbowType: segment1.shape,
+      throatType,
       angle: snappedAngle,
       centerlineRadius,
       position: elbowCenter,
@@ -843,6 +851,19 @@ const ElbowMesh: React.FC<{
 
   const elbowDimensions = { ductSize, ductWidth, ductHeight };
 
+  const rectElbowGeometry = useMemo(() => {
+    if (fitting.inlet.shape === 'rectangular') {
+      return createRectangularElbowGeometry(
+        elbowDimensions.ductWidth,
+        elbowDimensions.ductHeight,
+        fitting.centerlineRadius,
+        fitting.angle,
+        fitting.throatType ?? 'radius'
+      );
+    }
+    return null;
+  }, [fitting, elbowDimensions]);
+
   const getColor = () => {
     if (isSelected) return '#3b82f6'; // Blue when selected
     if (hovered) return '#6366f1'; // Indigo when hovered
@@ -863,8 +884,8 @@ const ElbowMesh: React.FC<{
         // Round elbow - torus segment with actual diameter
         <torusGeometry args={[fitting.centerlineRadius, elbowDimensions.ductSize / 2, 8, 16, (fitting.angle * Math.PI) / 180]} />
       ) : (
-        // Rectangular elbow - box geometry with actual width and height
-        <boxGeometry args={[elbowDimensions.ductWidth, elbowDimensions.ductHeight, fitting.centerlineRadius * 0.5]} />
+        // Rectangular elbow - generated geometry based on throat type
+        rectElbowGeometry && <primitive object={rectElbowGeometry} />
       )}
       <meshStandardMaterial
         color={getColor()}

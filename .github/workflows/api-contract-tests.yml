@@ -1,0 +1,314 @@
+name: API Contract Tests
+
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - "backend/**"
+      - "core/**"
+      - "tests/contract/**"
+      - ".github/workflows/api-contract-tests.yml"
+  pull_request:
+    branches: [main, develop]
+    paths:
+      - "backend/**"
+      - "core/**"
+      - "tests/contract/**"
+      - ".github/workflows/api-contract-tests.yml"
+  schedule:
+    # Run contract tests daily at 6 AM UTC
+    - cron: "0 6 * * *"
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Environment to test"
+        required: true
+        default: "development"
+        type: choice
+        options:
+          - development
+          - staging
+          - production
+      generate_reports:
+        description: "Generate HTML and JSON reports"
+        required: false
+        default: true
+        type: boolean
+
+env:
+  PYTHON_VERSION: "3.11"
+  NODE_VERSION: "18"
+
+jobs:
+  contract-tests:
+    name: API Contract Tests
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        environment: [development]
+        include:
+          - environment: development
+            base_url: http://localhost:5000
+            auth_url: http://localhost:5001
+            frontend_url: http://localhost:3000
+
+    services:
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_USER: postgres
+          POSTGRES_DB: sizewise_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: "pip"
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "npm"
+
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install -r requirements-dev.txt
+          pip install requests jsonschema pydantic
+
+      - name: Install Node.js dependencies
+        run: |
+          npm ci
+          npm run build
+
+      - name: Set up environment variables
+        run: |
+          echo "FLASK_ENV=testing" >> $GITHUB_ENV
+          echo "DATABASE_URL=postgresql://postgres:postgres@localhost:5432/sizewise_test" >> $GITHUB_ENV
+          echo "REDIS_URL=redis://localhost:6379/0" >> $GITHUB_ENV
+          echo "SECRET_KEY=test-secret-key-for-ci" >> $GITHUB_ENV
+          echo "JWT_SECRET_KEY=test-jwt-secret-for-ci" >> $GITHUB_ENV
+
+      - name: Initialize database
+        run: |
+          cd backend
+          python -c "
+          from app import create_app, db
+          app = create_app()
+          with app.app_context():
+              db.create_all()
+              print('Database initialized successfully')
+          "
+
+      - name: Start backend server
+        run: |
+          cd backend
+          python app.py &
+          echo $! > backend.pid
+          sleep 10
+        env:
+          FLASK_ENV: testing
+          PORT: 5000
+
+      - name: Wait for backend to be ready
+        run: |
+          timeout 60 bash -c 'until curl -f http://localhost:5000/api/health; do sleep 2; done'
+
+      - name: Run API contract tests
+        id: contract_tests
+        run: |
+          cd tests/contract
+          python run_contract_tests.py \
+            --environment ${{ matrix.environment }} \
+            --html-report \
+            --json-report \
+            --ci-export \
+            --output-dir ../../contract-test-results \
+            --verbose
+        continue-on-error: true
+
+      - name: Upload contract test results
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: contract-test-results-${{ matrix.environment }}
+          path: contract-test-results/
+          retention-days: 30
+
+      - name: Parse contract test results
+        id: parse_results
+        if: always()
+        run: |
+          if [ -f "contract-test-results/contract_ci_export_${{ matrix.environment }}.json" ]; then
+            VALIDATION_SCORE=$(jq -r '.summary.validation_score' "contract-test-results/contract_ci_export_${{ matrix.environment }}.json")
+            TESTS_PASSED=$(jq -r '.summary.passed_tests' "contract-test-results/contract_ci_export_${{ matrix.environment }}.json")
+            TOTAL_TESTS=$(jq -r '.summary.total_tests' "contract-test-results/contract_ci_export_${{ matrix.environment }}.json")
+            STATUS=$(jq -r '.summary.status' "contract-test-results/contract_ci_export_${{ matrix.environment }}.json")
+            OVERALL_PASS=$(jq -r '.quality_gates.overall_pass' "contract-test-results/contract_ci_export_${{ matrix.environment }}.json")
+            
+            echo "validation_score=$VALIDATION_SCORE" >> $GITHUB_OUTPUT
+            echo "tests_passed=$TESTS_PASSED" >> $GITHUB_OUTPUT
+            echo "total_tests=$TOTAL_TESTS" >> $GITHUB_OUTPUT
+            echo "status=$STATUS" >> $GITHUB_OUTPUT
+            echo "overall_pass=$OVERALL_PASS" >> $GITHUB_OUTPUT
+          else
+            echo "validation_score=0" >> $GITHUB_OUTPUT
+            echo "tests_passed=0" >> $GITHUB_OUTPUT
+            echo "total_tests=0" >> $GITHUB_OUTPUT
+            echo "status=FAILED" >> $GITHUB_OUTPUT
+            echo "overall_pass=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Comment PR with contract test results
+        if: github.event_name == 'pull_request' && always()
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const fs = require('fs');
+            const path = require('path');
+
+            const validationScore = '${{ steps.parse_results.outputs.validation_score }}';
+            const testsPassed = '${{ steps.parse_results.outputs.tests_passed }}';
+            const totalTests = '${{ steps.parse_results.outputs.total_tests }}';
+            const status = '${{ steps.parse_results.outputs.status }}';
+            const overallPass = '${{ steps.parse_results.outputs.overall_pass }}';
+
+            const statusIcon = overallPass === 'true' ? '✅' : '❌';
+            const statusText = overallPass === 'true' ? 'PASSED' : 'FAILED';
+
+            let comment = `## ${statusIcon} API Contract Tests - ${statusText}\n\n`;
+            comment += `**Environment:** ${{ matrix.environment }}\n`;
+            comment += `**Validation Score:** ${validationScore}%\n`;
+            comment += `**Tests:** ${testsPassed}/${totalTests} passed\n`;
+            comment += `**Status:** ${status}\n\n`;
+
+            // Add failed tests if any
+            const ciExportPath = 'contract-test-results/contract_ci_export_${{ matrix.environment }}.json';
+            if (fs.existsSync(ciExportPath)) {
+              const ciData = JSON.parse(fs.readFileSync(ciExportPath, 'utf8'));
+              if (ciData.failed_tests && ciData.failed_tests.length > 0) {
+                comment += `**Failed Tests:**\n`;
+                ciData.failed_tests.forEach(test => {
+                  comment += `- ❌ ${test}\n`;
+                });
+                comment += `\n`;
+              }
+              
+              if (ciData.recommendations && ciData.recommendations.length > 0) {
+                comment += `**Recommendations:**\n`;
+                ciData.recommendations.forEach(rec => {
+                  comment += `- ${rec}\n`;
+                });
+              }
+            }
+
+            comment += `\n📊 [View detailed report](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})`;
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: comment
+            });
+
+      - name: Create GitHub check
+        if: always()
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const overallPass = '${{ steps.parse_results.outputs.overall_pass }}';
+            const validationScore = '${{ steps.parse_results.outputs.validation_score }}';
+            const testsPassed = '${{ steps.parse_results.outputs.tests_passed }}';
+            const totalTests = '${{ steps.parse_results.outputs.total_tests }}';
+
+            const conclusion = overallPass === 'true' ? 'success' : 'failure';
+            const title = `API Contract Tests: ${testsPassed}/${totalTests} passed (${validationScore}%)`;
+
+            await github.rest.checks.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              name: 'API Contract Tests',
+              head_sha: context.sha,
+              status: 'completed',
+              conclusion: conclusion,
+              output: {
+                title: title,
+                summary: `Contract validation score: ${validationScore}%\nEnvironment: ${{ matrix.environment }}`
+              }
+            });
+
+      - name: Stop backend server
+        if: always()
+        run: |
+          if [ -f backend.pid ]; then
+            kill $(cat backend.pid) || true
+            rm backend.pid
+          fi
+
+      - name: Fail job if contract tests failed
+        if: steps.parse_results.outputs.overall_pass != 'true'
+        run: |
+          echo "❌ API contract tests failed!"
+          echo "Validation Score: ${{ steps.parse_results.outputs.validation_score }}%"
+          echo "Tests Passed: ${{ steps.parse_results.outputs.tests_passed }}/${{ steps.parse_results.outputs.total_tests }}"
+          echo "Status: ${{ steps.parse_results.outputs.status }}"
+          exit 1
+
+  contract-validation:
+    name: Contract Validation Summary
+    runs-on: ubuntu-latest
+    needs: [contract-tests]
+    if: always()
+
+    steps:
+      - name: Download contract test results
+        uses: actions/download-artifact@v3
+        with:
+          name: contract-test-results-development
+          path: contract-test-results/
+
+      - name: Generate summary
+        run: |
+          echo "## 📋 API Contract Test Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          if [ -f "contract-test-results/contract_ci_export_development.json" ]; then
+            VALIDATION_SCORE=$(jq -r '.summary.validation_score' contract-test-results/contract_ci_export_development.json)
+            TESTS_PASSED=$(jq -r '.summary.passed_tests' contract-test-results/contract_ci_export_development.json)
+            TOTAL_TESTS=$(jq -r '.summary.total_tests' contract-test-results/contract_ci_export_development.json)
+            STATUS=$(jq -r '.summary.status' contract-test-results/contract_ci_export_development.json)
+            
+            echo "| Metric | Value |" >> $GITHUB_STEP_SUMMARY
+            echo "|--------|-------|" >> $GITHUB_STEP_SUMMARY
+            echo "| Validation Score | ${VALIDATION_SCORE}% |" >> $GITHUB_STEP_SUMMARY
+            echo "| Tests Passed | ${TESTS_PASSED}/${TOTAL_TESTS} |" >> $GITHUB_STEP_SUMMARY
+            echo "| Status | ${STATUS} |" >> $GITHUB_STEP_SUMMARY
+            echo "| Environment | development |" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ Contract test results not found" >> $GITHUB_STEP_SUMMARY
+          fi

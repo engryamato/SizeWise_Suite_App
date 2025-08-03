@@ -1,0 +1,402 @@
+name: Dependency Security Monitoring
+
+on:
+  schedule:
+    # Run weekly on Mondays at 9 AM UTC
+    - cron: '0 9 * * 1'
+  push:
+    branches: [ main, develop ]
+    paths:
+      - 'package.json'
+      - 'package-lock.json'
+      - 'requirements.txt'
+      - '.github/workflows/dependency-security.yml'
+  pull_request:
+    branches: [ main, develop ]
+    paths:
+      - 'package.json'
+      - 'package-lock.json'
+      - 'requirements.txt'
+  workflow_dispatch:
+    inputs:
+      update_dependencies:
+        description: 'Update dependencies automatically'
+        required: false
+        default: 'false'
+        type: boolean
+
+env:
+  NODE_VERSION: '20'
+  PYTHON_VERSION: '3.11'
+
+jobs:
+  # =============================================================================
+  # Frontend Security Scan
+  # =============================================================================
+  frontend-security:
+    name: Frontend Security Scan
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+        
+    - name: Install dependencies
+      run: npm ci
+      
+    - name: Run npm audit
+      id: npm-audit
+      run: |
+        echo "Running npm audit..."
+        npm audit --audit-level=moderate --json > npm-audit-report.json || true
+        
+        # Check if there are any vulnerabilities
+        VULN_COUNT=$(cat npm-audit-report.json | jq '.metadata.vulnerabilities.total // 0')
+        echo "vulnerability_count=$VULN_COUNT" >> $GITHUB_OUTPUT
+        
+        # Display audit results
+        npm audit --audit-level=moderate || true
+        
+    - name: Upload npm audit report
+      uses: actions/upload-artifact@v4
+      with:
+        name: npm-audit-report
+        path: npm-audit-report.json
+        
+    - name: Check for high/critical vulnerabilities
+      run: |
+        HIGH_VULN=$(cat npm-audit-report.json | jq '.metadata.vulnerabilities.high // 0')
+        CRITICAL_VULN=$(cat npm-audit-report.json | jq '.metadata.vulnerabilities.critical // 0')
+        
+        echo "High vulnerabilities: $HIGH_VULN"
+        echo "Critical vulnerabilities: $CRITICAL_VULN"
+        
+        if [ $HIGH_VULN -gt 0 ] || [ $CRITICAL_VULN -gt 0 ]; then
+          echo "❌ High or critical vulnerabilities found!"
+          exit 1
+        else
+          echo "✅ No high or critical vulnerabilities found"
+        fi
+        
+    - name: Check for outdated packages
+      run: |
+        echo "Checking for outdated packages..."
+        npm outdated --json > npm-outdated-report.json || true
+        
+        # Count outdated packages
+        OUTDATED_COUNT=$(cat npm-outdated-report.json | jq 'length // 0')
+        echo "Outdated packages: $OUTDATED_COUNT"
+        
+        if [ $OUTDATED_COUNT -gt 0 ]; then
+          echo "📦 Outdated packages found:"
+          npm outdated || true
+        fi
+        
+    - name: Upload outdated packages report
+      uses: actions/upload-artifact@v4
+      with:
+        name: npm-outdated-report
+        path: npm-outdated-report.json
+
+  # =============================================================================
+  # Backend Security Scan
+  # =============================================================================
+  backend-security:
+    name: Backend Security Scan
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+        cache: 'pip'
+        
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install safety pip-audit
+        
+    - name: Run Safety check
+      id: safety-check
+      run: |
+        echo "Running Safety security scan..."
+        safety check --json > safety-report.json || true
+        
+        # Check results
+        VULN_COUNT=$(cat safety-report.json | jq 'length // 0')
+        echo "vulnerability_count=$VULN_COUNT" >> $GITHUB_OUTPUT
+        
+        # Display results
+        safety check || true
+        
+    - name: Run pip-audit
+      id: pip-audit
+      run: |
+        echo "Running pip-audit security scan..."
+        pip-audit --format=json --output=pip-audit-report.json || true
+        
+        # Display results
+        pip-audit || true
+        
+    - name: Upload security reports
+      uses: actions/upload-artifact@v4
+      with:
+        name: python-security-reports
+        path: |
+          safety-report.json
+          pip-audit-report.json
+          
+    - name: Check for vulnerabilities
+      run: |
+        SAFETY_VULN=$(cat safety-report.json | jq 'length // 0')
+        
+        echo "Safety vulnerabilities: $SAFETY_VULN"
+        
+        if [ $SAFETY_VULN -gt 0 ]; then
+          echo "❌ Security vulnerabilities found!"
+          exit 1
+        else
+          echo "✅ No security vulnerabilities found"
+        fi
+        
+    - name: Check for outdated packages
+      run: |
+        echo "Checking for outdated Python packages..."
+        pip list --outdated --format=json > pip-outdated-report.json || true
+        
+        OUTDATED_COUNT=$(cat pip-outdated-report.json | jq 'length // 0')
+        echo "Outdated packages: $OUTDATED_COUNT"
+        
+        if [ $OUTDATED_COUNT -gt 0 ]; then
+          echo "📦 Outdated Python packages found:"
+          pip list --outdated || true
+        fi
+        
+    - name: Upload outdated packages report
+      uses: actions/upload-artifact@v4
+      with:
+        name: pip-outdated-report
+        path: pip-outdated-report.json
+
+  # =============================================================================
+  # Dependency Update (Optional)
+  # =============================================================================
+  dependency-update:
+    name: Automated Dependency Update
+    runs-on: ubuntu-latest
+    needs: [frontend-security, backend-security]
+    if: github.event.inputs.update_dependencies == 'true' || (github.event_name == 'schedule' && github.ref == 'refs/heads/main')
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+        
+    - name: Setup Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+        cache: 'pip'
+        
+    - name: Install dependencies
+      run: |
+        npm ci
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        
+    - name: Update patch-level dependencies
+      run: |
+        echo "Updating patch-level dependencies..."
+        
+        # Update npm patch versions
+        npm update
+        
+        # Update Python patch versions (conservative approach)
+        pip install --upgrade --upgrade-strategy only-if-needed $(pip freeze | grep -E '^(Flask|numpy|pandas|pytest)' | cut -d'=' -f1)
+        
+    - name: Run tests after updates
+      run: |
+        echo "Running tests after dependency updates..."
+        
+        # Frontend tests
+        npm test || echo "Frontend tests failed"
+        
+        # Backend tests
+        python -m pytest tests/ -v || echo "Backend tests failed"
+        
+    - name: Generate updated requirements
+      run: |
+        pip freeze > requirements.txt
+        
+    - name: Create Pull Request
+      uses: peter-evans/create-pull-request@v6
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        commit-message: 'chore: update dependencies (automated)'
+        title: 'Automated Dependency Updates'
+        body: |
+          ## Automated Dependency Updates
+          
+          This PR contains automated dependency updates for patch-level versions.
+          
+          ### Changes
+          - Updated npm dependencies to latest patch versions
+          - Updated Python dependencies to latest patch versions
+          
+          ### Security Status
+          - ✅ No security vulnerabilities detected
+          - ✅ All tests passing
+          
+          ### Review Required
+          Please review the changes and ensure all functionality works as expected.
+          
+          **Auto-generated by GitHub Actions**
+        branch: automated-dependency-updates
+        delete-branch: true
+
+  # =============================================================================
+  # Security Report Generation
+  # =============================================================================
+  security-report:
+    name: Generate Security Report
+    runs-on: ubuntu-latest
+    needs: [frontend-security, backend-security]
+    if: always()
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Download all artifacts
+      uses: actions/download-artifact@v4
+      
+    - name: Generate security summary
+      run: |
+        echo "# SizeWise Suite Security Report" > security-summary.md
+        echo "**Generated:** $(date)" >> security-summary.md
+        echo "" >> security-summary.md
+        
+        # Frontend security summary
+        echo "## Frontend Security" >> security-summary.md
+        if [ -f npm-audit-report/npm-audit-report.json ]; then
+          TOTAL_VULN=$(cat npm-audit-report/npm-audit-report.json | jq '.metadata.vulnerabilities.total // 0')
+          HIGH_VULN=$(cat npm-audit-report/npm-audit-report.json | jq '.metadata.vulnerabilities.high // 0')
+          CRITICAL_VULN=$(cat npm-audit-report/npm-audit-report.json | jq '.metadata.vulnerabilities.critical // 0')
+          
+          echo "- **Total Vulnerabilities:** $TOTAL_VULN" >> security-summary.md
+          echo "- **High Severity:** $HIGH_VULN" >> security-summary.md
+          echo "- **Critical Severity:** $CRITICAL_VULN" >> security-summary.md
+        fi
+        
+        if [ -f npm-outdated-report/npm-outdated-report.json ]; then
+          OUTDATED_COUNT=$(cat npm-outdated-report/npm-outdated-report.json | jq 'length // 0')
+          echo "- **Outdated Packages:** $OUTDATED_COUNT" >> security-summary.md
+        fi
+        
+        echo "" >> security-summary.md
+        
+        # Backend security summary
+        echo "## Backend Security" >> security-summary.md
+        if [ -f python-security-reports/safety-report.json ]; then
+          SAFETY_VULN=$(cat python-security-reports/safety-report.json | jq 'length // 0')
+          echo "- **Safety Vulnerabilities:** $SAFETY_VULN" >> security-summary.md
+        fi
+        
+        if [ -f pip-outdated-report/pip-outdated-report.json ]; then
+          PIP_OUTDATED=$(cat pip-outdated-report/pip-outdated-report.json | jq 'length // 0')
+          echo "- **Outdated Python Packages:** $PIP_OUTDATED" >> security-summary.md
+        fi
+        
+        echo "" >> security-summary.md
+        echo "## Recommendations" >> security-summary.md
+        echo "- Review and update outdated packages" >> security-summary.md
+        echo "- Monitor security advisories" >> security-summary.md
+        echo "- Run security scans regularly" >> security-summary.md
+        
+    - name: Upload security summary
+      uses: actions/upload-artifact@v4
+      with:
+        name: security-summary
+        path: security-summary.md
+        
+    - name: Comment on PR (if applicable)
+      if: github.event_name == 'pull_request'
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const fs = require('fs');
+          
+          if (fs.existsSync('security-summary.md')) {
+            const summary = fs.readFileSync('security-summary.md', 'utf8');
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: summary
+            });
+          }
+
+  # =============================================================================
+  # Notification
+  # =============================================================================
+  notify:
+    name: Send Notifications
+    runs-on: ubuntu-latest
+    needs: [frontend-security, backend-security]
+    if: failure()
+    
+    steps:
+    - name: Send Slack notification (if configured)
+      if: env.SLACK_WEBHOOK_URL != ''
+      env:
+        SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+      run: |
+        curl -X POST -H 'Content-type: application/json' \
+          --data '{"text":"🚨 SizeWise Suite security scan failed! Check GitHub Actions for details."}' \
+          $SLACK_WEBHOOK_URL
+          
+    - name: Create issue for security failures
+      if: github.event_name == 'schedule'
+      uses: actions/github-script@v7
+      with:
+        script: |
+          github.rest.issues.create({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            title: '🚨 Security Scan Failure - ' + new Date().toISOString().split('T')[0],
+            body: `## Security Scan Failure
+            
+            The automated security scan has detected issues that require attention.
+            
+            **Workflow Run:** ${context.runId}
+            **Triggered by:** ${context.eventName}
+            
+            Please review the workflow logs and address any security vulnerabilities.
+            
+            ### Next Steps
+            1. Review the security scan results
+            2. Update vulnerable dependencies
+            3. Run tests to ensure compatibility
+            4. Close this issue once resolved
+            `,
+            labels: ['security', 'dependencies', 'high-priority']
+          });

@@ -1,0 +1,68 @@
+{
+  "id": "INC-20250803-0001",
+  "title": "Test Critical Incident",
+  "description": "Critical system outage test",
+  "severity": "critical",
+  "status": "open",
+  "category": "system_outage",
+  "created_at": "2025-08-03T09:51:43.789834",
+  "updated_at": "2025-08-03T09:51:44.329912",
+  "assigned_to": null,
+  "escalation_level": 1,
+  "escalated_at": null,
+  "resolved_at": null,
+  "closed_at": null,
+  "tags": [],
+  "timeline": [
+    {
+      "timestamp": "2025-08-03T09:51:43.789834",
+      "action": "incident_created",
+      "details": "Incident created by validation_test",
+      "user": "validation_test"
+    },
+    {
+      "timestamp": "2025-08-03T09:51:43.789834",
+      "action": "automated_response_started",
+      "details": "Executing runbook: System Outage Response",
+      "user": "system"
+    },
+    {
+      "timestamp": "2025-08-03T09:51:43.895094",
+      "action": "automated_step_completed",
+      "details": "Completed: Check system health endpoints",
+      "user": "system"
+    },
+    {
+      "timestamp": "2025-08-03T09:51:44.003999",
+      "action": "automated_step_completed",
+      "details": "Completed: Verify database connectivity",
+      "user": "system"
+    },
+    {
+      "timestamp": "2025-08-03T09:51:44.112510",
+      "action": "automated_step_completed",
+      "details": "Completed: Check load balancer status",
+      "user": "system"
+    },
+    {
+      "timestamp": "2025-08-03T09:51:44.221100",
+      "action": "automated_step_completed",
+      "details": "Completed: Validate service mesh health",
+      "user": "system"
+    },
+    {
+      "timestamp": "2025-08-03T09:51:44.329912",
+      "action": "automated_step_completed",
+      "details": "Completed: Restart failed services if safe",
+      "user": "system"
+    },
+    {
+      "timestamp": "2025-08-03T09:51:44.329912",
+      "action": "automated_response_completed",
+      "details": "Automated response completed",
+      "user": "system"
+    }
+  ],
+  "runbook_executed": true,
+  "sla_breach": false
+}

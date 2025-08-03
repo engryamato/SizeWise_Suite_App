@@ -1,0 +1,141 @@
+{
+  "tests_run": 22,
+  "tests_passed": 19,
+  "tests_failed": 3,
+  "validation_details": [
+    {
+      "test_name": "Test Environment Setup",
+      "passed": true,
+      "details": "",
+      "timestamp": "2025-08-03T06:05:00.715169"
+    },
+    {
+      "test_name": "Logger Initialization",
+      "passed": true,
+      "details": "",
+      "timestamp": "2025-08-03T06:05:00.715169"
+    },
+    {
+      "test_name": "Basic Logging",
+      "passed": true,
+      "details": "",
+      "timestamp": "2025-08-03T06:05:00.716170"
+    },
+    {
+      "test_name": "Correlation Tracking",
+      "passed": true,
+      "details": "",
+      "timestamp": "2025-08-03T06:05:00.716170"
+    },
+    {
+      "test_name": "Log Levels and Sources",
+      "passed": true,
+      "details": "",
+      "timestamp": "2025-08-03T06:05:00.716170"
+    },
+    {
+      "test_name": "Metadata and Tags",
+      "passed": true,
+      "details": "",
+      "timestamp": "2025-08-03T06:05:00.717169"
+    },
+    {
+      "test_name": "Log Search Functionality",
+      "passed": true,
+      "details": "",
+      "timestamp": "2025-08-03T06:05:00.718170"
+    },
+    {
+      "test_name": "Correlation Search",
+      "passed": true,
+      "details": "",
+      "timestamp": "2025-08-03T06:05:00.718170"
+    },
+    {
+      "test_name": "Time Range Search",
+      "passed": true,
+      "details": "",
+      "timestamp": "2025-08-03T06:05:00.719170"
+    },
+    {
+      "test_name": "Advanced Filtering",
+      "passed": true,
+      "details": "",
+      "timestamp": "2025-08-03T06:05:00.720243"
+    },
+    {
+      "test_name": "Data Sanitization",
+      "passed": true,
+      "details": "",
+      "timestamp": "2025-08-03T06:05:00.720243"
+    },
+    {
+      "test_name": "Sensitive Data Handling",
+      "passed": false,
+      "details": "",
+      "timestamp": "2025-08-03T06:05:00.720243"
+    },
+    {
+      "test_name": "User Privacy Protection",
+      "passed": true,
+      "details": "",
+      "timestamp": "2025-08-03T06:05:00.720243"
+    },
+    {
+      "test_name": "Log Storage",
+      "passed": false,
+      "details": "'charmap' codec can't decode byte 0x9d in position 50: character maps to <undefined>",
+      "timestamp": "2025-08-03T06:05:00.733538"
+    },
+    {
+      "test_name": "Log Compression",
+      "passed": true,
+      "details": "",
+      "timestamp": "2025-08-03T06:05:00.737047"
+    },
+    {
+      "test_name": "Retention Policy",
+      "passed": true,
+      "details": "",
+      "timestamp": "2025-08-03T06:05:00.738047"
+    },
+    {
+      "test_name": "High Volume Logging",
+      "passed": true,
+      "details": "",
+      "timestamp": "2025-08-03T06:05:00.784932"
+    },
+    {
+      "test_name": "Search Performance",
+      "passed": true,
+      "details": "",
+      "timestamp": "2025-08-03T06:05:00.791709"
+    },
+    {
+      "test_name": "Memory Usage",
+      "passed": false,
+      "details": "",
+      "timestamp": "2025-08-03T06:05:00.803850"
+    },
+    {
+      "test_name": "Structlog Integration",
+      "passed": true,
+      "details": "",
+      "timestamp": "2025-08-03T06:05:00.803850"
+    },
+    {
+      "test_name": "HVAC Calculation Logging",
+      "passed": true,
+      "details": "",
+      "timestamp": "2025-08-03T06:05:00.804363"
+    },
+    {
+      "test_name": "Error Alerting Integration",
+      "passed": true,
+      "details": "",
+      "timestamp": "2025-08-03T06:05:00.910029"
+    }
+  ],
+  "success_rate": 86.36363636363636,
+  "overall_status": "NEEDS_ATTENTION"
+}

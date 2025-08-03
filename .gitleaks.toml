@@ -131,6 +131,61 @@ id = "pypi-upload-token"
 regex = '''pypi-AgEIcHlwaS5vcmc[A-Za-z0-9\-_]{50,1000}'''
 tags = ["key", "pypi"]
 
+# SizeWise Suite specific rules
+[[rules]]
+description = "MongoDB connection string"
+id = "mongodb-connection-string"
+regex = '''mongodb(\+srv)?://[^\s'"]+'''
+tags = ["database", "mongodb", "sizewise"]
+
+[[rules]]
+description = "PostgreSQL connection string"
+id = "postgres-connection-string"
+regex = '''postgres(ql)?://[^\s'"]+'''
+tags = ["database", "postgresql", "sizewise"]
+
+[[rules]]
+description = "Redis connection string"
+id = "redis-connection-string"
+regex = '''redis://[^\s'"]+'''
+tags = ["database", "redis", "sizewise"]
+
+[[rules]]
+description = "JWT secret key"
+id = "jwt-secret"
+regex = '''(?i)(jwt[_-]?secret|secret[_-]?key)['"]*\s*[:=]\s*['"][^'"]{20,}['"]'''
+tags = ["jwt", "secret", "sizewise"]
+
+[[rules]]
+description = "Flask secret key"
+id = "flask-secret-key"
+regex = '''(?i)(flask[_-]?secret|secret[_-]?key)['"]*\s*[:=]\s*['"][^'"]{20,}['"]'''
+tags = ["flask", "secret", "sizewise"]
+
+[[rules]]
+description = "Sentry DSN"
+id = "sentry-dsn"
+regex = '''https://[a-f0-9]{32}@[a-z0-9.-]+\.ingest\.sentry\.io/[0-9]+'''
+tags = ["sentry", "monitoring", "sizewise"]
+
+[[rules]]
+description = "Hardcoded password"
+id = "hardcoded-password"
+regex = '''(?i)(password|passwd|pwd)['"]*\s*[:=]\s*['"][^'"]{8,}['"]'''
+tags = ["password", "hardcoded", "sizewise"]
+
+[[rules]]
+description = "API key generic"
+id = "api-key-generic"
+regex = '''(?i)(api[_-]?key|apikey)['"]*\s*[:=]\s*['"][a-zA-Z0-9]{20,}['"]'''
+tags = ["api", "key", "sizewise"]
+
+[[rules]]
+description = "Private key"
+id = "private-key"
+regex = '''-----BEGIN [A-Z]+ PRIVATE KEY-----'''
+tags = ["private-key", "crypto", "sizewise"]
+
 # Allowlist for common false positives
 [allowlist]
 description = "Allowlisted files"
@@ -207,5 +262,28 @@ regexes = [
     '''EAACEdEose0cBA[0-9A-Za-z]+.*test''',
     '''[f|F][a|A][c|C][e|E][b|B][o|O][o|O][k|K].*['|\"][0-9a-f]{32}['|\"].*test''',
     '''[t|T][w|W][i|I][t|T][t|T][e|E][r|R].*['|\"][0-9a-zA-Z]{35,44}['|\"].*test''',
-    '''[g|G][i|I][t|T][h|H][u|U][b|B].*['|\"][0-9a-zA-Z]{35,40}['|\"].*test'''
+    '''[g|G][i|I][t|T][h|H][u|U][b|B].*['|\"][0-9a-zA-Z]{35,40}['|\"].*test''',
+    # SizeWise Suite specific allowlist patterns
+    '''dev-secret-key-change-in-production''',
+    '''your_secure_.*_here''',
+    '''changeme''',
+    '''password123''',
+    '''secret123''',
+    '''test123''',
+    '''SizeWiseSuite!''',
+    '''engryamato''',
+    '''sizewise''',
+    '''localhost:27017''',
+    '''mongodb://localhost''',
+    '''postgres://localhost''',
+    '''redis://localhost''',
+    '''test_.*_key''',
+    '''example_.*_secret''',
+    '''dummy_.*_token''',
+    '''placeholder_.*''',
+    '''your_.*_here''',
+    '''replace_with_actual''',
+    '''set_your_.*_here''',
+    '''configure_your_.*''',
+    '''add_your_.*_here'''
 ]

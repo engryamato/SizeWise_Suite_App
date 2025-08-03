@@ -13,6 +13,14 @@ from pymongo import MongoClient
 from pymongo.errors import ConnectionFailure, ServerSelectionTimeoutError
 import structlog
 
+# Import secure credential manager
+try:
+    from backend.security.credential_manager import get_credential_manager
+except ImportError:
+    # Fallback for development
+    def get_credential_manager():
+        return None
+
 logger = structlog.get_logger()
 
 class MongoDBConfig:
@@ -26,19 +34,42 @@ class MongoDBConfig:
         self.database: Optional[AsyncIOMotorDatabase] = None
         
     def _get_connection_string(self) -> str:
-        """Get MongoDB connection string from environment variables."""
-        # Primary connection string from environment
-        connection_string = os.getenv('MONGODB_CONNECTION_STRING')
-        
-        if not connection_string:
-            # Fallback to individual components
-            username = os.getenv('MONGODB_USERNAME', 'engryamato')
-            password = os.getenv('MONGODB_PASSWORD', 'SizeWiseSuite!')
-            host = os.getenv('MONGODB_HOST', 'sizewisespatial.qezsy7z.mongodb.net')
-            options = os.getenv('MONGODB_OPTIONS', 'retryWrites=true&w=majority&appName=SizeWiseSpatial')
-            
-            connection_string = f"mongodb+srv://{username}:{password}@{host}/?{options}"
-        
+        """Get MongoDB connection string from secure credential manager."""
+        # Try to get credential manager
+        credential_manager = get_credential_manager()
+
+        if credential_manager:
+            # Use secure credential manager
+            connection_string = credential_manager.get_credential('database', 'mongodb_connection_string')
+
+            if not connection_string:
+                # Build from individual components using credential manager
+                username = credential_manager.get_credential('database', 'mongodb_username')
+                password = credential_manager.get_credential('database', 'mongodb_password')
+                host = credential_manager.get_credential('database', 'mongodb_host', 'localhost')
+                options = os.getenv('MONGODB_OPTIONS', 'retryWrites=true&w=majority&appName=SizeWiseSpatial')
+
+                if username and password and host:
+                    connection_string = f"mongodb+srv://{username}:{password}@{host}/?{options}"
+                else:
+                    logger.warning("MongoDB credentials not found in credential manager, using fallback")
+                    connection_string = None
+        else:
+            # Fallback to environment variables (for development)
+            connection_string = os.getenv('MONGODB_CONNECTION_STRING')
+
+            if not connection_string:
+                username = os.getenv('MONGODB_USERNAME')
+                password = os.getenv('MONGODB_PASSWORD')
+                host = os.getenv('MONGODB_HOST', 'localhost')
+                options = os.getenv('MONGODB_OPTIONS', 'retryWrites=true&w=majority&appName=SizeWiseSpatial')
+
+                if username and password:
+                    connection_string = f"mongodb+srv://{username}:{password}@{host}/?{options}"
+                else:
+                    logger.error("MongoDB credentials not configured. Set MONGODB_USERNAME and MONGODB_PASSWORD environment variables.")
+                    connection_string = "mongodb://localhost:27017/sizewise_db"  # Local fallback
+
         return connection_string
     
     def get_sync_client(self) -> MongoClient:

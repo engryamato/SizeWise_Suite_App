@@ -22,6 +22,14 @@ from enum import Enum
 import structlog
 from prometheus_client import Counter, Histogram, Gauge, Info, CollectorRegistry, generate_latest
 
+# Import alerting dependencies
+import smtplib
+import ssl
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
+import aiohttp
+import os
+
 logger = structlog.get_logger()
 
 # =============================================================================
@@ -718,12 +726,29 @@ class MetricsCollector:
 
             logger.warning("ALERT FIRED", **alert_message)
 
-            # Here you would integrate with alerting systems like:
-            # - Slack notifications
-            # - Email alerts
-            # - PagerDuty
-            # - Discord webhooks
-            # - etc.
+            # Send alert through AlertingManager if available
+            if hasattr(self, 'alerting_manager') and self.alerting_manager:
+                try:
+                    from .AlertingManager import Alert, AlertSeverity
+
+                    # Convert to Alert object
+                    alert = Alert(
+                        name=alert_rule.name,
+                        severity=alert_rule.severity,
+                        description=alert_rule.description,
+                        metric_name=alert_rule.metric_name,
+                        current_value=current_value,
+                        threshold=alert_rule.threshold,
+                        condition=alert_rule.condition,
+                        duration_seconds=duration,
+                        timestamp=datetime.utcnow()
+                    )
+
+                    # Send alert asynchronously
+                    asyncio.create_task(self.alerting_manager.send_alert(alert))
+
+                except Exception as e:
+                    logger.error("Failed to send alert through AlertingManager", error=str(e))
 
         except Exception as e:
             logger.error("Failed to fire alert", alert_name=alert_rule.name, error=str(e))

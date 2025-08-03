@@ -13,13 +13,14 @@ import {
   ComplianceResult,
   FittingType
 } from './fitting-interfaces';
-import { 
-  MaterialType, 
+import {
+  MaterialType,
   GaugeType,
   getWallThickness,
   getRecommendedGauge,
   isValidGaugeForMaterial,
-  SMACNA_GAUGE_RECOMMENDATIONS
+  SMACNA_GAUGE_RECOMMENDATIONS,
+  SMACNA_GAUGE_TABLE
 } from './smacna-gauge-tables';
 
 export interface ValidationRule {

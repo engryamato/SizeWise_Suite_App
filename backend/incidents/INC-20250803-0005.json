@@ -1,0 +1,74 @@
+{
+  "id": "INC-20250803-0005",
+  "title": "SLA Test Incident",
+  "description": "Testing SLA compliance monitoring",
+  "severity": "critical",
+  "status": "resolved",
+  "category": "system_outage",
+  "created_at": "2025-08-03T09:51:45.421709",
+  "updated_at": "2025-08-03T09:51:45.974518",
+  "assigned_to": null,
+  "escalation_level": 1,
+  "escalated_at": null,
+  "resolved_at": "2025-08-03T09:51:45.974518",
+  "closed_at": null,
+  "tags": [],
+  "timeline": [
+    {
+      "timestamp": "2025-08-03T09:51:45.421709",
+      "action": "incident_created",
+      "details": "Incident created by sla_test",
+      "user": "sla_test"
+    },
+    {
+      "timestamp": "2025-08-03T09:51:45.421709",
+      "action": "automated_response_started",
+      "details": "Executing runbook: System Outage Response",
+      "user": "system"
+    },
+    {
+      "timestamp": "2025-08-03T09:51:45.537958",
+      "action": "automated_step_completed",
+      "details": "Completed: Check system health endpoints",
+      "user": "system"
+    },
+    {
+      "timestamp": "2025-08-03T09:51:45.648579",
+      "action": "automated_step_completed",
+      "details": "Completed: Verify database connectivity",
+      "user": "system"
+    },
+    {
+      "timestamp": "2025-08-03T09:51:45.757094",
+      "action": "automated_step_completed",
+      "details": "Completed: Check load balancer status",
+      "user": "system"
+    },
+    {
+      "timestamp": "2025-08-03T09:51:45.866246",
+      "action": "automated_step_completed",
+      "details": "Completed: Validate service mesh health",
+      "user": "system"
+    },
+    {
+      "timestamp": "2025-08-03T09:51:45.973010",
+      "action": "automated_step_completed",
+      "details": "Completed: Restart failed services if safe",
+      "user": "system"
+    },
+    {
+      "timestamp": "2025-08-03T09:51:45.973010",
+      "action": "automated_response_completed",
+      "details": "Automated response completed",
+      "user": "system"
+    },
+    {
+      "timestamp": "2025-08-03T09:51:45.974518",
+      "action": "status_updated",
+      "details": "Status changed from open to resolved. Test resolution",
+      "user": "sla_test"
+    }
+  ],
+  "runbook_executed": true,
+  "sla_breach": false
+}

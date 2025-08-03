@@ -1,0 +1,32 @@
+{
+  "id": "INC-20250803-0004",
+  "title": "Escalation Test Incident",
+  "description": "Testing escalation procedures",
+  "severity": "high",
+  "status": "open",
+  "category": "api_failure",
+  "created_at": "2025-08-03T09:51:45.416977",
+  "updated_at": "2025-08-03T09:51:45.419472",
+  "assigned_to": null,
+  "escalation_level": 2,
+  "escalated_at": "2025-08-03T09:51:45.419472",
+  "resolved_at": null,
+  "closed_at": null,
+  "tags": [],
+  "timeline": [
+    {
+      "timestamp": "2025-08-03T09:51:45.416977",
+      "action": "incident_created",
+      "details": "Incident created by escalation_test",
+      "user": "escalation_test"
+    },
+    {
+      "timestamp": "2025-08-03T09:51:45.419472",
+      "action": "incident_escalated",
+      "details": "Escalated to level 2: Engineering Manager. Reason: manual_test_escalation",
+      "user": "validation_test"
+    }
+  ],
+  "runbook_executed": false,
+  "sla_breach": false
+}

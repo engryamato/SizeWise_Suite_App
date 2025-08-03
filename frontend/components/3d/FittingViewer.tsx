@@ -12,6 +12,7 @@ import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
 import { Separator } from '../ui/separator';
 import { FittingResult, FittingType } from '../../lib/3d-fittings/fitting-interfaces';
+import { useThreeMemoryManager } from '@/lib/hooks/useMemoryManager';
 
 interface FittingViewerProps {
   fitting?: FittingResult;
@@ -22,13 +23,13 @@ interface FittingViewerProps {
   className?: string;
 }
 
-export function FittingViewer({ 
-  fitting, 
-  width = 400, 
+export function FittingViewer({
+  fitting,
+  width = 400,
   height = 300,
   showControls = true,
   showStats = true,
-  className = '' 
+  className = ''
 }: FittingViewerProps) {
   const mountRef = useRef<HTMLDivElement>(null);
   const sceneRef = useRef<THREE.Scene | null>(null);
@@ -40,6 +41,16 @@ export function FittingViewer({
 
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Memory management
+  const memoryManager = useThreeMemoryManager({
+    enableMonitoring: true,
+    autoCleanup: true,
+    maxMemoryMB: 100,
+    onMemoryLeak: (growthRate) => {
+      console.warn(`Memory leak detected in FittingViewer: ${growthRate.toFixed(2)} MB/hour`);
+    }
+  });
 
   // Initialize Three.js scene
   const initializeScene = useCallback(() => {
@@ -181,15 +192,10 @@ export function FittingViewer({
     setError(null);
 
     try {
-      // Remove previous mesh
+      // Remove previous mesh using memory manager
       if (currentMeshRef.current) {
         sceneRef.current.remove(currentMeshRef.current);
-        currentMeshRef.current.geometry.dispose();
-        if (Array.isArray(currentMeshRef.current.material)) {
-          currentMeshRef.current.material.forEach(mat => mat.dispose());
-        } else {
-          currentMeshRef.current.material.dispose();
-        }
+        memoryManager.disposeMesh(currentMeshRef.current);
       }
 
       // Add new mesh
@@ -250,17 +256,24 @@ export function FittingViewer({
     initializeScene();
 
     return () => {
-      // Cleanup
+      // Cleanup using memory manager
       if (animationIdRef.current) {
         cancelAnimationFrame(animationIdRef.current);
       }
       if (controlsRef.current) {
         controlsRef.current.dispose();
       }
-      if (rendererRef.current && mountRef.current) {
-        mountRef.current.removeChild(rendererRef.current.domElement);
-        rendererRef.current.dispose();
+      if (currentMeshRef.current) {
+        memoryManager.disposeMesh(currentMeshRef.current);
       }
+      if (rendererRef.current) {
+        if (mountRef.current && rendererRef.current.domElement.parentNode) {
+          mountRef.current.removeChild(rendererRef.current.domElement);
+        }
+        memoryManager.dispose(rendererRef.current);
+      }
+      // Dispose all tracked resources
+      memoryManager.disposeAll();
     };
   }, [initializeScene]);
 

@@ -4,10 +4,25 @@ Calculations API Blueprint
 Handles all calculation endpoints for HVAC modules.
 """
 
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, g
 import sys
 import os
 import structlog
+
+# Import caching for performance optimization
+try:
+    from ..caching.redis_cache import cache_hvac_calculation, cache_api_response
+except ImportError:
+    # Fallback decorators if caching not available
+    def cache_hvac_calculation(ttl=None):
+        def decorator(func):
+            return func
+        return decorator
+
+    def cache_api_response(ttl=None):
+        def decorator(func):
+            return func
+        return decorator
 
 # Add project root to path for imports
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
@@ -26,11 +41,23 @@ from core.calculations.enhanced_friction_calculator import (
 )
 from core.calculations.air_properties_calculator import AirConditions
 
+# Import input validation middleware
+try:
+    from backend.middleware.input_validator import validate_input
+except ImportError:
+    # Fallback for development
+    def validate_input(schema_name=None, required=True):
+        def decorator(f):
+            return f
+        return decorator
+
 logger = structlog.get_logger()
 
 calculations_bp = Blueprint('calculations', __name__)
 
 @calculations_bp.route('/air-duct', methods=['POST'])
+@validate_input(schema_name='air_duct_calculation', required=True)
+@cache_hvac_calculation(ttl=3600)  # Cache for 1 hour
 def calculate_air_duct():
     """
     Calculate air duct sizing based on SMACNA standards.
@@ -46,7 +73,9 @@ def calculate_air_duct():
     }
     """
     try:
-        data = request.get_json()
+        # Use validated and sanitized data from middleware
+        data = getattr(g, 'validated_data', None) or request.get_json()
+        validation_warnings = getattr(g, 'validation_warnings', [])
 
         if not data:
             return jsonify({'error': 'No data provided'}), 400
@@ -125,6 +154,7 @@ def get_air_duct_standard_sizes(duct_type):
         return jsonify({'error': 'Failed to get standard sizes', 'message': str(e)}), 500
 
 @calculations_bp.route('/air-duct/materials', methods=['GET'])
+@cache_api_response(ttl=86400)  # Cache for 24 hours (static data)
 def get_air_duct_materials():
     """Get available duct materials."""
     try:
@@ -202,6 +232,7 @@ def get_air_duct_info():
         return jsonify({'error': 'Failed to get module info', 'message': str(e)}), 500
 
 @calculations_bp.route('/grease-duct', methods=['POST'])
+@cache_hvac_calculation(ttl=3600)  # Cache for 1 hour
 def calculate_grease_duct():
     """
     Calculate grease duct sizing based on NFPA 96 standards.

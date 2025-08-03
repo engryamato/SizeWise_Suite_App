@@ -1,0 +1,250 @@
+name: Visual Regression Testing
+
+on:
+  pull_request:
+    branches: [ main, develop ]
+    paths:
+      - 'frontend/**'
+      - '.github/workflows/visual-regression.yml'
+  push:
+    branches: [ main ]
+    paths:
+      - 'frontend/**'
+  workflow_dispatch:
+    inputs:
+      update_snapshots:
+        description: 'Update visual snapshots'
+        required: false
+        default: 'false'
+        type: boolean
+
+env:
+  NODE_VERSION: '18'
+  PYTHON_VERSION: '3.11'
+
+jobs:
+  visual-regression:
+    name: Visual Regression Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    strategy:
+      fail-fast: false
+      matrix:
+        browser: [chromium, firefox, webkit]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: |
+          npm ci
+          npx playwright install --with-deps ${{ matrix.browser }}
+
+      - name: Install backend dependencies
+        working-directory: backend
+        run: |
+          pip install -r requirements.txt
+
+      - name: Setup test environment
+        run: |
+          # Create test environment variables
+          echo "PLAYWRIGHT_TEST_BASE_URL=http://localhost:3000" >> $GITHUB_ENV
+          echo "NODE_ENV=test" >> $GITHUB_ENV
+          echo "CI=true" >> $GITHUB_ENV
+
+      - name: Start backend server
+        working-directory: backend
+        run: |
+          python app.py &
+          echo $! > backend.pid
+          # Wait for backend to be ready
+          timeout 30 bash -c 'until curl -f http://localhost:5000/health; do sleep 1; done'
+        env:
+          FLASK_ENV: test
+          DATABASE_URL: sqlite:///test.db
+
+      - name: Build frontend
+        working-directory: frontend
+        run: npm run build
+
+      - name: Start frontend server
+        working-directory: frontend
+        run: |
+          npm start &
+          echo $! > frontend.pid
+          # Wait for frontend to be ready
+          timeout 60 bash -c 'until curl -f http://localhost:3000; do sleep 1; done'
+
+      - name: Run visual regression tests
+        working-directory: frontend
+        run: |
+          if [ "${{ github.event.inputs.update_snapshots }}" = "true" ]; then
+            npm run test:visual:update -- --project=${{ matrix.browser }}
+          else
+            npm run test:visual -- --project=${{ matrix.browser }}
+          fi
+        env:
+          PLAYWRIGHT_TEST_BASE_URL: http://localhost:3000
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: visual-test-results-${{ matrix.browser }}
+          path: |
+            frontend/test-results/
+            frontend/playwright-report/
+          retention-days: 7
+
+      - name: Upload visual diff artifacts
+        uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: visual-diffs-${{ matrix.browser }}
+          path: |
+            frontend/test-results/visual-regression-artifacts/
+            frontend/test-results/*-actual.png
+            frontend/test-results/*-diff.png
+          retention-days: 14
+
+      - name: Stop servers
+        if: always()
+        run: |
+          if [ -f frontend/frontend.pid ]; then
+            kill $(cat frontend/frontend.pid) || true
+          fi
+          if [ -f backend/backend.pid ]; then
+            kill $(cat backend/backend.pid) || true
+          fi
+
+  visual-regression-report:
+    name: Visual Regression Report
+    runs-on: ubuntu-latest
+    needs: visual-regression
+    if: always()
+
+    steps:
+      - name: Download all test results
+        uses: actions/download-artifact@v4
+        with:
+          path: test-results
+
+      - name: Generate visual regression report
+        run: |
+          echo "# Visual Regression Test Results" > visual-report.md
+          echo "" >> visual-report.md
+          echo "## Test Summary" >> visual-report.md
+          
+          # Count test results
+          TOTAL_TESTS=0
+          FAILED_TESTS=0
+          
+          for browser in chromium firefox webkit; do
+            if [ -d "test-results/visual-test-results-$browser" ]; then
+              echo "### $browser Results" >> visual-report.md
+              
+              # Check for test results
+              if [ -f "test-results/visual-test-results-$browser/visual-regression-results.json" ]; then
+                # Parse JSON results (simplified)
+                echo "- Tests completed for $browser" >> visual-report.md
+              else
+                echo "- ❌ Tests failed for $browser" >> visual-report.md
+                FAILED_TESTS=$((FAILED_TESTS + 1))
+              fi
+              
+              TOTAL_TESTS=$((TOTAL_TESTS + 1))
+            fi
+          done
+          
+          echo "" >> visual-report.md
+          echo "## Summary" >> visual-report.md
+          echo "- Total browsers tested: $TOTAL_TESTS" >> visual-report.md
+          echo "- Failed browsers: $FAILED_TESTS" >> visual-report.md
+          
+          if [ $FAILED_TESTS -gt 0 ]; then
+            echo "- ❌ Visual regression tests failed" >> visual-report.md
+            echo "" >> visual-report.md
+            echo "## Visual Differences" >> visual-report.md
+            echo "Check the uploaded artifacts for visual diff images." >> visual-report.md
+          else
+            echo "- ✅ All visual regression tests passed" >> visual-report.md
+          fi
+
+      - name: Comment PR with visual regression results
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const report = fs.readFileSync('visual-report.md', 'utf8');
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: report
+            });
+
+      - name: Upload consolidated report
+        uses: actions/upload-artifact@v4
+        with:
+          name: visual-regression-report
+          path: visual-report.md
+          retention-days: 30
+
+  update-snapshots:
+    name: Update Visual Snapshots
+    runs-on: ubuntu-latest
+    if: github.event.inputs.update_snapshots == 'true' && github.ref == 'refs/heads/main'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        working-directory: frontend
+        run: |
+          npm ci
+          npx playwright install --with-deps
+
+      - name: Update visual snapshots
+        working-directory: frontend
+        run: npm run test:visual:update
+
+      - name: Commit updated snapshots
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add frontend/e2e/**/*-*.png
+          if git diff --staged --quiet; then
+            echo "No snapshot changes to commit"
+          else
+            git commit -m "Update visual regression snapshots [skip ci]"
+            git push
+          fi

@@ -1,0 +1,322 @@
+name: Shadow Testing Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+  schedule:
+    # Run shadow tests daily at 2 AM UTC
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+    inputs:
+      enforce_mode:
+        description: 'Force enforcement mode for all tests'
+        required: false
+        default: 'false'
+        type: boolean
+      report_period:
+        description: 'Report period in days'
+        required: false
+        default: '7'
+        type: string
+
+env:
+  NODE_VERSION: '18'
+  SHADOW_TESTING_ENABLED: true
+  SHADOW_TESTING_CI_MODE: true
+
+jobs:
+  shadow-test-setup:
+    name: Shadow Test Setup
+    runs-on: ubuntu-latest
+    outputs:
+      config: ${{ steps.config.outputs.config }}
+      should-run: ${{ steps.config.outputs.should-run }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          
+      - name: Configure shadow testing
+        id: config
+        run: |
+          # Determine if shadow tests should run
+          SHOULD_RUN="true"
+          
+          # Skip on draft PRs unless explicitly requested
+          if [[ "${{ github.event.pull_request.draft }}" == "true" && "${{ github.event_name }}" != "workflow_dispatch" ]]; then
+            SHOULD_RUN="false"
+          fi
+          
+          # Create configuration
+          CONFIG=$(cat << EOF
+          {
+            "enabled": true,
+            "mode": "${{ github.event.inputs.enforce_mode == 'true' && 'enforced' || 'shadow' }}",
+            "enforcementThreshold": 95,
+            "monitoringPeriod": 7,
+            "gradualRollout": true,
+            "rolloutSteps": [25, 50, 75, 100],
+            "maxFailureRate": 5,
+            "reportingEnabled": true,
+            "ciIntegration": true
+          }
+          EOF
+          )
+          
+          echo "config=$CONFIG" >> $GITHUB_OUTPUT
+          echo "should-run=$SHOULD_RUN" >> $GITHUB_OUTPUT
+
+  shadow-tests:
+    name: Run Shadow Tests
+    runs-on: ubuntu-latest
+    needs: shadow-test-setup
+    if: needs.shadow-test-setup.outputs.should-run == 'true'
+    
+    strategy:
+      fail-fast: false
+      matrix:
+        browser: [chromium, firefox, webkit]
+        shard: [1/4, 2/4, 3/4, 4/4]
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          
+      - name: Install dependencies
+        run: |
+          npm ci
+          npx playwright install --with-deps ${{ matrix.browser }}
+          
+      - name: Setup shadow testing environment
+        run: |
+          mkdir -p test-results/shadow-testing
+          echo '${{ needs.shadow-test-setup.outputs.config }}' > test-results/shadow-testing/config.json
+          
+      - name: Run shadow tests
+        env:
+          BROWSER: ${{ matrix.browser }}
+          SHARD: ${{ matrix.shard }}
+          BUILD_ID: ${{ github.run_id }}
+          COMMIT_HASH: ${{ github.sha }}
+          E2E_DETAILED_REPORTING: true
+        run: |
+          # Run tests with shadow testing enabled
+          npx playwright test \
+            --project=${{ matrix.browser }} \
+            --shard=${{ matrix.shard }} \
+            --reporter=json \
+            --output-dir=test-results/shadow-testing/${{ matrix.browser }}-${{ matrix.shard }} \
+            tests/e2e/shadow-enabled/
+        continue-on-error: true
+        
+      - name: Generate shadow test report
+        if: always()
+        run: |
+          # Generate shadow test report
+          node -e "
+          const { ShadowTestCIIntegration } = require('./tests/shadow-testing/playwright-shadow-fixture.ts');
+          const report = ShadowTestCIIntegration.generateCIReport();
+          console.log(report.summary);
+          process.exit(report.exitCode);
+          "
+        continue-on-error: true
+        
+      - name: Upload shadow test artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: shadow-test-results-${{ matrix.browser }}-${{ matrix.shard }}
+          path: |
+            test-results/shadow-testing/
+            test-results/e2e-metrics/
+          retention-days: 30
+
+  shadow-test-analysis:
+    name: Shadow Test Analysis
+    runs-on: ubuntu-latest
+    needs: [shadow-test-setup, shadow-tests]
+    if: always() && needs.shadow-test-setup.outputs.should-run == 'true'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          
+      - name: Install dependencies
+        run: npm ci
+        
+      - name: Download all shadow test artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: shadow-test-results-*
+          path: test-results/
+          merge-multiple: true
+          
+      - name: Analyze shadow test results
+        id: analysis
+        run: |
+          # Combine and analyze all shadow test results
+          node -e "
+          const fs = require('fs');
+          const path = require('path');
+          const { shadowTestManager } = require('./tests/shadow-testing/shadow-test-manager.ts');
+          
+          // Load all results
+          const resultsDir = 'test-results/shadow-testing';
+          if (fs.existsSync(resultsDir)) {
+            const files = fs.readdirSync(resultsDir, { recursive: true });
+            console.log('Found shadow test result files:', files.length);
+          }
+          
+          // Generate comprehensive report
+          const report = shadowTestManager.generateReport(${{ github.event.inputs.report_period || 7 }});
+          const reportPath = shadowTestManager.exportReport(report, 'comprehensive-shadow-report.json');
+          
+          console.log('Shadow Test Analysis Summary:');
+          console.log('Total Tests:', report.summary.totalTests);
+          console.log('Shadow Tests:', report.summary.shadowTests);
+          console.log('Enforced Tests:', report.summary.enforcedTests);
+          console.log('Ready for Enforcement:', report.summary.readyForEnforcement);
+          console.log('Average Success Rate:', report.summary.averageSuccessRate.toFixed(1) + '%');
+          
+          // Set outputs
+          console.log('::set-output name=total-tests::' + report.summary.totalTests);
+          console.log('::set-output name=ready-for-enforcement::' + report.summary.readyForEnforcement);
+          console.log('::set-output name=success-rate::' + report.summary.averageSuccessRate.toFixed(1));
+          "
+          
+      - name: Create shadow test summary
+        run: |
+          cat << EOF > shadow-test-summary.md
+          # Shadow Test Analysis Report
+          
+          ## Summary
+          - **Total Tests**: ${{ steps.analysis.outputs.total-tests }}
+          - **Ready for Enforcement**: ${{ steps.analysis.outputs.ready-for-enforcement }}
+          - **Average Success Rate**: ${{ steps.analysis.outputs.success-rate }}%
+          - **Report Period**: ${{ github.event.inputs.report_period || 7 }} days
+          
+          ## Recommendations
+          
+          ### Tests Ready for Enforcement
+          Tests that have met the success rate threshold and monitoring period requirements.
+          
+          ### Tests Needing Improvement
+          Tests with low success rates that require attention before enforcement.
+          
+          ### System Health
+          Overall shadow testing system performance and reliability metrics.
+          
+          ## Next Steps
+          1. Review tests ready for enforcement
+          2. Address failing tests in shadow mode
+          3. Update test reliability thresholds if needed
+          4. Plan gradual enforcement rollout
+          
+          ---
+          *Generated on $(date) for commit ${{ github.sha }}*
+          EOF
+          
+      - name: Comment on PR
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const summary = fs.readFileSync('shadow-test-summary.md', 'utf8');
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: summary
+            });
+            
+      - name: Upload comprehensive report
+        uses: actions/upload-artifact@v4
+        with:
+          name: shadow-test-comprehensive-report
+          path: |
+            test-results/shadow-testing/comprehensive-shadow-report.json
+            shadow-test-summary.md
+          retention-days: 90
+
+  shadow-test-enforcement:
+    name: Shadow Test Enforcement Check
+    runs-on: ubuntu-latest
+    needs: [shadow-test-setup, shadow-test-analysis]
+    if: always() && needs.shadow-test-setup.outputs.should-run == 'true'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          
+      - name: Install dependencies
+        run: npm ci
+        
+      - name: Check enforcement status
+        id: enforcement
+        run: |
+          # Check if any enforced tests failed
+          node -e "
+          const { ShadowTestCIIntegration } = require('./tests/shadow-testing/playwright-shadow-fixture.ts');
+          const report = ShadowTestCIIntegration.generateCIReport();
+          
+          console.log('Enforcement Check:');
+          console.log(report.summary);
+          
+          // Export CI artifacts
+          const artifacts = ShadowTestCIIntegration.exportCIArtifacts();
+          console.log('Exported artifacts:', artifacts);
+          
+          // Exit with appropriate code
+          process.exit(report.exitCode);
+          "
+          
+      - name: Fail if enforced tests failed
+        if: steps.enforcement.outcome == 'failure'
+        run: |
+          echo "❌ Enforced shadow tests failed. Build should be blocked."
+          exit 1
+          
+      - name: Success message
+        if: steps.enforcement.outcome == 'success'
+        run: |
+          echo "✅ All enforced shadow tests passed. Build can proceed."
+
+  shadow-test-cleanup:
+    name: Shadow Test Cleanup
+    runs-on: ubuntu-latest
+    needs: [shadow-tests, shadow-test-analysis, shadow-test-enforcement]
+    if: always()
+    
+    steps:
+      - name: Cleanup old artifacts
+        run: |
+          echo "Shadow test pipeline completed"
+          echo "Artifacts will be retained according to retention policy"

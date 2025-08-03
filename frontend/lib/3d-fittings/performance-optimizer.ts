@@ -85,7 +85,7 @@ export class PerformanceOptimizer {
       const diameter = optimizedParams.diameter as number;
       const diameterOptimization = this.getDiameterOptimization(diameter, qualityLevel);
       
-      if ('radialSegments' in optimizedParams) {
+      if ('radialSegments' in optimizedParams && optimizedParams.radialSegments !== undefined) {
         optimizedParams.radialSegments = Math.max(
           8,
           Math.floor(optimizedParams.radialSegments * diameterOptimization.segmentMultiplier)

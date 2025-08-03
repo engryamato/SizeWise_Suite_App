@@ -223,19 +223,19 @@ export function FittingSelector({
         </div>
 
         {/* Enhanced Gauge Recommendation with Validation */}
-        {gaugeRecommendation && (
+        {gaugeRecommendation && gaugeRecommendation.recommended && (
           <div className="space-y-2">
             {/* SMACNA Recommendation */}
             <Alert variant={gaugeRecommendation.isCurrentRecommended ? "default" : "destructive"}>
               <AlertDescription>
                 SMACNA recommends {gaugeRecommendation.recommended} gauge
                 (minimum {gaugeRecommendation.minimum}) for this diameter.
-                {gauge !== gaugeRecommendation.recommended && (
+                {gaugeRecommendation.recommended && gauge !== gaugeRecommendation.recommended && (
                   <Button
                     variant="link"
                     size="sm"
                     className="p-0 h-auto ml-2"
-                    onClick={() => setGauge(gaugeRecommendation.recommended)}
+                    onClick={() => gaugeRecommendation.recommended && setGauge(gaugeRecommendation.recommended)}
                   >
                     Use recommended
                   </Button>
@@ -245,7 +245,7 @@ export function FittingSelector({
 
             {/* Validation Warnings */}
             {gaugeRecommendation.validation?.warnings.length > 0 && (
-              <Alert variant="warning">
+              <Alert variant="default">
                 <AlertDescription>
                   <div className="space-y-1">
                     {gaugeRecommendation.validation.warnings.map((warning, index) => (

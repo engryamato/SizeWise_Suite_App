@@ -1,9 +1,12 @@
 const { withSentryConfig } = require("@sentry/nextjs");
 const withPWA = require('next-pwa')({ dest: 'public' });
+const withBundleAnalyzer = require('@next/bundle-analyzer')({
+  enabled: process.env.ANALYZE === 'true',
+});
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  webpack: (config, { isServer }) => {
+  webpack: (config, { isServer, dev }) => {
     // Fix for Konva.js in Next.js
     config.resolve.fallback = {
       ...config.resolve.fallback,
@@ -31,6 +34,67 @@ const nextConfig = {
       ],
     })
 
+    // Bundle optimization and code splitting for production
+    if (!dev && !isServer) {
+      config.optimization = {
+        ...config.optimization,
+        splitChunks: {
+          chunks: 'all',
+          cacheGroups: {
+            // Three.js and 3D libraries
+            threejs: {
+              test: /[\\/]node_modules[\\/](three|@react-three)[\\/]/,
+              name: 'threejs',
+              chunks: 'all',
+              priority: 20,
+            },
+            // PDF libraries
+            pdf: {
+              test: /[\\/]node_modules[\\/](pdfjs-dist|react-pdf)[\\/]/,
+              name: 'pdf',
+              chunks: 'all',
+              priority: 20,
+            },
+            // ONNX and AI libraries
+            ai: {
+              test: /[\\/]node_modules[\\/](onnxruntime-web|@tensorflow)[\\/]/,
+              name: 'ai',
+              chunks: 'all',
+              priority: 20,
+            },
+            // Chart libraries
+            charts: {
+              test: /[\\/]node_modules[\\/](recharts|d3)[\\/]/,
+              name: 'charts',
+              chunks: 'all',
+              priority: 15,
+            },
+            // HVAC calculation modules
+            hvac: {
+              test: /[\\/](lib\/services|lib\/hooks)[\\/].*[Cc]alculation/,
+              name: 'hvac-calculations',
+              chunks: 'all',
+              priority: 25,
+            },
+            // 3D components
+            components3d: {
+              test: /[\\/]components[\\/]3d[\\/]/,
+              name: 'components-3d',
+              chunks: 'all',
+              priority: 25,
+            },
+            // Vendor libraries (default)
+            vendor: {
+              test: /[\\/]node_modules[\\/]/,
+              name: 'vendors',
+              chunks: 'all',
+              priority: 10,
+            },
+          },
+        },
+      };
+    }
+
     return config
   },
 
@@ -47,7 +111,78 @@ const nextConfig = {
         protocol: 'https',
         hostname: 'images.unsplash.com',
       },
+      {
+        protocol: 'https',
+        hostname: 'cdn.sizewise.app',
+      },
     ],
+    formats: ['image/webp', 'image/avif'],
+    deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048, 3840],
+    imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
+    minimumCacheTTL: 31536000, // 1 year
+    dangerouslyAllowSVG: true,
+    contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
+  },
+
+  // CDN and Asset Optimization
+  assetPrefix: process.env.NODE_ENV === 'production' ? process.env.NEXT_PUBLIC_CDN_URL : '',
+
+  // Enhanced caching headers
+  async headers() {
+    return [
+      {
+        source: '/(.*)',
+        headers: [
+          {
+            key: 'X-Content-Type-Options',
+            value: 'nosniff',
+          },
+          {
+            key: 'X-Frame-Options',
+            value: 'DENY',
+          },
+          {
+            key: 'X-XSS-Protection',
+            value: '1; mode=block',
+          },
+        ],
+      },
+      {
+        source: '/images/(.*)',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=31536000, immutable',
+          },
+        ],
+      },
+      {
+        source: '/models/(.*)',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=2592000, immutable',
+          },
+          {
+            key: 'Content-Encoding',
+            value: 'gzip',
+          },
+        ],
+      },
+      {
+        source: '/fonts/(.*)',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=31536000, immutable',
+          },
+          {
+            key: 'Access-Control-Allow-Origin',
+            value: '*',
+          },
+        ],
+      },
+    ];
   },
 
   // Enable experimental features for better performance
@@ -75,9 +210,10 @@ const nextConfig = {
   },
 }
 
-module.exports = withPWA(
-  withSentryConfig(
-    nextConfig,
+module.exports = withBundleAnalyzer(
+  withPWA(
+    withSentryConfig(
+      nextConfig,
     {
       // For all available options, see:
       // https://www.npmjs.com/package/@sentry/webpack-plugin#options
@@ -109,5 +245,6 @@ module.exports = withPWA(
     // https://vercel.com/docs/cron-jobs
       automaticVercelMonitors: true,
     }
+  )
   )
 );

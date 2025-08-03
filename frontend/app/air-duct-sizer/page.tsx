@@ -1,24 +1,79 @@
 'use client'
 
-import React, { useState, useCallback, useEffect } from 'react'
+import React, { useState, useCallback, useEffect, Suspense, lazy } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Vector3, Euler } from 'three'
-import { Canvas3D } from '@/components/3d/Canvas3D'
 import { useToast } from '@/lib/hooks/useToaster'
 import { withAirDuctSizerAccess } from '@/components/hoc/withToolAccess'
 import { Equipment } from '@/utils/EquipmentFactory'
 
-// V1 Components
-import { ProjectPropertiesManager } from '@/components/managers/ProjectPropertiesManager'
-import { DrawingToolFAB, DrawingMode, DuctProperties } from '@/components/ui/DrawingToolFAB'
-import { ContextPropertyPanel } from '@/components/ui/ContextPropertyPanel'
-import { ElementProperties } from '@/constants/MockDataConstants'
-import { ModelSummaryPanel } from '@/components/ui/ModelSummaryPanel'
-import { StatusBar } from '@/components/ui/StatusBar'
+// Dynamic imports for heavy components
+const Canvas3D = lazy(() => import('@/components/3d/Canvas3D').then(module => ({
+  default: module.Canvas3D
+})));
 
-// Priority 5-7 Components
-import { WarningPanel, ValidationWarning } from '@/components/ui/WarningPanel'
-import { ViewCube, ViewCubeOrientation } from '@/components/ui/ViewCube'
+// Loading component for Canvas3D
+const Canvas3DLoader = () => (
+  <div className="absolute inset-0 top-20 flex items-center justify-center bg-neutral-50 dark:bg-neutral-900">
+    <div className="text-center space-y-4">
+      <motion.div
+        animate={{ rotate: 360 }}
+        transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+        className="w-12 h-12 mx-auto border-4 border-blue-500 border-t-transparent rounded-full"
+      />
+      <p className="text-sm text-neutral-600 dark:text-neutral-400">
+        Loading 3D workspace...
+      </p>
+    </div>
+  </div>
+);
+
+// Dynamic imports for V1 Components
+const ProjectPropertiesManager = lazy(() =>
+  import('@/components/managers/ProjectPropertiesManager').then(module => ({
+    default: module.ProjectPropertiesManager
+  }))
+);
+const DrawingToolFAB = lazy(() =>
+  import('@/components/ui/DrawingToolFAB').then(module => ({
+    default: module.DrawingToolFAB
+  }))
+);
+const ContextPropertyPanel = lazy(() =>
+  import('@/components/ui/ContextPropertyPanel').then(module => ({
+    default: module.ContextPropertyPanel
+  }))
+);
+const ModelSummaryPanel = lazy(() =>
+  import('@/components/ui/ModelSummaryPanel').then(module => ({
+    default: module.ModelSummaryPanel
+  }))
+);
+const StatusBar = lazy(() =>
+  import('@/components/ui/StatusBar').then(module => ({
+    default: module.StatusBar
+  }))
+);
+
+// Dynamic imports for Priority 5-7 Components
+const WarningPanel = lazy(() =>
+  import('@/components/ui/WarningPanel').then(module => ({
+    default: module.WarningPanel
+  }))
+);
+
+// Import types separately (not lazy loaded)
+import type { DrawingMode, DuctProperties } from '@/components/ui/DrawingToolFAB'
+import type { ElementProperties } from '@/constants/MockDataConstants'
+import type { ValidationWarning } from '@/components/ui/WarningPanel'
+
+// Dynamic import for ViewCube (3D navigation component)
+const ViewCube = lazy(() => import('@/components/ui/ViewCube').then(module => ({
+  default: module.ViewCube
+})));
+
+// Import ViewCubeOrientation type separately
+import type { ViewCubeOrientation } from '@/components/ui/ViewCube'
 
 // Shared hooks and utilities
 import { useEquipmentPlacement } from '@/hooks/useEquipmentPlacement'
@@ -345,97 +400,130 @@ function AirDuctSizerPage() {
   return (
     <div className="h-screen w-full relative overflow-hidden">
       {/* Unified Project Properties Manager */}
-      <ProjectPropertiesManager />
+      <Suspense fallback={
+        <div className="fixed top-0 left-0 w-full h-20 bg-white/10 dark:bg-neutral-900/10 backdrop-blur-md border-b border-neutral-200 dark:border-neutral-700 animate-pulse" />
+      }>
+        <ProjectPropertiesManager />
+      </Suspense>
 
       {/* Main 3D Canvas Workspace */}
       <div className="absolute inset-0 top-20">
-        <Canvas3D
-          segments={ductSegments}
-          onSegmentAdd={handleSegmentAdd}
-          onSegmentUpdate={handleSegmentUpdate}
-          onSegmentDelete={handleSegmentDelete}
-          showGrid={gridEnabled}
-          showGizmo={true}
-          activeTool={drawingMode === 'duct' || drawingMode === 'drawing' ? 'line' : 'select'}
-          onElementSelect={handleElementSelect}
-          onCameraReady={handleCameraReady}
-          ductProperties={ductProperties}
-          fittings={ductFittings}
-          onFittingAdd={handleFittingAdd}
-          equipment={equipment}
-          onEquipmentAdd={handleEquipmentAdd}
-          onEquipmentPlace={drawingMode === 'equipment' ? handleEquipmentPlace : undefined}
-        />
+        <Suspense fallback={<Canvas3DLoader />}>
+          <Canvas3D
+            segments={ductSegments}
+            onSegmentAdd={handleSegmentAdd}
+            onSegmentUpdate={handleSegmentUpdate}
+            onSegmentDelete={handleSegmentDelete}
+            showGrid={gridEnabled}
+            showGizmo={true}
+            activeTool={drawingMode === 'duct' || drawingMode === 'drawing' ? 'line' : 'select'}
+            onElementSelect={handleElementSelect}
+            onCameraReady={handleCameraReady}
+            ductProperties={ductProperties}
+            fittings={ductFittings}
+            onFittingAdd={handleFittingAdd}
+            equipment={equipment}
+            onEquipmentAdd={handleEquipmentAdd}
+            onEquipmentPlace={drawingMode === 'equipment' ? handleEquipmentPlace : undefined}
+          />
+        </Suspense>
       </div>
 
       {/* Drawing Tool FAB */}
-      <DrawingToolFAB
-        drawingMode={drawingMode}
-        onDrawingModeChange={handleDrawingModeChange}
-        onPropertyPanelOpen={() => {
-          // Handle property panel opening if needed
-        }}
-        ductProperties={ductProperties}
-        onDuctPropertiesChange={setDuctProperties}
-        onEquipmentPlace={handleEquipmentPlace}
-      />
+      <Suspense fallback={
+        <div className="fixed bottom-6 left-6 w-16 h-16 bg-blue-500/20 rounded-full animate-pulse" />
+      }>
+        <DrawingToolFAB
+          drawingMode={drawingMode}
+          onDrawingModeChange={handleDrawingModeChange}
+          onPropertyPanelOpen={() => {
+            // Handle property panel opening if needed
+          }}
+          ductProperties={ductProperties}
+          onDuctPropertiesChange={setDuctProperties}
+          onEquipmentPlace={handleEquipmentPlace}
+        />
+      </Suspense>
 
       {/* Context Property Panel */}
-      <ContextPropertyPanel
-        isVisible={showContextPanel}
-        selectedElement={selectedElement}
-        position={contextPanelPosition}
-        onClose={() => setShowContextPanel(false)}
-        onElementUpdate={handleElementUpdate}
-        onElementDelete={handleElementDelete}
-        onElementCopy={handleElementCopy}
-      />
+      <Suspense fallback={
+        showContextPanel ? (
+          <div className="fixed bg-white/10 dark:bg-neutral-900/10 backdrop-blur-md border border-neutral-200 dark:border-neutral-700 rounded-lg p-4 animate-pulse w-80 h-96"
+               style={{ left: contextPanelPosition.x, top: contextPanelPosition.y }} />
+        ) : null
+      }>
+        <ContextPropertyPanel
+          isVisible={showContextPanel}
+          selectedElement={selectedElement}
+          position={contextPanelPosition}
+          onClose={() => setShowContextPanel(false)}
+          onElementUpdate={handleElementUpdate}
+          onElementDelete={handleElementDelete}
+          onElementCopy={handleElementCopy}
+        />
+      </Suspense>
 
       {/* Model Summary Panel */}
-      <ModelSummaryPanel
-        isOpen={showModelSummary}
-        onClose={() => setShowModelSummary(false)}
-        systemSummary={systemSummary}
-        calculationResults={calculationResults}
-        warnings={warnings}
-        isCalculating={isCalculating}
-        onRunCalculation={handleRunCalculation}
-        onJumpToElement={handleJumpToElement}
-      />
+      <Suspense fallback={
+        showModelSummary ? (
+          <div className="fixed inset-y-0 right-0 w-96 bg-white/10 dark:bg-neutral-900/10 backdrop-blur-md border-l border-neutral-200 dark:border-neutral-700 animate-pulse" />
+        ) : null
+      }>
+        <ModelSummaryPanel
+          isOpen={showModelSummary}
+          onClose={() => setShowModelSummary(false)}
+          systemSummary={systemSummary}
+          calculationResults={calculationResults}
+          warnings={warnings}
+          isCalculating={isCalculating}
+          onRunCalculation={handleRunCalculation}
+          onJumpToElement={handleJumpToElement}
+        />
+      </Suspense>
 
       {/* Status Bar */}
-      <StatusBar
-        isOnline={isOnline}
-        isConnectedToServer={isConnectedToServer}
-        saveStatus={saveStatus}
-        lastSaved={lastSaved}
-        gridEnabled={gridEnabled}
-        snapEnabled={snapEnabled}
-        zoomLevel={zoomLevel}
-        onGridToggle={handleGridToggle}
-        onSnapToggle={handleSnapToggle}
-        onZoomIn={handleZoomIn}
-        onZoomOut={handleZoomOut}
-        onZoomReset={handleZoomReset}
-        userName="Demo User"
-        projectName="Air Duct Sizer"
-        currentBranch="main"
-        hasUnsavedChanges={saveStatus === 'unsaved'}
-        calculationStatus={calculationStatus}
-        warningCount={warnings.filter(w => w.type === 'warning' && !w.resolved).length}
-        errorCount={warnings.filter(w => w.type === 'error' && !w.resolved).length}
-        currentUnits={units}
-        onUnitsChange={setUnits}
-      />
+      <Suspense fallback={
+        <div className="fixed bottom-0 left-0 w-full h-8 bg-white/10 dark:bg-neutral-900/10 backdrop-blur-md border-t border-neutral-200 dark:border-neutral-700 animate-pulse" />
+      }>
+        <StatusBar
+          isOnline={isOnline}
+          isConnectedToServer={isConnectedToServer}
+          saveStatus={saveStatus}
+          lastSaved={lastSaved}
+          gridEnabled={gridEnabled}
+          snapEnabled={snapEnabled}
+          zoomLevel={zoomLevel}
+          onGridToggle={handleGridToggle}
+          onSnapToggle={handleSnapToggle}
+          onZoomIn={handleZoomIn}
+          onZoomOut={handleZoomOut}
+          onZoomReset={handleZoomReset}
+          userName="Demo User"
+          projectName="Air Duct Sizer"
+          currentBranch="main"
+          hasUnsavedChanges={saveStatus === 'unsaved'}
+          calculationStatus={calculationStatus}
+          warningCount={warnings.filter(w => w.type === 'warning' && !w.resolved).length}
+          errorCount={warnings.filter(w => w.type === 'error' && !w.resolved).length}
+          currentUnits={units}
+          onUnitsChange={setUnits}
+        />
+      </Suspense>
 
       {/* Priority 5: Warning Panel */}
-      <WarningPanel
-        warnings={warnings}
-        onWarningClick={handleWarningClick}
-        onWarningResolve={handleWarningResolve}
-        onWarningDismiss={handleWarningDismiss}
-        className="fixed right-6 top-1/2 -translate-y-1/2 z-40"
-      />
+      <Suspense fallback={
+        warnings.length > 0 ? (
+          <div className="fixed right-6 top-1/2 -translate-y-1/2 z-40 w-80 h-32 bg-yellow-500/10 border border-yellow-500/20 rounded-lg animate-pulse" />
+        ) : null
+      }>
+        <WarningPanel
+          warnings={warnings}
+          onWarningClick={handleWarningClick}
+          onWarningResolve={handleWarningResolve}
+          onWarningDismiss={handleWarningDismiss}
+          className="fixed right-6 top-1/2 -translate-y-1/2 z-40"
+        />
+      </Suspense>
 
       {/* Priority 6: Bottom Right Corner - Chat & Help */}
       <BottomRightCorner className="fixed bottom-6 right-6 z-50" />
@@ -463,13 +551,17 @@ function AirDuctSizerPage() {
       </motion.button>
 
       {/* Priority 7: ViewCube 3D Navigation */}
-      <ViewCube
-        currentView={currentView}
-        onViewChange={handleViewChange}
-        onResetView={handleResetView}
-        onFitToScreen={handleFitToScreen}
-        className="fixed top-20 right-6 z-[70]"
-      />
+      <Suspense fallback={
+        <div className="fixed top-20 right-6 z-[70] w-16 h-16 bg-white/10 dark:bg-neutral-900/10 backdrop-blur-md border border-neutral-200 dark:border-neutral-700 rounded-xl animate-pulse" />
+      }>
+        <ViewCube
+          currentView={currentView}
+          onViewChange={handleViewChange}
+          onResetView={handleResetView}
+          onFitToScreen={handleFitToScreen}
+          className="fixed top-20 right-6 z-[70]"
+        />
+      </Suspense>
 
       {/* Welcome Message - Positioned to not interfere with canvas */}
       <AnimatePresence>

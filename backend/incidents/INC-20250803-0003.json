@@ -1,0 +1,68 @@
+{
+  "id": "INC-20250803-0003",
+  "title": "Test Performance Issue",
+  "description": "Performance degradation detected",
+  "severity": "medium",
+  "status": "open",
+  "category": "performance_degradation",
+  "created_at": "2025-08-03T09:51:44.871485",
+  "updated_at": "2025-08-03T09:51:45.414394",
+  "assigned_to": null,
+  "escalation_level": 1,
+  "escalated_at": null,
+  "resolved_at": null,
+  "closed_at": null,
+  "tags": [],
+  "timeline": [
+    {
+      "timestamp": "2025-08-03T09:51:44.871485",
+      "action": "incident_created",
+      "details": "Incident created by validation_test",
+      "user": "validation_test"
+    },
+    {
+      "timestamp": "2025-08-03T09:51:44.871485",
+      "action": "automated_response_started",
+      "details": "Executing runbook: Performance Degradation Response",
+      "user": "system"
+    },
+    {
+      "timestamp": "2025-08-03T09:51:44.977039",
+      "action": "automated_step_completed",
+      "details": "Completed: Check CPU and memory usage",
+      "user": "system"
+    },
+    {
+      "timestamp": "2025-08-03T09:51:45.085501",
+      "action": "automated_step_completed",
+      "details": "Completed: Analyze database query performance",
+      "user": "system"
+    },
+    {
+      "timestamp": "2025-08-03T09:51:45.195507",
+      "action": "automated_step_completed",
+      "details": "Completed: Review cache hit ratios",
+      "user": "system"
+    },
+    {
+      "timestamp": "2025-08-03T09:51:45.305206",
+      "action": "automated_step_completed",
+      "details": "Completed: Check network latency",
+      "user": "system"
+    },
+    {
+      "timestamp": "2025-08-03T09:51:45.414394",
+      "action": "automated_step_completed",
+      "details": "Completed: Scale resources if configured",
+      "user": "system"
+    },
+    {
+      "timestamp": "2025-08-03T09:51:45.414394",
+      "action": "automated_response_completed",
+      "details": "Automated response completed",
+      "user": "system"
+    }
+  ],
+  "runbook_executed": true,
+  "sla_breach": false
+}

@@ -1,0 +1,195 @@
+{
+  "contract_test_config": {
+    "environments": {
+      "development": {
+        "base_url": "http://localhost:5000",
+        "auth_url": "http://localhost:5001",
+        "frontend_url": "http://localhost:3000",
+        "timeout_seconds": 30,
+        "retry_attempts": 3
+      },
+      "staging": {
+        "base_url": "https://api-staging.sizewise-suite.com",
+        "auth_url": "https://auth-staging.sizewise-suite.com",
+        "frontend_url": "https://staging.sizewise-suite.com",
+        "timeout_seconds": 60,
+        "retry_attempts": 2
+      },
+      "production": {
+        "base_url": "https://api.sizewise-suite.com",
+        "auth_url": "https://auth.sizewise-suite.com",
+        "frontend_url": "https://sizewise-suite.com",
+        "timeout_seconds": 30,
+        "retry_attempts": 1
+      }
+    },
+    "test_categories": {
+      "critical": [
+        "API Info Contract",
+        "Health Check Contract",
+        "Air Duct Calculation Contract",
+        "Error Response Contract"
+      ],
+      "important": [
+        "Validation Endpoint Contract",
+        "Authentication Contract",
+        "API Versioning Contract"
+      ],
+      "optional": [
+        "CORS Policy Contract",
+        "Rate Limiting Contract",
+        "Performance Contract"
+      ]
+    },
+    "performance_thresholds": {
+      "api_info_ms": 1000,
+      "health_check_ms": 500,
+      "calculation_ms": 5000,
+      "validation_ms": 2000,
+      "authentication_ms": 3000
+    },
+    "validation_rules": {
+      "required_response_fields": {
+        "api_info": ["name", "version", "modules", "endpoints"],
+        "health_check": ["status", "timestamp"],
+        "calculation": ["success", "data"],
+        "error": ["success", "error"]
+      },
+      "required_error_fields": ["code", "message"],
+      "required_auth_fields": ["access_token", "token_type", "user"],
+      "required_user_fields": ["id", "email", "tier"]
+    },
+    "schema_validation": {
+      "strict_mode": true,
+      "additional_properties": false,
+      "validate_formats": true,
+      "validate_types": true
+    },
+    "test_data": {
+      "valid_air_duct_request": {
+        "airflow": 1000,
+        "duct_type": "rectangular",
+        "friction_rate": 0.08,
+        "units": "imperial",
+        "material": "galvanized_steel",
+        "insulation": false
+      },
+      "invalid_air_duct_request": {
+        "airflow": -1000,
+        "duct_type": "invalid_type",
+        "friction_rate": 10.0,
+        "units": "invalid_units"
+      },
+      "edge_case_air_duct_request": {
+        "airflow": 25,
+        "duct_type": "rectangular",
+        "friction_rate": 0.001,
+        "units": "imperial"
+      },
+      "valid_auth_request": {
+        "email": "test@example.com",
+        "password": "securePassword123",
+        "name": "Test User"
+      },
+      "invalid_auth_request": {
+        "email": "invalid-email",
+        "password": "123",
+        "name": ""
+      }
+    },
+    "expected_modules": [
+      "air-duct-sizer",
+      "grease-duct-sizer",
+      "engine-exhaust-sizer",
+      "boiler-vent-sizer",
+      "estimating-app"
+    ],
+    "expected_endpoints": {
+      "calculations": "/api/calculations",
+      "validation": "/api/validation",
+      "exports": "/api/exports",
+      "health": "/api/health"
+    },
+    "api_versioning": {
+      "current_version": "1.0.0",
+      "supported_versions": ["1.0.0"],
+      "version_header": "API-Version",
+      "version_in_url": true,
+      "backward_compatibility_months": 6
+    },
+    "cors_policy": {
+      "allowed_origins": [
+        "http://localhost:3000",
+        "https://sizewise-suite.com",
+        "https://staging.sizewise-suite.com"
+      ],
+      "allowed_methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+      "allowed_headers": ["Authorization", "Content-Type", "API-Version"],
+      "credentials_supported": true
+    },
+    "rate_limiting": {
+      "enabled": true,
+      "default_limit": 1000,
+      "window_minutes": 60,
+      "headers": {
+        "limit": "X-RateLimit-Limit",
+        "remaining": "X-RateLimit-Remaining",
+        "reset": "X-RateLimit-Reset"
+      }
+    },
+    "security_requirements": {
+      "https_required": true,
+      "auth_required_endpoints": [
+        "/api/projects",
+        "/api/user",
+        "/api/exports"
+      ],
+      "public_endpoints": [
+        "/api/info",
+        "/api/health",
+        "/api/calculations"
+      ]
+    },
+    "compliance_standards": {
+      "openapi_version": "3.0.0",
+      "json_schema_version": "draft-07",
+      "rest_principles": true,
+      "http_status_codes": {
+        "success": [200, 201, 204],
+        "client_error": [400, 401, 403, 404, 422],
+        "server_error": [500, 502, 503]
+      }
+    },
+    "monitoring_integration": {
+      "sentry_enabled": true,
+      "performance_tracking": true,
+      "error_tracking": true,
+      "custom_metrics": [
+        "api_response_time",
+        "api_error_rate",
+        "calculation_accuracy",
+        "user_tier_distribution"
+      ]
+    },
+    "backward_compatibility": {
+      "breaking_change_policy": "6_month_notice",
+      "deprecation_warnings": true,
+      "version_sunset_policy": "12_months",
+      "migration_guides": true
+    },
+    "quality_gates": {
+      "contract_compliance_threshold": 90,
+      "performance_threshold": 95,
+      "error_rate_threshold": 1,
+      "availability_threshold": 99.9
+    },
+    "reporting": {
+      "generate_html_report": true,
+      "generate_json_report": true,
+      "include_performance_metrics": true,
+      "include_schema_validation": true,
+      "include_recommendations": true,
+      "export_to_ci": true
+    }
+  }
+}

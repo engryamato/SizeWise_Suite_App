@@ -1,0 +1,98 @@
+{
+  "id": "INC-20250803-0007",
+  "title": "Status Test Incident",
+  "description": "Testing status management",
+  "severity": "medium",
+  "status": "closed",
+  "category": "performance_degradation",
+  "created_at": "2025-08-03T09:51:46.516206",
+  "updated_at": "2025-08-03T09:51:47.063240",
+  "assigned_to": null,
+  "escalation_level": 1,
+  "escalated_at": null,
+  "resolved_at": "2025-08-03T09:51:47.061236",
+  "closed_at": "2025-08-03T09:51:47.063240",
+  "tags": [],
+  "timeline": [
+    {
+      "timestamp": "2025-08-03T09:51:46.516206",
+      "action": "incident_created",
+      "details": "Incident created by status_test",
+      "user": "status_test"
+    },
+    {
+      "timestamp": "2025-08-03T09:51:46.516206",
+      "action": "automated_response_started",
+      "details": "Executing runbook: Performance Degradation Response",
+      "user": "system"
+    },
+    {
+      "timestamp": "2025-08-03T09:51:46.621014",
+      "action": "automated_step_completed",
+      "details": "Completed: Check CPU and memory usage",
+      "user": "system"
+    },
+    {
+      "timestamp": "2025-08-03T09:51:46.729229",
+      "action": "automated_step_completed",
+      "details": "Completed: Analyze database query performance",
+      "user": "system"
+    },
+    {
+      "timestamp": "2025-08-03T09:51:46.836975",
+      "action": "automated_step_completed",
+      "details": "Completed: Review cache hit ratios",
+      "user": "system"
+    },
+    {
+      "timestamp": "2025-08-03T09:51:46.944404",
+      "action": "automated_step_completed",
+      "details": "Completed: Check network latency",
+      "user": "system"
+    },
+    {
+      "timestamp": "2025-08-03T09:51:47.053419",
+      "action": "automated_step_completed",
+      "details": "Completed: Scale resources if configured",
+      "user": "system"
+    },
+    {
+      "timestamp": "2025-08-03T09:51:47.053419",
+      "action": "automated_response_completed",
+      "details": "Automated response completed",
+      "user": "system"
+    },
+    {
+      "timestamp": "2025-08-03T09:51:47.055993",
+      "action": "status_updated",
+      "details": "Status changed from open to investigating. Testing investigating status",
+      "user": "status_test"
+    },
+    {
+      "timestamp": "2025-08-03T09:51:47.058072",
+      "action": "status_updated",
+      "details": "Status changed from investigating to identified. Testing identified status",
+      "user": "status_test"
+    },
+    {
+      "timestamp": "2025-08-03T09:51:47.059662",
+      "action": "status_updated",
+      "details": "Status changed from identified to monitoring. Testing monitoring status",
+      "user": "status_test"
+    },
+    {
+      "timestamp": "2025-08-03T09:51:47.061236",
+      "action": "status_updated",
+      "details": "Status changed from monitoring to resolved. Testing resolved status",
+      "user": "status_test"
+    },
+    {
+      "timestamp": "2025-08-03T09:51:47.063240",
+      "action": "status_updated",
+      "details": "Status changed from resolved to closed. Testing closed status",
+      "user": "status_test"
+    }
+  ],
+  "runbook_executed": true,
+  "sla_breach": false
+}

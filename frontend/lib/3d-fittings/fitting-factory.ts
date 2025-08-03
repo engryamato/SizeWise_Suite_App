@@ -313,7 +313,14 @@ export class FittingFactory {
       memoryBudget: qualityLevel === 'draft' ? 50 : qualityLevel === 'standard' ? 100 : 200
     };
 
-    return this.generateFitting(type, params, optimizationOptions);
+    const result = await this.generateFitting(type, params, optimizationOptions);
+
+    // Ensure performance metrics are always present for optimized fittings
+    if (!result.performanceMetrics) {
+      throw new Error('Performance metrics not available for optimized fitting generation');
+    }
+
+    return result as FittingResult & { performanceMetrics: PerformanceMetrics };
   }
 
   /**

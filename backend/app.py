@@ -12,8 +12,13 @@ import sys
 import asyncio
 from dotenv import load_dotenv
 import structlog
-from .sentry_config import init_sentry
-from .config.mongodb_config import mongodb_config, init_mongodb_collections
+from sentry_config import init_sentry
+from config.mongodb_config import mongodb_config, init_mongodb_collections
+from middleware.rate_limiter import RateLimitMiddleware
+from middleware.input_validator import InputValidationMiddleware
+from middleware.security_headers import SecurityHeadersMiddleware
+from security.credential_manager import get_credential_manager
+from monitoring.flask_integration import init_monitoring
 
 # Add parent directory to Python path for imports
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -54,35 +59,88 @@ def create_app(config_name='development'):
     default_origins = 'http://localhost:3000,http://127.0.0.1:3000'
     cors_origins = os.getenv('CORS_ORIGINS', default_origins).split(',')
     CORS(app, origins=cors_origins)
-    
-    # Configuration
+
+    # Initialize security middleware
+    rate_limiter = RateLimitMiddleware(app)
+    input_validator = InputValidationMiddleware(app)
+    security_headers = SecurityHeadersMiddleware(app)
+    logger.info("Security middleware initialized (rate limiting + input validation + security headers)")
+
+    # Initialize monitoring dashboard
+    init_monitoring(app)
+    logger.info("Monitoring dashboard initialized")
+
+    # Configuration using secure credential manager
+    credential_manager = get_credential_manager()
+
     app.config['DEBUG'] = os.getenv('FLASK_DEBUG', 'True').lower() == 'true'
-    app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'dev-secret-key-change-in-production')
+
+    # Use secure credential manager for sensitive configuration
+    if credential_manager:
+        app.config['SECRET_KEY'] = credential_manager.get_credential('application', 'secret_key')
+
+        # Validate credentials on startup
+        validation = credential_manager.validate_credentials()
+        if not validation['valid']:
+            logger.warning("Missing required credentials", missing=validation['missing_credentials'])
+        if validation['using_defaults']:
+            logger.warning("Using default credentials - set environment variables for production",
+                         defaults=validation['using_defaults'])
+    else:
+        # Fallback for development
+        app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'dev-secret-key-change-in-production')
+        logger.warning("Credential manager not available, using environment variables directly")
     
-    # Register blueprints
+    # Initialize API versioning
+    from backend.middleware.api_versioning import init_api_versioning, get_default_versioning_config, get_api_version_info
+    versioning_config = get_default_versioning_config()
+    init_api_versioning(app, versioning_config)
+
+    # Register blueprints with versioning support
     from backend.api.calculations import calculations_bp
     from backend.api.validation import validation_bp
     from backend.api.exports import exports_bp
     from backend.api.mongodb_api import mongodb_bp
+    from backend.api.cdn_management import cdn_bp
+    from backend.api.asset_optimization import asset_optimization_bp
+    from backend.api.migration import migration_bp
 
+    # Register v1 API endpoints
+    app.register_blueprint(calculations_bp, url_prefix='/api/v1/calculations')
+    app.register_blueprint(validation_bp, url_prefix='/api/v1/validation')
+    app.register_blueprint(exports_bp, url_prefix='/api/v1/exports')
+    app.register_blueprint(mongodb_bp, url_prefix='/api/v1/mongodb')
+    app.register_blueprint(cdn_bp, url_prefix='/api/v1')
+    app.register_blueprint(asset_optimization_bp, url_prefix='/api/v1')
+    app.register_blueprint(migration_bp, url_prefix='/api/v1')
+
+    # Maintain backward compatibility with non-versioned endpoints
     app.register_blueprint(calculations_bp, url_prefix='/api/calculations')
     app.register_blueprint(validation_bp, url_prefix='/api/validation')
     app.register_blueprint(exports_bp, url_prefix='/api/exports')
     app.register_blueprint(mongodb_bp, url_prefix='/api/mongodb')
+    app.register_blueprint(migration_bp, url_prefix='/api')
     
-    # Initialize MongoDB on app startup
-    @app.before_first_request
-    def initialize_mongodb():
-        """Initialize MongoDB collections and indexes."""
+    # Initialize MongoDB with timeout and fallback
+    mongodb_enabled = os.getenv('MONGODB_ENABLED', 'false').lower() == 'true'
+    if mongodb_enabled:
         try:
-            # Run async initialization in a new event loop
+            # Run async initialization with timeout
             loop = asyncio.new_event_loop()
             asyncio.set_event_loop(loop)
-            loop.run_until_complete(init_mongodb_collections())
+
+            # Use asyncio.wait_for with timeout to prevent hanging
+            loop.run_until_complete(
+                asyncio.wait_for(init_mongodb_collections(), timeout=2.0)
+            )
             loop.close()
             logger.info("MongoDB initialized successfully")
+        except asyncio.TimeoutError:
+            logger.warning("MongoDB initialization timed out - continuing without MongoDB")
         except Exception as e:
-            logger.error("Failed to initialize MongoDB", error=str(e))
+            logger.warning("Failed to initialize MongoDB - continuing without MongoDB", error=str(e))
+    else:
+        logger.info("MongoDB disabled - skipping initialization")
 
     # Health check endpoint
     @app.route('/api/health')
@@ -106,13 +164,14 @@ def create_app(config_name='development'):
             'mongodb_status': mongodb_status
         })
     
-    # API info endpoint
+    # API info endpoint with versioning information
     @app.route('/api/info')
+    @app.route('/api/v1/info')
     def api_info():
-        """API information endpoint."""
-        return jsonify({
+        """API information endpoint with versioning details."""
+        base_info = {
             'name': 'SizeWise Suite API',
-            'version': '0.1.0',
+            'version': '1.0.0',
             'description': 'HVAC engineering and estimating platform API',
             'modules': [
                 'air-duct-sizer',
@@ -122,13 +181,29 @@ def create_app(config_name='development'):
                 'estimating-app'
             ],
             'endpoints': {
+                'calculations': '/api/v1/calculations',
+                'validation': '/api/v1/validation',
+                'exports': '/api/v1/exports',
+                'mongodb': '/api/v1/mongodb',
+                'health': '/api/health',
+                'sentry-debug': '/api/sentry-debug'
+            },
+            'legacy_endpoints': {
                 'calculations': '/api/calculations',
                 'validation': '/api/validation',
                 'exports': '/api/exports',
-                'health': '/api/health',
-                'sentry-debug': '/api/sentry-debug'
+                'mongodb': '/api/mongodb'
             }
-        })
+        }
+
+        # Add versioning information
+        versioning_info = get_api_version_info()
+        if versioning_info:
+            base_info.update({
+                'versioning': versioning_info
+            })
+
+        return jsonify(base_info)
 
     # Sentry verification endpoint
     @app.route('/api/sentry-debug')

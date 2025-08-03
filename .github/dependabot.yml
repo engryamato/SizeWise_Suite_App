@@ -1,3 +1,6 @@
+# Dependabot Configuration for SizeWise Suite
+# Enhanced with security monitoring and intelligent update scheduling
+
 version: 2
 updates:
   # Frontend dependencies (Next.js)
@@ -8,13 +11,66 @@ updates:
       day: "monday"
       time: "09:00"
     open-pull-requests-limit: 5
+
+    # Enhanced grouping for better organization
     groups:
-      npm_and_yarn:
+      # React ecosystem updates
+      react:
+        patterns:
+          - "react*"
+          - "@types/react*"
+
+      # Next.js ecosystem
+      nextjs:
+        patterns:
+          - "next*"
+          - "@next/*"
+
+      # Testing frameworks
+      testing:
+        patterns:
+          - "jest*"
+          - "@testing-library/*"
+          - "playwright*"
+          - "cypress*"
+
+      # Development tools
+      dev-tools:
+        patterns:
+          - "eslint*"
+          - "prettier*"
+          - "typescript*"
+          - "@types/*"
+
+      # Other dependencies
+      other:
         patterns:
           - "*"
+
+    # Security-focused ignore rules
+    ignore:
+      # Major version updates that require careful testing
+      - dependency-name: "next"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "react"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "react-dom"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "typescript"
+        update-types: ["version-update:semver-major"]
+
     commit-message:
-      prefix: "build(deps)"
+      prefix: "chore(deps)"
+      prefix-development: "chore(deps-dev)"
       include: "scope"
+
+    # Enhanced labels for better categorization
+    labels:
+      - "dependencies"
+      - "frontend"
+      - "automated"
+      - "security-reviewed"
+
     reviewers:
       - "engryamato"
     assignees:
@@ -25,16 +81,82 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
-      day: "monday"
-      time: "10:00"
+      day: "tuesday"
+      time: "09:00"
     open-pull-requests-limit: 5
+
+    # Enhanced grouping for Python packages
     groups:
-      pip:
+      # Core framework packages
+      core-framework:
+        patterns:
+          - "flask*"
+          - "werkzeug"
+          - "jinja2"
+          - "markupsafe"
+
+      # Data science stack
+      data-science:
+        patterns:
+          - "numpy"
+          - "pandas"
+          - "scipy"
+
+      # Security packages
+      security:
+        patterns:
+          - "cryptography"
+          - "pyjwt"
+          - "bcrypt"
+          - "pyotp"
+
+      # Testing framework
+      testing:
+        patterns:
+          - "pytest*"
+          - "coverage"
+
+      # Development tools
+      dev-tools:
+        patterns:
+          - "black"
+          - "flake8"
+          - "mypy"
+          - "isort"
+
+      # Other dependencies
+      other:
         patterns:
           - "*"
+
+    # Security-focused ignore rules for Python
+    ignore:
+      # Major versions that may affect HVAC calculations
+      - dependency-name: "numpy"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "pandas"
+        update-types: ["version-update:semver-major"]
+
+      # Framework major versions requiring migration
+      - dependency-name: "flask"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "sqlalchemy"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "pydantic"
+        update-types: ["version-update:semver-major"]
+
     commit-message:
-      prefix: "build(deps)"
+      prefix: "chore(deps)"
       include: "scope"
+
+    # Enhanced labels
+    labels:
+      - "dependencies"
+      - "backend"
+      - "python"
+      - "automated"
+      - "security-reviewed"
+
     reviewers:
       - "engryamato"
     assignees:

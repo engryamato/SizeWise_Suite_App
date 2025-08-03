@@ -1,170 +1,67 @@
 /**
  * AuthenticationManager - Secure Session Management
- * 
+ *
  * MISSION-CRITICAL: Secure authentication foundation for SaaS transition
  * Manages secure sessions, token validation, and authentication state
- * 
+ *
+ * Refactored to use modular architecture with specialized managers:
+ * - SessionManager: Session lifecycle and validation
+ * - TokenManager: JWT token operations
+ * - LicenseValidator: License key validation
+ * - SuperAdminManager: Super admin authentication
+ * - SecurityLogger: Security event logging
+ *
  * @see docs/implementation/security/application-security-guide.md section 5
  * @see docs/implementation/security/security-implementation-checklist.md section 1.4
  */
 
-import * as crypto from 'crypto';
 import { KeystoreManager } from './KeystoreManager';
+import { SessionManager } from './managers/SessionManager';
+import { TokenManager } from './managers/TokenManager';
+import { LicenseValidator } from './validators/LicenseValidator';
+import { SuperAdminManager } from './managers/SuperAdminManager';
+import { SecurityLogger } from './utils/SecurityLogger';
+import {
+  AuthSession,
+  SuperAdminSession,
+  AuthResult,
+  SuperAdminAuthResult,
+  HardwareKeyAuthRequest,
+  EmergencyAccessRequest,
+  EmergencyAccessResult,
+  JWTValidationResult,
+  LicenseValidationResult
+} from './types/AuthTypes';
 
-// Frontend stub for SuperAdminValidator (backend implementation exists)
-class SuperAdminValidator {
-  constructor(securityManager: any) {
-    // Frontend stub - actual implementation in backend
-  }
-
-  async authenticateSuperAdmin(...args: any[]): Promise<any> {
-    throw new Error('SuperAdminValidator not available in frontend');
-  }
-
-  async requestEmergencyAccess(...args: any[]): Promise<any> {
-    throw new Error('SuperAdminValidator not available in frontend');
-  }
-
-  async validateSession(...args: any[]): Promise<any> {
-    throw new Error('SuperAdminValidator not available in frontend');
-  }
-
-  async revokeSession(...args: any[]): Promise<any> {
-    throw new Error('SuperAdminValidator not available in frontend');
-  }
-
-  async registerHardwareKey(...args: any[]): Promise<any> {
-    throw new Error('SuperAdminValidator not available in frontend');
-  }
-
-  getSecurityStatistics(): any {
-    return null;
-  }
-
-  getAuditTrail(limit: number = 100): any[] {
-    return [];
-  }
-}
-
-// Local interfaces for super admin functionality
-export interface SuperAdminValidationResult {
-  isValid: boolean;
-  sessionId?: string;
-  permissions?: string[];
-  emergencyAccess?: boolean;
-  error?: string;
-}
-
-export interface HardwareKeyCredential {
-  userId: string;
-  hardwareKeyId: string;
-  challenge: string;
-  signature: string;
-}
-
-export interface EmergencyAccessRequest {
-  reason: string;
-  contactInfo: string;
-  timestamp?: string;
-  requestedPermissions?: string[];
-  hardwareKeyProof?: string;
-}
+// Re-export types from the modular type definitions
+export * from './types/AuthTypes';
 
 /**
- * Authentication session structure
- */
-export interface AuthSession {
-  sessionId: string;
-  userId: string;
-  email: string;
-  tier: 'free' | 'pro' | 'enterprise' | 'super_admin';
-  issuedAt: number;
-  expiresAt: number;
-  lastActivity: number;
-  deviceFingerprint: string;
-  permissions: string[];
-}
-
-/**
- * JWT token structure
- */
-export interface JWTToken {
-  header: {
-    alg: 'HS256' | 'RS256';
-    typ: 'JWT';
-  };
-  payload: {
-    sub: string; // userId
-    email: string;
-    tier: 'free' | 'pro' | 'enterprise';
-    iat: number;
-    exp: number;
-    aud: string;
-    iss: string;
-  };
-  signature: string;
-}
-
-/**
- * Authentication result
- */
-export interface AuthResult {
-  success: boolean;
-  session?: AuthSession;
-  token?: string;
-  error?: string;
-  securityEvent?: string;
-}
-
-/**
- * Super Admin Authentication Session (extends regular session)
- */
-export interface SuperAdminSession extends AuthSession {
-  superAdminSessionId: string;
-  hardwareKeyId: string;
-  emergencyAccess: boolean;
-  superAdminPermissions: string[];
-  superAdminExpiresAt: number;
-}
-
-/**
- * Hardware Key Authentication Request
- */
-export interface HardwareKeyAuthRequest {
-  userId: string;
-  hardwareKeyId: string;
-  challenge: string;
-  signature: string;
-  clientData: string;
-}
-
-/**
- * Super Admin Authentication Result
- */
-export interface SuperAdminAuthResult {
-  success: boolean;
-  superAdminSession?: SuperAdminSession;
-  validationResult?: SuperAdminValidationResult;
-  error?: string;
-  requiresHardwareKey?: boolean;
-}
-
-/**
- * Production-grade authentication manager
+ * Production-grade authentication manager with modular architecture
  * CRITICAL: Secure session management and token validation
+ *
+ * Refactored to use specialized managers for better maintainability:
+ * - SessionManager: Session lifecycle and validation
+ * - TokenManager: JWT token operations
+ * - LicenseValidator: License key validation
+ * - SuperAdminManager: Super admin authentication
+ * - SecurityLogger: Security event logging
  */
 export class AuthenticationManager {
   private readonly keystore: KeystoreManager;
-  private currentSession: AuthSession | null = null;
-  private currentSuperAdminSession: SuperAdminSession | null = null;
-  private superAdminValidator: SuperAdminValidator | null = null;
-  private readonly sessionTimeout = 8 * 60 * 60 * 1000; // 8 hours
-  private readonly activityTimeout = 30 * 60 * 1000; // 30 minutes
-  private readonly superAdminTimeout = 30 * 60 * 1000; // 30 minutes
-  private readonly jwtSecret = 'SizeWise-Suite-JWT-Secret-2024'; // In production, use secure key management
+  private readonly sessionManager: SessionManager;
+  private readonly tokenManager: TokenManager;
+  private readonly licenseValidator: LicenseValidator;
+  private readonly superAdminManager: SuperAdminManager;
+  private readonly securityLogger: SecurityLogger;
 
   constructor() {
     this.keystore = new KeystoreManager();
+    this.sessionManager = new SessionManager();
+    this.tokenManager = new TokenManager();
+    this.licenseValidator = new LicenseValidator();
+    this.superAdminManager = new SuperAdminManager(this.sessionManager);
+    this.securityLogger = SecurityLogger.getInstance();
   }
 
   /**
@@ -174,75 +71,26 @@ export class AuthenticationManager {
    */
   async authenticateUser(email: string, password: string): Promise<AuthResult> {
     try {
-      // Check for super admin credentials first
-      const SUPER_ADMIN_EMAIL = process.env.NEXT_PUBLIC_SUPER_ADMIN_EMAIL || 'admin@sizewise.com';
-      const SUPER_ADMIN_PASSWORD = process.env.NEXT_PUBLIC_SUPER_ADMIN_PASSWORD || 'SizeWise2024!6EAF4610705941';
+      // Delegate to SuperAdminManager for super admin authentication
+      const superAdminResult = await this.superAdminManager.authenticateSuperAdmin(email, password);
 
-      if (email === SUPER_ADMIN_EMAIL && password === SUPER_ADMIN_PASSWORD) {
-        // Create super admin session
-        const sessionId = crypto.randomBytes(32).toString('hex');
-        const now = Date.now();
-        const superAdminSession: SuperAdminSession = {
-          sessionId,
-          userId: 'super-admin',
-          email: email,
-          tier: 'super_admin' as const,
-          issuedAt: now,
-          expiresAt: now + (8 * 60 * 60 * 1000), // 8 hours
-          lastActivity: now,
-          deviceFingerprint: await this.generateDeviceFingerprint(),
-          permissions: ['admin:full_access', 'admin:super_admin_functions'],
-          superAdminSessionId: sessionId,
-          hardwareKeyId: 'emergency-access',
-          emergencyAccess: true,
-          superAdminPermissions: ['all'],
-          superAdminExpiresAt: now + (30 * 60 * 1000) // 30 minutes
-        };
-
-        this.currentSuperAdminSession = superAdminSession;
-
-        // Generate JWT token for super admin
-        const token = await this.generateJWTToken({
-          sessionId: superAdminSession.sessionId,
-          userId: superAdminSession.userId,
-          email: superAdminSession.email,
-          tier: superAdminSession.tier,
-          issuedAt: superAdminSession.issuedAt,
-          expiresAt: superAdminSession.expiresAt,
-          lastActivity: superAdminSession.lastActivity,
-          deviceFingerprint: superAdminSession.deviceFingerprint,
-          permissions: superAdminSession.superAdminPermissions
-        });
-
-        await this.logSecurityEvent('super_admin_authentication_success', {
-          userId: superAdminSession.userId,
-          email: email,
-          sessionId: superAdminSession.sessionId
-        });
+      if (superAdminResult.success && superAdminResult.session) {
+        // Generate JWT token for super admin session
+        const token = await this.tokenManager.generateJWTToken(superAdminResult.session);
 
         return {
           success: true,
-          session: {
-            sessionId: superAdminSession.sessionId,
-            userId: superAdminSession.userId,
-            email: superAdminSession.email,
-            tier: superAdminSession.tier,
-            issuedAt: superAdminSession.issuedAt,
-            expiresAt: superAdminSession.expiresAt,
-            lastActivity: superAdminSession.lastActivity,
-            deviceFingerprint: superAdminSession.deviceFingerprint,
-            permissions: superAdminSession.superAdminPermissions
-          },
+          session: superAdminResult.session,
           token
         };
       }
 
-      // For non-super admin users, this would integrate with license validation
-      // For now, return authentication failure for regular users
-      await this.logSecurityEvent('authentication_failed', {
+      // For non-super admin users, return authentication failure
+      // In production, this could integrate with other authentication methods
+      await this.securityLogger.logSecurityEvent('authentication_failed', {
         email: email,
         reason: 'Invalid credentials'
-      });
+      }, 'medium');
 
       return {
         success: false,
@@ -252,10 +100,11 @@ export class AuthenticationManager {
 
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      await this.logSecurityEvent('authentication_error', {
+      await this.securityLogger.logSecurityEvent('authentication_error', {
         email: email,
         error: errorMessage
-      });
+      }, 'high');
+
       return {
         success: false,
         error: `Authentication failed: ${errorMessage}`,
@@ -270,53 +119,37 @@ export class AuthenticationManager {
    */
   async authenticateWithLicense(licenseKey: string): Promise<AuthResult> {
     try {
-      // Validate license key format
-      if (!this.validateLicenseFormat(licenseKey)) {
-        await this.logSecurityEvent('invalid_license_format', { licenseKey: licenseKey.substring(0, 8) + '...' });
-        return {
-          success: false,
-          error: 'Invalid license key format',
-          securityEvent: 'INVALID_LICENSE_FORMAT'
-        };
-      }
+      // Delegate to LicenseValidator for license validation
+      const licenseValidation = await this.licenseValidator.validateLicense(licenseKey);
 
-      // Validate license cryptographically (placeholder - would use LicenseValidator)
-      const licenseValid = await this.validateLicenseCryptographically(licenseKey);
-      if (!licenseValid) {
-        await this.logSecurityEvent('license_validation_failed', { licenseKey: licenseKey.substring(0, 8) + '...' });
+      if (!licenseValidation.valid || !licenseValidation.licenseInfo) {
         return {
           success: false,
-          error: 'License validation failed',
+          error: licenseValidation.error || 'License validation failed',
           securityEvent: 'LICENSE_VALIDATION_FAILED'
         };
       }
 
-      // Extract user information from license
-      const userInfo = await this.extractUserFromLicense(licenseKey);
-      if (!userInfo) {
-        return {
-          success: false,
-          error: 'Failed to extract user information from license',
-          securityEvent: 'USER_EXTRACTION_FAILED'
-        };
-      }
+      const licenseInfo = licenseValidation.licenseInfo;
 
-      // Create secure session
-      const session = await this.createSecureSession(userInfo);
-      
-      // Generate JWT token
-      const token = await this.generateJWTToken(session);
+      // Create secure session using SessionManager
+      const session = await this.sessionManager.createSession(
+        licenseInfo.userId,
+        licenseInfo.email,
+        licenseInfo.tier,
+        licenseInfo.permissions,
+        'license'
+      );
 
-      // Store session securely
-      await this.storeSession(session);
+      // Generate JWT token using TokenManager
+      const token = await this.tokenManager.generateJWTToken(session);
 
-      this.currentSession = session;
-
-      await this.logSecurityEvent('authentication_success', {
+      await this.securityLogger.logSecurityEvent('authentication_success', {
         userId: session.userId,
         tier: session.tier,
-        sessionId: session.sessionId
-      });
+        sessionId: session.sessionId,
+        method: 'license'
+      }, 'low');
 
       return {
         success: true,
@@ -326,7 +159,11 @@ export class AuthenticationManager {
 
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      await this.logSecurityEvent('authentication_error', { error: errorMessage });
+      await this.securityLogger.logSecurityEvent('authentication_error', {
+        error: errorMessage,
+        method: 'license'
+      }, 'high');
+
       return {
         success: false,
         error: `Authentication failed: ${errorMessage}`,
@@ -339,72 +176,37 @@ export class AuthenticationManager {
    * Validate JWT token
    * CRITICAL: Token validation for API requests
    */
-  async validateJWTToken(token: string): Promise<AuthResult> {
+  async validateJWTToken(token: string): Promise<JWTValidationResult> {
     try {
-      // Parse JWT token
-      const parsedToken = this.parseJWTToken(token);
-      if (!parsedToken) {
-        await this.logSecurityEvent('invalid_jwt_format', {});
-        return {
-          success: false,
-          error: 'Invalid JWT token format',
-          securityEvent: 'INVALID_JWT_FORMAT'
-        };
+      // Delegate to TokenManager for JWT validation
+      const validation = await this.tokenManager.validateJWTToken(token);
+
+      if (!validation.success) {
+        return validation;
       }
 
-      // Verify signature
-      const signatureValid = this.verifyJWTSignature(parsedToken);
-      if (!signatureValid) {
-        await this.logSecurityEvent('invalid_jwt_signature', { userId: parsedToken.payload.sub });
-        return {
-          success: false,
-          error: 'Invalid JWT signature',
-          securityEvent: 'INVALID_JWT_SIGNATURE'
-        };
+      // Additional session validation if needed
+      if (validation.payload?.sessionId) {
+        const sessionValidation = await this.sessionManager.validateSession(validation.payload.sessionId);
+        if (!sessionValidation.valid) {
+          return {
+            success: false,
+            error: 'Session no longer valid',
+            expired: true
+          };
+        }
       }
 
-      // Check expiration
-      if (parsedToken.payload.exp < Date.now() / 1000) {
-        await this.logSecurityEvent('jwt_expired', { userId: parsedToken.payload.sub });
-        return {
-          success: false,
-          error: 'JWT token expired',
-          securityEvent: 'JWT_EXPIRED'
-        };
-      }
-
-      // Validate audience and issuer
-      if (parsedToken.payload.aud !== 'sizewise-suite' || parsedToken.payload.iss !== 'sizewise-auth') {
-        await this.logSecurityEvent('jwt_invalid_claims', { userId: parsedToken.payload.sub });
-        return {
-          success: false,
-          error: 'Invalid JWT claims',
-          securityEvent: 'JWT_INVALID_CLAIMS'
-        };
-      }
-
-      // Get session from token
-      const session = await this.getSessionFromToken(parsedToken);
-      if (!session) {
-        return {
-          success: false,
-          error: 'Session not found',
-          securityEvent: 'SESSION_NOT_FOUND'
-        };
-      }
-
-      return {
-        success: true,
-        session
-      };
+      return validation;
 
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      await this.logSecurityEvent('jwt_validation_error', { error: errorMessage });
+      await this.securityLogger.logSecurityEvent('jwt_validation_error', {
+        error: errorMessage
+      }, 'medium');
       return {
         success: false,
-        error: `JWT validation failed: ${errorMessage}`,
-        securityEvent: 'JWT_VALIDATION_ERROR'
+        error: `JWT validation failed: ${errorMessage}`
       };
     }
   }
@@ -414,28 +216,13 @@ export class AuthenticationManager {
    */
   async getCurrentSession(): Promise<AuthSession | null> {
     try {
-      if (!this.currentSession) {
-        // Try to restore session from secure storage
-        this.currentSession = await this.restoreSession();
-      }
-
-      if (this.currentSession) {
-        // Check session validity
-        const isValid = await this.validateSession(this.currentSession);
-        if (!isValid) {
-          await this.clearSession();
-          return null;
-        }
-
-        // Update last activity
-        await this.updateSessionActivity(this.currentSession.sessionId);
-      }
-
-      return this.currentSession;
-
+      // Delegate to SessionManager - it handles session restoration and validation
+      return await this.sessionManager.getCurrentSession();
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      await this.logSecurityEvent('session_retrieval_error', { error: errorMessage });
+      await this.securityLogger.logSecurityEvent('session_retrieval_error', {
+        error: errorMessage
+      }, 'medium');
       return null;
     }
   }
@@ -454,48 +241,32 @@ export class AuthenticationManager {
         };
       }
 
-      // Check if session can be refreshed
-      const timeSinceIssued = Date.now() - currentSession.issuedAt;
-      const maxRefreshTime = 24 * 60 * 60 * 1000; // 24 hours
-      
-      if (timeSinceIssued > maxRefreshTime) {
-        await this.clearSession();
+      // Delegate to SessionManager for session refresh
+      const refreshResult = await this.sessionManager.refreshSession(currentSession.sessionId);
+
+      if (!refreshResult.valid || !refreshResult.session) {
         return {
           success: false,
-          error: 'Session too old to refresh',
-          securityEvent: 'SESSION_TOO_OLD'
+          error: refreshResult.error || 'Session refresh failed',
+          securityEvent: 'SESSION_REFRESH_FAILED'
         };
       }
 
-      // Create new session with extended expiration
-      const refreshedSession: AuthSession = {
-        ...currentSession,
-        sessionId: crypto.randomUUID(),
-        expiresAt: Date.now() + this.sessionTimeout,
-        lastActivity: Date.now()
-      };
-
-      // Generate new JWT token
-      const token = await this.generateJWTToken(refreshedSession);
-
-      // Store refreshed session
-      await this.storeSession(refreshedSession);
-      this.currentSession = refreshedSession;
-
-      await this.logSecurityEvent('session_refreshed', {
-        userId: refreshedSession.userId,
-        sessionId: refreshedSession.sessionId
-      });
+      // Generate new JWT token for refreshed session
+      const token = await this.tokenManager.generateJWTToken(refreshResult.session);
 
       return {
         success: true,
-        session: refreshedSession,
+        session: refreshResult.session,
         token
       };
 
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      await this.logSecurityEvent('session_refresh_error', { error: errorMessage });
+      await this.securityLogger.logSecurityEvent('session_refresh_error', {
+        error: errorMessage
+      }, 'medium');
+
       return {
         success: false,
         error: `Session refresh failed: ${errorMessage}`,
@@ -509,679 +280,158 @@ export class AuthenticationManager {
    */
   async logout(): Promise<void> {
     try {
-      if (this.currentSession) {
-        await this.logSecurityEvent('user_logout', {
-          userId: this.currentSession.userId,
-          sessionId: this.currentSession.sessionId
-        });
+      const currentSession = await this.getCurrentSession();
+      if (currentSession) {
+        await this.securityLogger.logSecurityEvent('user_logout', {
+          userId: currentSession.userId,
+          sessionId: currentSession.sessionId
+        }, 'low');
+
+        // Delegate to SessionManager for session cleanup
+        await this.sessionManager.removeSession(currentSession.sessionId);
       }
-
-      await this.clearSession();
-
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      await this.logSecurityEvent('logout_error', { error: errorMessage });
+      await this.securityLogger.logSecurityEvent('logout_error', {
+        error: errorMessage
+      }, 'medium');
     }
   }
-
-  /**
-   * Validate license format
-   */
-  private validateLicenseFormat(licenseKey: string): boolean {
-    // Basic format validation (XXXX-XXXX-XXXX-XXXX)
-    const licensePattern = /^[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}$/;
-    return licensePattern.test(licenseKey);
-  }
-
-  /**
-   * Validate license cryptographically
-   */
-  private async validateLicenseCryptographically(licenseKey: string): Promise<boolean> {
-    try {
-      // In production, this would use the LicenseValidator
-      // For now, basic validation
-      return licenseKey.length === 19 && licenseKey.includes('-');
-    } catch (error) {
-      return false;
     }
-  }
-
-  /**
-   * Extract user information from license
-   */
-  private async extractUserFromLicense(licenseKey: string): Promise<any> {
-    try {
-      // In production, this would decode the license
-      // For now, return mock user data
-      return {
-        userId: crypto.randomUUID(),
-        email: 'user@example.com',
-        tier: 'pro' as const,
-        permissions: ['basic_calculations', 'unlimited_projects', 'high_res_export']
-      };
-    } catch (error) {
-      return null;
-    }
-  }
-
-  /**
-   * Create secure session
-   */
-  private async createSecureSession(userInfo: any): Promise<AuthSession> {
-    const now = Date.now();
-    const deviceFingerprint = await this.generateDeviceFingerprint();
-
-    return {
-      sessionId: crypto.randomUUID(),
-      userId: userInfo.userId,
-      email: userInfo.email,
-      tier: userInfo.tier,
-      issuedAt: now,
-      expiresAt: now + this.sessionTimeout,
-      lastActivity: now,
-      deviceFingerprint,
-      permissions: userInfo.permissions || []
-    };
-  }
-
-  /**
-   * Convert base64 to base64url encoding
-   * BRIDGE: Provides compatibility for Node.js versions without native base64url support
-   */
-  private base64ToBase64Url(base64: string): string {
-    return base64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
-  }
-
-  /**
-   * Convert base64url to base64 encoding
-   * BRIDGE: Provides compatibility for Node.js versions without native base64url support
-   */
-  private base64UrlToBase64(base64url: string): string {
-    let base64 = base64url.replace(/-/g, '+').replace(/_/g, '/');
-    // Add padding if needed
-    while (base64.length % 4) {
-      base64 += '=';
-    }
-    return base64;
-  }
-
-  /**
-   * Generate JWT token
-   * BRIDGE: Fixed base64url encoding compatibility issue
-   */
-  private async generateJWTToken(session: AuthSession): Promise<string> {
-    try {
-      const header = {
-        alg: 'HS256' as const,
-        typ: 'JWT'
-      };
-
-      const payload = {
-        sub: session.userId,
-        email: session.email,
-        tier: session.tier,
-        iat: Math.floor(session.issuedAt / 1000),
-        exp: Math.floor(session.expiresAt / 1000),
-        aud: 'sizewise-suite',
-        iss: 'sizewise-auth'
-      };
-
-      // Encode header and payload using compatible base64url encoding
-      const encodedHeader = this.base64ToBase64Url(
-        Buffer.from(JSON.stringify(header)).toString('base64')
-      );
-      const encodedPayload = this.base64ToBase64Url(
-        Buffer.from(JSON.stringify(payload)).toString('base64')
-      );
-
-      // Create signature
-      const signatureInput = `${encodedHeader}.${encodedPayload}`;
-      const signature = this.base64ToBase64Url(
-        crypto.createHmac('sha256', this.jwtSecret)
-          .update(signatureInput)
-          .digest('base64')
-      );
-
-      return `${encodedHeader}.${encodedPayload}.${signature}`;
-
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      throw new Error(`JWT generation failed: ${errorMessage}`);
-    }
-  }
-
-  /**
-   * Parse JWT token
-   */
-  private parseJWTToken(token: string): JWTToken | null {
-    try {
-      const parts = token.split('.');
-      if (parts.length !== 3) {
-        return null;
-      }
-
-      const header = JSON.parse(Buffer.from(this.base64UrlToBase64(parts[0]), 'base64').toString());
-      const payload = JSON.parse(Buffer.from(this.base64UrlToBase64(parts[1]), 'base64').toString());
-      const signature = parts[2];
-
-      return { header, payload, signature };
-
-    } catch (error) {
-      return null;
-    }
-  }
-
-  /**
-   * Verify JWT signature
-   */
-  private verifyJWTSignature(token: JWTToken): boolean {
-    try {
-      const encodedHeader = this.base64ToBase64Url(
-        Buffer.from(JSON.stringify(token.header)).toString('base64')
-      );
-      const encodedPayload = this.base64ToBase64Url(
-        Buffer.from(JSON.stringify(token.payload)).toString('base64')
-      );
-
-      const signatureInput = `${encodedHeader}.${encodedPayload}`;
-      const expectedSignature = this.base64ToBase64Url(
-        crypto.createHmac('sha256', this.jwtSecret)
-          .update(signatureInput)
-          .digest('base64')
-      );
-
-      return crypto.timingSafeEqual(
-        Buffer.from(this.base64UrlToBase64(token.signature), 'base64'),
-        Buffer.from(this.base64UrlToBase64(expectedSignature), 'base64')
-      );
-
-    } catch (error) {
-      return false;
-    }
-  }
-
-  /**
-   * Get session from JWT token
-   */
-  private async getSessionFromToken(token: JWTToken): Promise<AuthSession | null> {
-    try {
-      // In production, this would query the session store
-      // For now, create session from token data
-      const deviceFingerprint = await this.generateDeviceFingerprint();
-
-      return {
-        sessionId: crypto.randomUUID(),
-        userId: token.payload.sub,
-        email: token.payload.email,
-        tier: token.payload.tier,
-        issuedAt: token.payload.iat * 1000,
-        expiresAt: token.payload.exp * 1000,
-        lastActivity: Date.now(),
-        deviceFingerprint,
-        permissions: []
-      };
-
-    } catch (error) {
-      return null;
-    }
-  }
-
-  /**
-   * Validate session
-   */
-  private async validateSession(session: AuthSession): Promise<boolean> {
-    try {
-      const now = Date.now();
-
-      // Check expiration
-      if (session.expiresAt < now) {
-        return false;
-      }
-
-      // Check activity timeout
-      if (now - session.lastActivity > this.activityTimeout) {
-        return false;
-      }
-
-      // Validate device fingerprint
-      const currentFingerprint = await this.generateDeviceFingerprint();
-      if (session.deviceFingerprint !== currentFingerprint) {
-        await this.logSecurityEvent('device_fingerprint_mismatch', {
-          userId: session.userId,
-          sessionId: session.sessionId
-        });
-        return false;
-      }
-
-      return true;
-
-    } catch (error) {
-      return false;
-    }
-  }
-
-  /**
-   * Store session securely
-   */
-  private async storeSession(session: AuthSession): Promise<void> {
-    try {
-      // Store in OS keystore for security
-      await this.keystore.storeLicense({
-        header: { version: '1.0', algorithm: 'RSA-SHA256', keyId: 'session' },
-        payload: session as any,
-        signature: 'session-data'
-      });
-
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      throw new Error(`Session storage failed: ${errorMessage}`);
-    }
-  }
-
-  /**
-   * Restore session from storage
-   */
-  private async restoreSession(): Promise<AuthSession | null> {
-    try {
-      const storedData = await this.keystore.retrieveLicense();
-      if (!storedData) {
-        return null;
-      }
-
-      return storedData.payload as any;
-
-    } catch (error) {
-      return null;
-    }
-  }
-
-  /**
-   * Update session activity
-   */
-  private async updateSessionActivity(sessionId: string): Promise<void> {
-    try {
-      if (this.currentSession && this.currentSession.sessionId === sessionId) {
-        this.currentSession.lastActivity = Date.now();
-        await this.storeSession(this.currentSession);
-      }
-    } catch (error) {
-      // Non-critical error
-    }
-  }
-
-  /**
-   * Clear session
-   */
-  private async clearSession(): Promise<void> {
-    try {
-      this.currentSession = null;
-      await this.keystore.removeLicense();
-    } catch (error) {
-      // Non-critical error
-    }
-  }
-
-  /**
-   * Generate device fingerprint
-   */
-  private async generateDeviceFingerprint(): Promise<string> {
-    try {
-      const os = require('os');
-      const data = [
-        os.hostname(),
-        os.platform(),
-        os.arch(),
-        process.env.USERNAME || process.env.USER || 'unknown'
-      ].join('|');
-
-      return crypto.createHash('sha256').update(data).digest('hex').substring(0, 16);
-
-    } catch (error) {
-      return 'unknown-device';
-    }
-  }
-
-  /**
-   * Log security events
-   */
-  private async logSecurityEvent(event: string, data: any): Promise<void> {
-    const logEntry = {
-      timestamp: new Date().toISOString(),
-      event,
-      data,
-      source: 'AuthenticationManager'
-    };
-
-    // In production, this would send to secure logging service
-    console.log('[SECURITY]', JSON.stringify(logEntry));
   }
 
   // ========================================
-  // SUPER ADMINISTRATOR AUTHENTICATION
+  // SUPER ADMIN AUTHENTICATION METHODS
   // ========================================
-
-  /**
-   * Initialize super admin validator
-   */
-  async initializeSuperAdminValidator(securityManager: any): Promise<void> {
-    if (!this.superAdminValidator) {
-      this.superAdminValidator = new SuperAdminValidator(securityManager);
-    }
-  }
 
   /**
    * Authenticate super admin with hardware key
    */
-  async authenticateSuperAdmin(request: HardwareKeyAuthRequest): Promise<SuperAdminAuthResult> {
-    try {
-      if (!this.superAdminValidator) {
-        return {
-          success: false,
-          error: 'Super admin validator not initialized',
-          requiresHardwareKey: true
-        };
-      }
-
-      // Validate hardware key authentication
-      const validationResult = await this.superAdminValidator.authenticateSuperAdmin(
-        request.userId,
-        request.hardwareKeyId,
-        request.signature,
-        request.challenge,
-        request.clientData,
-        '127.0.0.1', // In production, get real IP
-        'SizeWise Suite Desktop'
-      );
-
-      if (!validationResult.valid) {
-        await this.logSecurityEvent('super_admin_auth_failed', {
-          userId: request.userId,
-          hardwareKeyId: request.hardwareKeyId,
-          reason: validationResult.reason
-        });
-
-        return {
-          success: false,
-          error: validationResult.reason,
-          requiresHardwareKey: true
-        };
-      }
-
-      // Create super admin session
-      const now = Date.now();
-      const superAdminSession: SuperAdminSession = {
-        sessionId: validationResult.sessionId!,
-        userId: request.userId,
-        email: 'super-admin@sizewise.com',
-        tier: 'super_admin' as const,
-        issuedAt: now,
-        expiresAt: validationResult.expiresAt!.getTime(),
-        lastActivity: now,
-        deviceFingerprint: await this.generateDeviceFingerprint(),
-        permissions: validationResult.permissions.map((p: any) => p.action),
-        superAdminSessionId: validationResult.sessionId!,
-        hardwareKeyId: request.hardwareKeyId,
-        emergencyAccess: validationResult.emergencyAccess,
-        superAdminPermissions: validationResult.permissions.map((p: any) => p.action),
-        superAdminExpiresAt: validationResult.expiresAt!.getTime()
-      };
-
-      this.currentSuperAdminSession = superAdminSession;
-
-      await this.logSecurityEvent('super_admin_authenticated', {
-        userId: request.userId,
-        sessionId: validationResult.sessionId,
-        emergencyAccess: validationResult.emergencyAccess,
-        permissions: validationResult.permissions.length
-      });
-
-      return {
-        success: true,
-        superAdminSession,
-        validationResult
-      };
-
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      await this.logSecurityEvent('super_admin_auth_error', {
-        userId: request.userId,
-        error: errorMessage
-      });
-
-      return {
-        success: false,
-        error: `Super admin authentication failed: ${errorMessage}`,
-        requiresHardwareKey: true
-      };
-    }
+  async authenticateWithHardwareKey(request: HardwareKeyAuthRequest): Promise<SuperAdminAuthResult> {
+    return await this.superAdminManager.authenticateWithHardwareKey(request);
   }
 
   /**
    * Request emergency access
    */
-  async requestEmergencyAccess(request: EmergencyAccessRequest): Promise<SuperAdminAuthResult> {
-    try {
-      if (!this.superAdminValidator) {
-        return {
-          success: false,
-          error: 'Super admin validator not initialized'
-        };
-      }
+  async requestEmergencyAccess(request: EmergencyAccessRequest): Promise<EmergencyAccessResult> {
+    return await this.superAdminManager.requestEmergencyAccess(request);
+  }
 
-      const validationResult = await this.superAdminValidator.requestEmergencyAccess(
-        request,
-        '127.0.0.1', // In production, get real IP
-        'SizeWise Suite Desktop'
-      );
-
-      if (!validationResult.valid) {
-        await this.logSecurityEvent('emergency_access_denied', {
-          reason: request.reason,
-          requestedPermissions: request.requestedPermissions,
-          error: validationResult.reason
-        });
-
-        return {
-          success: false,
-          error: validationResult.reason
-        };
-      }
-
-      // Create emergency super admin session
-      const now = Date.now();
-      const emergencySession: SuperAdminSession = {
-        sessionId: validationResult.sessionId!,
-        userId: 'emergency',
-        email: 'emergency@sizewise.com',
-        tier: 'super_admin' as const,
-        issuedAt: now,
-        expiresAt: validationResult.expiresAt!.getTime(),
-        lastActivity: now,
-        deviceFingerprint: await this.generateDeviceFingerprint(),
-        permissions: validationResult.permissions.map((p: any) => p.action),
-        superAdminSessionId: validationResult.sessionId!,
-        hardwareKeyId: 'emergency',
-        emergencyAccess: true,
-        superAdminPermissions: validationResult.permissions.map((p: any) => p.action),
-        superAdminExpiresAt: validationResult.expiresAt!.getTime()
-      };
-
-      this.currentSuperAdminSession = emergencySession;
-
-      await this.logSecurityEvent('emergency_access_granted', {
-        sessionId: validationResult.sessionId,
-        reason: request.reason,
-        permissions: validationResult.permissions.length
-      });
-
-      return {
-        success: true,
-        superAdminSession: emergencySession,
-        validationResult
-      };
-
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      await this.logSecurityEvent('emergency_access_error', {
-        reason: request.reason,
-        error: errorMessage
-      });
-
-      return {
-        success: false,
-        error: `Emergency access failed: ${errorMessage}`
-      };
-    }
+  /**
+   * Validate super admin session
+   */
+  async validateSuperAdminSession(sessionId: string): Promise<SuperAdminValidationResult> {
+    const validation = await this.superAdminManager.validateSuperAdminSession(sessionId);
+    return {
+      isValid: validation.valid,
+      sessionId: validation.session?.sessionId,
+      permissions: validation.session?.superAdminPermissions,
+      emergencyAccess: validation.session?.emergencyAccess,
+      error: validation.error
+    };
   }
 
   /**
    * Get current super admin session
    */
   getCurrentSuperAdminSession(): SuperAdminSession | null {
-    if (!this.currentSuperAdminSession) {
-      return null;
-    }
-
-    // Check if session is expired
-    if (this.currentSuperAdminSession.superAdminExpiresAt < Date.now()) {
-      this.currentSuperAdminSession = null;
-      return null;
-    }
-
-    return this.currentSuperAdminSession;
-  }
-
-  /**
-   * Validate super admin session
-   */
-  async validateSuperAdminSession(sessionId: string): Promise<boolean> {
-    try {
-      if (!this.superAdminValidator) {
-        return false;
-      }
-
-      const validationResult = await this.superAdminValidator.validateSession(sessionId);
-      return validationResult.valid;
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      await this.logSecurityEvent('super_admin_session_validation_error', {
-        sessionId,
-        error: errorMessage
-      });
-      return false;
-    }
-  }
-
-  /**
-   * Check if user has super admin permission
-   */
-  hasSuperAdminPermission(action: string): boolean {
-    const session = this.getCurrentSuperAdminSession();
-    if (!session) {
-      return false;
-    }
-
-    return session.superAdminPermissions.includes(action);
+    return this.superAdminManager.getCurrentSuperAdminSession();
   }
 
   /**
    * Revoke super admin session
    */
-  async revokeSuperAdminSession(reason: string = 'Manual revocation'): Promise<boolean> {
-    try {
-      if (!this.currentSuperAdminSession || !this.superAdminValidator) {
-        return false;
-      }
+  async revokeSuperAdminSession(sessionId: string, reason?: string): Promise<void> {
+    await this.superAdminManager.revokeSuperAdminSession(sessionId, reason);
+  }
 
-      const success = await this.superAdminValidator.revokeSession(
-        this.currentSuperAdminSession.superAdminSessionId,
-        reason
-      );
+  // ========================================
+  // LICENSE VALIDATION METHODS
+  // ========================================
 
-      if (success) {
-        await this.logSecurityEvent('super_admin_session_revoked', {
-          sessionId: this.currentSuperAdminSession.superAdminSessionId,
-          userId: this.currentSuperAdminSession.userId,
-          reason
-        });
+  /**
+   * Validate license key format
+   */
+  validateLicenseFormat(licenseKey: string): boolean {
+    return this.licenseValidator.validateLicenseFormat(licenseKey);
+  }
 
-        this.currentSuperAdminSession = null;
-      }
+  /**
+   * Validate license and get license information
+   */
+  async validateLicense(licenseKey: string): Promise<LicenseValidationResult> {
+    return await this.licenseValidator.validateLicense(licenseKey);
+  }
 
-      return success;
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      await this.logSecurityEvent('super_admin_session_revocation_error', {
-        error: errorMessage
-      });
+  /**
+   * Get permission set for a tier
+   */
+  getPermissionSet(tier: UserTier): PermissionSet {
+    return this.licenseValidator.getPermissionSet(tier);
+  }
+
+  /**
+   * Check if license has specific permission
+   */
+  async hasPermission(licenseKey: string, permission: Permission): Promise<boolean> {
+    const validation = await this.licenseValidator.validateLicense(licenseKey);
+    if (!validation.valid || !validation.licenseInfo) {
       return false;
     }
+    return this.licenseValidator.hasPermission(validation.licenseInfo, permission);
   }
 
   /**
-   * Register hardware key for super admin
+   * Register device for license
    */
-  async registerHardwareKey(
-    adminUserId: string,
-    keyCredential: HardwareKeyCredential,
-    attestationData?: ArrayBuffer
-  ): Promise<{ success: boolean; keyId: string; reason?: string }> {
-    try {
-      if (!this.superAdminValidator) {
-        return {
-          success: false,
-          keyId: '',
-          reason: 'Super admin validator not initialized'
-        };
-      }
+  async registerDevice(licenseKey: string, deviceId: string): Promise<boolean> {
+    return await this.licenseValidator.registerDevice(licenseKey, deviceId);
+  }
 
-      const result = await this.superAdminValidator.registerHardwareKey(
-        adminUserId,
-        keyCredential,
-        attestationData
-      );
+  // ========================================
+  // UTILITY METHODS
+  // ========================================
 
-      await this.logSecurityEvent('hardware_key_registration', {
-        adminUserId,
-        success: result.success,
-        keyId: result.keyId
-      });
-
-      return result;
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      await this.logSecurityEvent('hardware_key_registration_error', {
-        adminUserId,
-        error: errorMessage
-      });
-
-      return {
-        success: false,
-        keyId: '',
-        reason: `Hardware key registration failed: ${errorMessage}`
-      };
+  /**
+   * Check if user has specific permission
+   */
+  async hasUserPermission(permission: Permission): Promise<boolean> {
+    const session = await this.getCurrentSession();
+    if (!session) {
+      return false;
     }
+    return session.permissions.includes(permission);
   }
 
   /**
-   * Get super admin security statistics
+   * Get security statistics
    */
-  getSuperAdminSecurityStats(): any {
-    if (!this.superAdminValidator) {
-      return null;
-    }
-
-    return this.superAdminValidator.getSecurityStatistics();
+  getSecurityStatistics(): any {
+    return this.securityLogger.getSecurityStatistics();
   }
 
   /**
-   * Get super admin audit trail
+   * Get audit trail
    */
-  getSuperAdminAuditTrail(limit: number = 100): any[] {
-    if (!this.superAdminValidator) {
-      return [];
-    }
-
-    return this.superAdminValidator.getAuditTrail(limit);
+  getAuditTrail(limit: number = 100): any[] {
+    return this.securityLogger.getAuditTrail(limit);
   }
+
+  /**
+   * Generate JWT token (delegated to TokenManager)
+   */
+  async generateJWTToken(session: AuthSession): Promise<string> {
+    return await this.tokenManager.generateJWTToken(session);
+  }
+
+  /**
+   * Refresh JWT token (delegated to TokenManager)
+   */
+  async refreshJWTToken(token: string): Promise<string | null> {
+    return await this.tokenManager.refreshJWTToken(token);
+  }
+
 }
+
+

@@ -17,9 +17,23 @@
     "test:e2e:ui": "playwright test --ui",
     "test:e2e:headed": "playwright test --headed",
     "test:e2e:debug": "playwright test --debug",
+    "test:e2e:critical": "playwright test critical-workflows.spec.ts",
+    "test:e2e:performance": "playwright test performance-workflows.spec.ts",
+    "test:load": "playwright test load-testing.spec.ts",
+    "test:load:light": "playwright test load-testing.spec.ts -g \"light load\"",
+    "test:load:medium": "playwright test load-testing.spec.ts -g \"medium load\"",
+    "test:load:stress": "playwright test load-testing.spec.ts -g \"stress test\"",
+    "test:visual": "playwright test --config=playwright-visual.config.ts",
+    "test:visual:ui": "playwright test --config=playwright-visual.config.ts --ui",
+    "test:visual:update": "playwright test --config=playwright-visual.config.ts --update-snapshots",
+    "test:comprehensive": "npm run test:e2e:critical && npm run test:e2e:performance && npm run test:visual && npm run test:load",
+    "test:visual:headed": "playwright test --config=playwright-visual.config.ts --headed",
     "playwright:install": "playwright install",
     "cypress:open": "cypress open",
-    "cypress:run": "cypress run"
+    "cypress:run": "cypress run",
+    "analyze": "cross-env ANALYZE=true next build",
+    "analyze:server": "cross-env BUNDLE_ANALYZE=server next build",
+    "analyze:browser": "cross-env BUNDLE_ANALYZE=browser next build"
   },
   "dependencies": {
     "@react-pdf/renderer": "^4.3.0",
@@ -59,6 +73,7 @@
   "devDependencies": {
     "@21st-extension/toolbar-next": "^0.5.14",
     "@axe-core/react": "^4.10.2",
+    "@next/bundle-analyzer": "^15.4.5",
     "@playwright/test": "^1.54.1",
     "@testing-library/dom": "^10.4.0",
     "@testing-library/jest-dom": "^6.1.5",
@@ -71,6 +86,7 @@
     "@types/uuid": "^10.0.0",
     "autoprefixer": "^10.4.20",
     "better-sqlite3": "^12.2.0",
+    "cross-env": "^10.0.0",
     "cypress": "^13.6.1",
     "eslint": "^8.57.1",
     "eslint-config-next": "^15.4.2",
@@ -86,7 +102,8 @@
     "tailwindcss-animate": "^1.0.7",
     "ts-jest": "^29.4.0",
     "ts-node": "^10.9.2",
-    "typescript": "^5.7.2"
+    "typescript": "^5.7.2",
+    "webpack-bundle-analyzer": "^4.10.2"
   },
   "keywords": [
     "nextjs",

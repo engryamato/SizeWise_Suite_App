@@ -1,0 +1,68 @@
+{
+  "id": "INC-20250803-0002",
+  "title": "Test HVAC Calculation Error",
+  "description": "HVAC calculation accuracy issue",
+  "severity": "high",
+  "status": "open",
+  "category": "hvac_calculation_error",
+  "created_at": "2025-08-03T09:51:44.333987",
+  "updated_at": "2025-08-03T09:51:44.869720",
+  "assigned_to": null,
+  "escalation_level": 1,
+  "escalated_at": null,
+  "resolved_at": null,
+  "closed_at": null,
+  "tags": [],
+  "timeline": [
+    {
+      "timestamp": "2025-08-03T09:51:44.333987",
+      "action": "incident_created",
+      "details": "Incident created by validation_test",
+      "user": "validation_test"
+    },
+    {
+      "timestamp": "2025-08-03T09:51:44.333987",
+      "action": "automated_response_started",
+      "details": "Executing runbook: HVAC Calculation Error Response",
+      "user": "system"
+    },
+    {
+      "timestamp": "2025-08-03T09:51:44.439490",
+      "action": "automated_step_completed",
+      "details": "Completed: Validate calculation inputs",
+      "user": "system"
+    },
+    {
+      "timestamp": "2025-08-03T09:51:44.546077",
+      "action": "automated_step_completed",
+      "details": "Completed: Check HVAC standards compliance",
+      "user": "system"
+    },
+    {
+      "timestamp": "2025-08-03T09:51:44.653905",
+      "action": "automated_step_completed",
+      "details": "Completed: Verify calculation algorithms",
+      "user": "system"
+    },
+    {
+      "timestamp": "2025-08-03T09:51:44.761967",
+      "action": "automated_step_completed",
+      "details": "Completed: Test with known good data",
+      "user": "system"
+    },
+    {
+      "timestamp": "2025-08-03T09:51:44.869720",
+      "action": "automated_step_completed",
+      "details": "Completed: Compare with reference calculations",
+      "user": "system"
+    },
+    {
+      "timestamp": "2025-08-03T09:51:44.869720",
+      "action": "automated_response_completed",
+      "details": "Automated response completed",
+      "user": "system"
+    }
+  ],
+  "runbook_executed": true,
+  "sla_breach": false
+}

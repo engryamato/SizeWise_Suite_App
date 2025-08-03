@@ -382,6 +382,9 @@ afterEach(() => {
   }
 })
 
+// Import test data management utilities
+import { TestDataFactory, TestDatabaseManager, createBasicTestData, createPerformanceTestData, createTierTestData, withTestDatabase } from './tests/fixtures/TestDataManager';
+
 // Global test utilities for authentication testing
 global.testUtils = {
   // Helper to create mock user
@@ -413,6 +416,52 @@ global.testUtils = {
     last_validated: '2024-01-01T00:00:00Z',
     ...overrides,
   }),
+
+  // Test data management utilities
+  TestDataFactory,
+  TestDatabaseManager,
+  createBasicTestData,
+  createPerformanceTestData,
+  createTierTestData,
+  withTestDatabase,
+
+  // Helper to create test database manager
+  createTestDatabaseManager: (testName = 'jest-test') => new TestDatabaseManager(testName),
+
+  // Helper to create test data factory
+  createTestDataFactory: (seed) => new TestDataFactory(seed),
+
+  // Helper to setup test database with data
+  setupTestDatabase: async (testName, scenario = 'basic') => {
+    const manager = new TestDatabaseManager(testName);
+    await manager.setup();
+
+    let scenarioData;
+    switch (scenario) {
+      case 'basic':
+        scenarioData = createBasicTestData();
+        break;
+      case 'performance':
+        scenarioData = createPerformanceTestData();
+        break;
+      case 'tier':
+        scenarioData = createTierTestData();
+        break;
+      default:
+        const factory = new TestDataFactory();
+        scenarioData = factory.createTestScenario(scenario);
+    }
+
+    await manager.loadTestScenario(scenarioData);
+    return { manager, scenarioData };
+  },
+
+  // Helper to cleanup test database
+  cleanupTestDatabase: async (manager) => {
+    if (manager && typeof manager.cleanup === 'function') {
+      await manager.cleanup();
+    }
+  },
 
   // Helper to create mock super admin
   createMockSuperAdmin: () => ({

@@ -1,0 +1,381 @@
+name: Enhanced Security Scanning
+
+on:
+  push:
+    branches: ["main", "develop", "security-*"]
+  pull_request:
+    branches: ["main", "develop"]
+  schedule:
+    # Run daily at 3 AM UTC for comprehensive scanning
+    - cron: "0 3 * * *"
+  workflow_dispatch:
+    inputs:
+      scan_type:
+        description: "Type of security scan to run"
+        required: true
+        default: "full"
+        type: choice
+        options:
+          - "full"
+          - "dependencies"
+          - "secrets"
+          - "code-analysis"
+          - "container"
+      severity_threshold:
+        description: "Minimum severity level to report"
+        required: false
+        default: "medium"
+        type: choice
+        options:
+          - "critical"
+          - "high"
+          - "medium"
+          - "low"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: "18"
+  PYTHON_VERSION: "3.11"
+  SEVERITY_THRESHOLD: ${{ github.event.inputs.severity_threshold || 'medium' }}
+  SCAN_TYPE: ${{ github.event.inputs.scan_type || 'full' }}
+
+jobs:
+  dependency-vulnerability-scan:
+    name: Dependency Vulnerability Scanning
+    runs-on: ubuntu-latest
+    if: contains(fromJSON('["full", "dependencies"]'), env.SCAN_TYPE)
+    outputs:
+      vulnerabilities-found: ${{ steps.vulnerability-check.outputs.vulnerabilities-found }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "npm"
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: "pip"
+
+      - name: Install dependencies
+        run: |
+          cd frontend && npm ci --legacy-peer-deps
+          python -m pip install --upgrade pip
+          pip install -r backend/requirements.txt
+          pip install safety pip-audit cyclonedx-bom
+
+      - name: Generate Software Bill of Materials (SBOM)
+        run: |
+          # Generate SBOM for Python dependencies
+          cyclonedx-py -o sbom-python.json
+          
+          # Generate SBOM for Node.js dependencies
+          cd frontend
+          npx @cyclonedx/cyclonedx-npm --output-file ../sbom-nodejs.json
+
+      - name: Run comprehensive npm audit
+        working-directory: ./frontend
+        run: |
+          npm audit --audit-level=low --json > npm-audit-report.json || true
+          npm audit --audit-level=${{ env.SEVERITY_THRESHOLD }}
+
+      - name: Run Python Safety check
+        run: |
+          safety check --json --output safety-report.json || true
+          safety check --exit-code --severity ${{ env.SEVERITY_THRESHOLD }}
+
+      - name: Run pip-audit
+        run: |
+          pip-audit --format=json --output=pip-audit-report.json || true
+          pip-audit --desc --severity=${{ env.SEVERITY_THRESHOLD }}
+
+      - name: Run OSV Scanner
+        uses: google/osv-scanner-action@v1.7.4
+        with:
+          scan-args: |-
+            --output=osv-report.json
+            --format=json
+            ./
+        continue-on-error: true
+
+      - name: Check for vulnerabilities
+        id: vulnerability-check
+        run: |
+          VULN_COUNT=0
+          
+          # Count npm vulnerabilities
+          if [ -f frontend/npm-audit-report.json ]; then
+            NPM_VULNS=$(jq '.metadata.vulnerabilities.total // 0' frontend/npm-audit-report.json)
+            VULN_COUNT=$((VULN_COUNT + NPM_VULNS))
+          fi
+          
+          # Count Python vulnerabilities
+          if [ -f safety-report.json ]; then
+            SAFETY_VULNS=$(jq 'length' safety-report.json)
+            VULN_COUNT=$((VULN_COUNT + SAFETY_VULNS))
+          fi
+          
+          echo "vulnerabilities-found=$VULN_COUNT" >> $GITHUB_OUTPUT
+          echo "Total vulnerabilities found: $VULN_COUNT"
+
+      - name: Upload vulnerability reports
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: vulnerability-reports
+          path: |
+            frontend/npm-audit-report.json
+            safety-report.json
+            pip-audit-report.json
+            osv-report.json
+            sbom-*.json
+          retention-days: 30
+
+  secrets-scanning:
+    name: Secrets and Credential Scanning
+    runs-on: ubuntu-latest
+    if: contains(fromJSON('["full", "secrets"]'), env.SCAN_TYPE)
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Run GitLeaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          config-path: .gitleaks.toml
+
+      - name: Run TruffleHog
+        uses: trufflesecurity/trufflehog@main
+        with:
+          path: ./
+          base: main
+          head: HEAD
+          extra_args: --debug --only-verified
+
+      - name: Run detect-secrets
+        run: |
+          pip install detect-secrets
+          detect-secrets scan --all-files --baseline .secrets.baseline
+          detect-secrets audit .secrets.baseline
+
+      - name: Check for hardcoded credentials
+        run: |
+          echo "Scanning for hardcoded credentials..."
+          
+          # Search for common credential patterns
+          grep -r -i "password.*=" . --include="*.py" --include="*.js" --include="*.ts" --exclude-dir=node_modules --exclude-dir=.git > credential-scan.txt || true
+          grep -r -i "secret.*=" . --include="*.py" --include="*.js" --include="*.ts" --exclude-dir=node_modules --exclude-dir=.git >> credential-scan.txt || true
+          grep -r -i "api.*key.*=" . --include="*.py" --include="*.js" --include="*.ts" --exclude-dir=node_modules --exclude-dir=.git >> credential-scan.txt || true
+          
+          if [ -s credential-scan.txt ]; then
+            echo "⚠️ Potential hardcoded credentials found:"
+            cat credential-scan.txt
+            echo "Please review these findings and ensure no actual credentials are hardcoded."
+          else
+            echo "✅ No obvious hardcoded credentials found."
+          fi
+
+      - name: Upload secrets scan results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: secrets-scan-results
+          path: |
+            credential-scan.txt
+            .secrets.baseline
+          retention-days: 30
+
+  static-code-analysis:
+    name: Static Code Analysis
+    runs-on: ubuntu-latest
+    if: contains(fromJSON('["full", "code-analysis"]'), env.SCAN_TYPE)
+    permissions:
+      security-events: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "npm"
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: "pip"
+
+      - name: Install dependencies
+        run: |
+          cd frontend && npm ci --legacy-peer-deps
+          python -m pip install --upgrade pip
+          pip install -r backend/requirements.txt
+          pip install bandit semgrep pylint
+
+      - name: Run Bandit (Python security linter)
+        run: |
+          bandit -r backend/ -f json -o bandit-report.json || true
+          bandit -r backend/ -ll -f txt
+
+      - name: Run Semgrep
+        run: |
+          semgrep --config=auto --json --output=semgrep-report.json . || true
+          semgrep --config=auto --sarif --output=semgrep-results.sarif .
+
+      - name: Run ESLint security rules
+        working-directory: ./frontend
+        run: |
+          npm run lint -- --format=json --output-file=eslint-security-report.json || true
+          npx eslint . --ext .js,.jsx,.ts,.tsx --config .eslintrc.json
+
+      - name: Run CodeQL Analysis
+        uses: github/codeql-action/analyze@v3
+        with:
+          languages: javascript,python
+          queries: security-extended,security-and-quality
+
+      - name: Upload SARIF results
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: semgrep-results.sarif
+
+      - name: Upload static analysis reports
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: static-analysis-reports
+          path: |
+            bandit-report.json
+            semgrep-report.json
+            frontend/eslint-security-report.json
+          retention-days: 30
+
+  container-security-scan:
+    name: Container Security Scanning
+    runs-on: ubuntu-latest
+    if: contains(fromJSON('["full", "container"]'), env.SCAN_TYPE)
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Build Docker images
+        run: |
+          # Build frontend image
+          docker build -t sizewise-frontend:latest -f frontend/Dockerfile frontend/
+          
+          # Build backend image
+          docker build -t sizewise-backend:latest -f backend/Dockerfile backend/
+
+      - name: Run Trivy container scan
+        run: |
+          # Install Trivy
+          sudo apt-get update
+          sudo apt-get install wget apt-transport-https gnupg lsb-release
+          wget -qO - https://aquasecurity.github.io/trivy-repo/deb/public.key | sudo apt-key add -
+          echo "deb https://aquasecurity.github.io/trivy-repo/deb $(lsb_release -sc) main" | sudo tee -a /etc/apt/sources.list.d/trivy.list
+          sudo apt-get update
+          sudo apt-get install trivy
+          
+          # Scan frontend image
+          trivy image --format sarif --output trivy-frontend.sarif sizewise-frontend:latest
+          trivy image --severity ${{ env.SEVERITY_THRESHOLD }},CRITICAL sizewise-frontend:latest
+          
+          # Scan backend image
+          trivy image --format sarif --output trivy-backend.sarif sizewise-backend:latest
+          trivy image --severity ${{ env.SEVERITY_THRESHOLD }},CRITICAL sizewise-backend:latest
+
+      - name: Run Grype container scan
+        run: |
+          # Install Grype
+          curl -sSfL https://raw.githubusercontent.com/anchore/grype/main/install.sh | sh -s -- -b /usr/local/bin
+          
+          # Scan images with Grype
+          grype sizewise-frontend:latest -o json > grype-frontend-report.json
+          grype sizewise-backend:latest -o json > grype-backend-report.json
+
+      - name: Upload container scan results
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: |
+            trivy-frontend.sarif
+            trivy-backend.sarif
+
+      - name: Upload container reports
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: container-scan-reports
+          path: |
+            trivy-*.sarif
+            grype-*-report.json
+          retention-days: 30
+
+  security-summary:
+    name: Security Scan Summary
+    runs-on: ubuntu-latest
+    needs: [dependency-vulnerability-scan, secrets-scanning, static-code-analysis, container-security-scan]
+    if: always()
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+
+      - name: Generate security summary
+        run: |
+          echo "# Security Scan Summary" > security-summary.md
+          echo "Generated on: $(date)" >> security-summary.md
+          echo "" >> security-summary.md
+          
+          # Vulnerability summary
+          if [ -f vulnerability-reports/safety-report.json ]; then
+            VULN_COUNT=$(jq 'length' vulnerability-reports/safety-report.json)
+            echo "## Dependency Vulnerabilities: $VULN_COUNT found" >> security-summary.md
+          fi
+          
+          # Add job status summary
+          echo "## Job Results" >> security-summary.md
+          echo "- Dependency Scan: ${{ needs.dependency-vulnerability-scan.result }}" >> security-summary.md
+          echo "- Secrets Scan: ${{ needs.secrets-scanning.result }}" >> security-summary.md
+          echo "- Static Analysis: ${{ needs.static-code-analysis.result }}" >> security-summary.md
+          echo "- Container Scan: ${{ needs.container-security-scan.result }}" >> security-summary.md
+          
+          cat security-summary.md
+
+      - name: Comment PR with security summary
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const summary = fs.readFileSync('security-summary.md', 'utf8');
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: summary
+            });
+
+      - name: Upload security summary
+        uses: actions/upload-artifact@v4
+        with:
+          name: security-summary
+          path: security-summary.md
+          retention-days: 90

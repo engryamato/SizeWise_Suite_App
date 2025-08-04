@@ -12,13 +12,13 @@ import Image, { ImageProps } from 'next/image';
 import { useCDNImage } from '@/lib/hooks/useCDN';
 import { cn } from '@/lib/utils';
 
-export interface CDNImageProps extends Omit<ImageProps, 'src' | 'onLoad' | 'onError'> {
+export interface CDNImageProps extends Omit<ImageProps, 'src' | 'onLoad' | 'onError' | 'sizes'> {
   src: string;
   alt: string;
   quality?: number;
   format?: 'webp' | 'avif' | 'jpeg' | 'png';
   responsive?: boolean;
-  sizes?: { width: number; height?: number }[];
+  sizes?: string | { width: number; height?: number }[];
   fallbackSrc?: string;
   showLoadingSpinner?: boolean;
   showErrorState?: boolean;
@@ -59,7 +59,7 @@ export const CDNImage = forwardRef<HTMLImageElement, CDNImageProps>(({
     quality,
     format,
     responsive,
-    sizes,
+    sizes: typeof sizes === 'string' ? sizes : undefined,
     width: props.width as number,
     height: props.height as number
   });

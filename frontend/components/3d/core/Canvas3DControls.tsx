@@ -48,7 +48,7 @@ const EnhancedOrbitControls: React.FC<Canvas3DControlsProps> = ({
   onControlStart,
   onControlEnd
 }) => {
-  const controlsRef = useRef<any>();
+  const controlsRef = useRef<any>(null);
   const { camera } = useThree();
   const lastCameraState = useRef<CameraState>({
     position: camera.position.clone(),

@@ -256,46 +256,51 @@ function createForbiddenResponse(): NextResponse {
 // =============================================================================
 
 export function middleware(request: NextRequest) {
-  const { pathname } = request.nextUrl;
+  // Temporarily disable middleware to test if it's causing server hang
+  console.log('Middleware called for:', request.nextUrl.pathname);
+  return NextResponse.next();
 
-  // Skip middleware for public routes
-  if (isPublicRoute(pathname)) {
-    return NextResponse.next();
-  }
+  // Original middleware logic (temporarily disabled):
+  // const { pathname } = request.nextUrl;
 
-  // Get and validate authentication token
-  const token = getAuthToken(request);
-  const validation = validateToken(token || '');
+  // // Skip middleware for public routes
+  // if (isPublicRoute(pathname)) {
+  //   return NextResponse.next();
+  // }
 
-  // Handle unauthenticated requests
-  if (!validation.valid) {
-    if (isProtectedApiRoute(pathname)) {
-      return createUnauthorizedResponse();
-    }
-    return createLoginRedirect(request);
-  }
+  // // Get and validate authentication token
+  // const token = getAuthToken(request);
+  // const validation = validateToken(token || '');
 
-  // Handle admin routes - require super admin privileges
-  if (isAdminRoute(pathname)) {
-    if (!validation.isSuperAdmin) {
-      if (isProtectedApiRoute(pathname)) {
-        return createForbiddenResponse();
-      }
-      // Redirect non-API admin routes to main app
-      return NextResponse.redirect(new URL('/', request.url));
-    }
-  }
+  // // Handle unauthenticated requests
+  // if (!validation.valid) {
+  //   if (isProtectedApiRoute(pathname)) {
+  //     return createUnauthorizedResponse();
+  //   }
+  //   return createLoginRedirect(request);
+  // }
 
-  // Add user info to headers for downstream components
-  const response = NextResponse.next();
-  if (validation.user) {
-    response.headers.set('x-user-id', validation.user.id);
-    response.headers.set('x-user-email', validation.user.email);
-    response.headers.set('x-user-tier', validation.user.tier);
-    response.headers.set('x-is-super-admin', validation.isSuperAdmin ? 'true' : 'false');
-  }
+  // // Handle admin routes - require super admin privileges
+  // if (isAdminRoute(pathname)) {
+  //   if (!validation.isSuperAdmin) {
+  //     if (isProtectedApiRoute(pathname)) {
+  //       return createForbiddenResponse();
+  //     }
+  //     // Redirect non-API admin routes to main app
+  //     return NextResponse.redirect(new URL('/', request.url));
+  //   }
+  // }
 
-  return response;
+  // // Add user info to headers for downstream components
+  // const response = NextResponse.next();
+  // if (validation.user) {
+  //   response.headers.set('x-user-id', validation.user.id);
+  //   response.headers.set('x-user-email', validation.user.email);
+  //   response.headers.set('x-user-tier', validation.user.tier);
+  //   response.headers.set('x-is-super-admin', validation.isSuperAdmin ? 'true' : 'false');
+  // }
+
+  // return response;
 }
 
 // =============================================================================

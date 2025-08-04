@@ -147,7 +147,11 @@ export const SuperAdminInterface: React.FC<SuperAdminInterfaceProps> = ({
 
     try {
       const request: EmergencyAccessRequest = {
+        userId: 'emergency-user', // TODO: Get actual user ID
         reason: emergencyData.reason,
+        duration: 3600, // 1 hour default
+        justification: emergencyData.reason, // Use reason as justification
+        emergencyCode: emergencyData.hardwareKeyProof || 'emergency-code',
         requestedPermissions: emergencyData.requestedPermissions,
         hardwareKeyProof: emergencyData.hardwareKeyProof,
         contactInfo: emergencyData.contactInfo

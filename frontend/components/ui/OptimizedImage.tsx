@@ -16,7 +16,7 @@ export interface OptimizedImageProps extends Omit<ImageProps, 'src' | 'onLoad' |
   src: string;
   alt: string;
   quality?: number;
-  format?: 'webp' | 'avif' | 'jpeg' | 'png';
+  format?: 'webp' | 'avif' | 'jpeg' | 'png' | 'svg';
   progressive?: boolean;
   lazy?: boolean;
   fallbackSrc?: string;
@@ -79,13 +79,20 @@ export const OptimizedImage = forwardRef<HTMLImageElement, OptimizedImageProps>(
     onLoadComplete?.();
   }, [onLoadComplete]);
 
-  const handleError = useCallback(() => {
+  const handleError = useCallback((event: React.SyntheticEvent<HTMLImageElement, Event>) => {
     setImageError(true);
     setIsLoading(false);
     if (optimizationError) {
       onError?.(optimizationError);
+    } else {
+      const error = new Error(`Failed to load image: ${src}`);
+      onError?.(error);
     }
-  }, [optimizationError, onError]);
+  }, [optimizationError, onError, src]);
+
+  const handleImageError = useCallback((event: React.SyntheticEvent<HTMLImageElement, Event>) => {
+    handleError(event);
+  }, [handleError]);
 
   const displaySrc = imageError && fallbackSrc ? fallbackSrc : optimizedSrc;
 
@@ -116,7 +123,7 @@ export const OptimizedImage = forwardRef<HTMLImageElement, OptimizedImageProps>(
         src={displaySrc}
         alt={alt}
         onLoad={handleLoad}
-        onError={handleError}
+        onError={handleImageError}
         priority={priority}
         className={cn(
           'transition-opacity duration-300',
@@ -172,7 +179,7 @@ export const ResponsiveImage = forwardRef<HTMLImageElement, ResponsiveImageProps
     setIsLoading(false);
   }, []);
 
-  const handleError = useCallback(() => {
+  const handleError = useCallback((event: React.SyntheticEvent<HTMLImageElement, Event>) => {
     setImageError(true);
     setIsLoading(false);
   }, []);

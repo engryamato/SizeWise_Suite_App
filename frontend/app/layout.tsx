@@ -1,13 +1,14 @@
 import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
 import './globals.css'
-import { AppShellContainer } from '@/components/layout/AppShellContainer'
-import { ToasterProvider } from '@/lib/hooks/useToaster'
-import { ThemeProvider } from '@/lib/hooks/useTheme'
-import { ServiceProvider } from '@/lib/providers/ServiceProvider'
+// Temporarily disable complex imports to test basic functionality
+// import { AppShellContainer } from '@/components/layout/AppShellContainer'
+// import { ToasterProvider } from '@/lib/hooks/useToaster'
+// import { ThemeProvider } from '@/lib/hooks/useTheme'
+// import { ServiceProvider } from '@/lib/providers/ServiceProvider'
 // import { TwentyFirstToolbar } from '@21st-extension/toolbar-next' // Temporarily disabled
-import { SentryErrorBoundary } from '@/components/error/SentryErrorBoundary'
-import { SentryTestPanel } from '@/components/debug/SentryTestPanel'
+// import { SentryErrorBoundary } from '@/components/error/SentryErrorBoundary'
+// import { SentryTestPanel } from '@/components/debug/SentryTestPanel'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -27,30 +28,14 @@ export default function RootLayout({
         <meta name="theme-color" content="#ffffff" />
       </head>
       <body className={inter.className}>
-        <SentryErrorBoundary>
-          <ServiceProvider mode="offline">
-            <ThemeProvider defaultTheme="system" storageKey="sizewise-theme">
-              <ToasterProvider position="bottom-left" maxToasts={5}>
-                <AppShellContainer>
-                  {children}
-                </AppShellContainer>
-              </ToasterProvider>
-            </ThemeProvider>
-          </ServiceProvider>
-        </SentryErrorBoundary>
-
-        {/* Development Tools */}
-        {process.env.NODE_ENV === 'development' && (
-          <>
-            {/* TwentyFirstToolbar temporarily disabled to fix network errors */}
-            {/* <TwentyFirstToolbar
-              config={{
-                plugins: [], // Add custom plugins here if needed
-              }}
-            /> */}
-            <SentryTestPanel />
-          </>
-        )}
+        {/* Minimal layout for testing */}
+        <div style={{ padding: '20px', fontFamily: 'Arial, sans-serif' }}>
+          <h1 style={{ color: '#333', marginBottom: '20px' }}>SizeWise Suite - Testing Basic Layout</h1>
+          <p style={{ color: '#666', marginBottom: '20px' }}>
+            If you can see this message, the basic Next.js setup is working.
+          </p>
+          {children}
+        </div>
       </body>
     </html>
   )

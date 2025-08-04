@@ -319,7 +319,7 @@ const FlowTab: React.FC<{ systemAnalysis: SystemFlowAnalysis }> = ({ systemAnaly
             <Gauge className="w-3 h-3 text-red-500" />
             <span className="text-gray-600">Pressure Drop:</span>
           </div>
-          <div className="font-mono text-lg">{systemAnalysis.systemPressureDrop.toFixed(3)}" w.g.</div>
+          <div className="font-mono text-lg">{systemAnalysis.systemPressureDrop.toFixed(3)}&quot; w.g.</div>
         </div>
       </div>
       

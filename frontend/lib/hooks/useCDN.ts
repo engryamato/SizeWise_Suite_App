@@ -283,7 +283,7 @@ export function useCDNImage(
   }, []);
 
   return {
-    ...imageData,
+    ...(imageData || {}),
     isLoaded,
     error,
     onLoad: handleLoad,

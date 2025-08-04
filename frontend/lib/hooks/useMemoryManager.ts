@@ -55,7 +55,7 @@ export function useMemoryManager(options: UseMemoryManagerOptions = {}): MemoryM
   const [growthRate, setGrowthRate] = useState(0);
   
   const trackedResourcesRef = useRef<Set<DisposableResource>>(new Set());
-  const monitoringIntervalRef = useRef<NodeJS.Timeout>();
+  const monitoringIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const lastCleanupRef = useRef<number>(0);
 
   // Track a resource for automatic cleanup
@@ -117,7 +117,7 @@ export function useMemoryManager(options: UseMemoryManagerOptions = {}): MemoryM
   const stopMonitoring = useCallback(() => {
     if (monitoringIntervalRef.current) {
       clearInterval(monitoringIntervalRef.current);
-      monitoringIntervalRef.current = undefined;
+      monitoringIntervalRef.current = null;
     }
     setIsMonitoring(false);
   }, []);

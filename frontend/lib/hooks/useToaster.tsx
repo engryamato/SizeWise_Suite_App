@@ -23,6 +23,7 @@ interface ToasterContextType {
   toasts: Toast[];
   addToast: (toast: Omit<Toast, 'id'>) => void;
   removeToast: (id: string) => void;
+  toast: (toast: Omit<Toast, 'id'>) => void;
   success: (title: string, message?: string) => void;
   error: (title: string, message?: string) => void;
   warning: (title: string, message?: string) => void;
@@ -125,6 +126,7 @@ export function ToasterProvider({
     toasts,
     addToast,
     removeToast,
+    toast: addToast,
     success,
     error,
     warning,

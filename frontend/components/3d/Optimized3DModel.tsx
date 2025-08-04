@@ -47,38 +47,39 @@ function Model3DLoader({
 }) {
   const [loadingProgress, setLoadingProgress] = useState(0);
 
-  // Load model based on format
-  const loadModel = useCallback(() => {
+  // Load model based on format - always call hooks but conditionally use results
+  const shouldLoadGLTF = format === 'glb' || format === 'gltf' || (!format || (format !== 'fbx'));
+  const shouldLoadFBX = format === 'fbx';
+
+  // Always call hooks to maintain hook order
+  const gltfResult = useGLTF(url);
+  const fbxResult = useFBX(url);
+
+  // Handle load completion
+  useEffect(() => {
+    if ((shouldLoadGLTF && gltfResult?.scene) || (shouldLoadFBX && fbxResult)) {
+      onLoadComplete?.();
+    }
+  }, [shouldLoadGLTF, gltfResult?.scene, shouldLoadFBX, fbxResult, onLoadComplete]);
+
+  // Render the appropriate model
+  const renderModel = useCallback(() => {
     try {
-      if (format === 'glb' || format === 'gltf') {
-        const { scene } = useGLTF(url);
-        useEffect(() => {
-          onLoadComplete?.();
-        }, [scene, onLoadComplete]);
-        return <primitive object={scene} />;
-      } else if (format === 'fbx') {
-        const fbx = useFBX(url);
-        useEffect(() => {
-          onLoadComplete?.();
-        }, [fbx, onLoadComplete]);
-        return <primitive object={fbx} />;
-      } else {
-        // Fallback for other formats
-        const { scene } = useGLTF(url);
-        useEffect(() => {
-          onLoadComplete?.();
-        }, [scene, onLoadComplete]);
-        return <primitive object={scene} />;
+      if (shouldLoadGLTF && gltfResult?.scene) {
+        return <primitive object={gltfResult.scene} />;
+      } else if (shouldLoadFBX && fbxResult) {
+        return <primitive object={fbxResult} />;
       }
+      return null;
     } catch (error) {
       onError?.(error instanceof Error ? error : new Error('Failed to load 3D model'));
       return null;
     }
-  }, [url, format, onLoadComplete, onError]);
+  }, [shouldLoadGLTF, gltfResult?.scene, shouldLoadFBX, fbxResult, onError]);
 
   return (
     <Center>
-      {loadModel()}
+      {renderModel()}
     </Center>
   );
 }
@@ -135,7 +136,7 @@ function Model3DError({ error, fallback }: { error?: Error; fallback?: React.Rea
 /**
  * Main Optimized 3D Model Component
  */
-export function Optimized3DModel({
+function Optimized3DModelComponent({
   modelPath,
   compression = 'gzip',
   lodLevel = 1,
@@ -307,7 +308,7 @@ export function HVAC3DModel({
   };
 
   return (
-    <Optimized3DModel
+    <Optimized3DModelComponent
       modelPath={modelPaths[modelType]}
       compression="gzip"
       lodLevel={size === 'sm' ? 1 : size === 'md' ? 2 : 3}
@@ -320,3 +321,6 @@ export function HVAC3DModel({
     />
   );
 }
+
+// Export the main component as default
+export default Optimized3DModelComponent;

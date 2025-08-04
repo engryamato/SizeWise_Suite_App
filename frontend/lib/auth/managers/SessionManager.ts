@@ -452,4 +452,20 @@ export class SessionManager {
       console.error('Failed to remove session from storage:', error);
     }
   }
+
+  /**
+   * Get current session
+   */
+  async getCurrentSession(): Promise<AuthSession | null> {
+    // TODO: Implement get current session
+    return null;
+  }
+
+  /**
+   * Refresh session
+   */
+  async refreshSession(sessionId: string): Promise<any> {
+    // TODO: Implement session refresh
+    return { success: false, error: 'Session refresh not implemented' };
+  }
 }

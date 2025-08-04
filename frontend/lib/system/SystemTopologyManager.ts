@@ -476,7 +476,29 @@ export class SystemTopologyManager {
       rotation: new Vector3(0, 0, 0) as any,
       inlet: { ...fromPoint, id: `${fittingId}_inlet` },
       outlet: { ...toPoint, id: `${fittingId}_outlet` },
-      material: 'galvanized_steel'
+      material: 'galvanized_steel',
+      flowProperties: this.initializeFlowProperties('fitting'),
+      connectionRelationships: {
+        upstreamSegments: [],
+        downstreamSegments: [],
+        connectedEquipment: [],
+        connectedFittings: [],
+        flowPath: [],
+        branchLevel: 0
+      },
+      calculationState: {
+        needsRecalculation: false,
+        isCalculating: false,
+        lastCalculated: null,
+        calculationDependencies: [],
+        calculationOrder: 0,
+        validationWarnings: [],
+        calculationErrors: []
+      },
+      pressureLossCoefficient: 0.1,
+      fittingCategory: 'standard',
+      installationNotes: '',
+      isValidated: false
     };
   }
 

@@ -165,6 +165,7 @@ export class SuperAdminManager {
       // Validate emergency access request
       if (!this.validateEmergencyAccessRequest(request)) {
         return {
+          success: false,
           granted: false,
           error: 'Invalid emergency access request',
           auditId: this.generateAuditId()
@@ -180,6 +181,7 @@ export class SuperAdminManager {
         }, 'critical');
 
         return {
+          success: false,
           granted: false,
           error: 'Invalid emergency access code',
           auditId: this.generateAuditId()
@@ -214,6 +216,7 @@ export class SuperAdminManager {
       );
 
       return {
+        success: true,
         granted: true,
         sessionId: session.sessionId,
         expiresAt,
@@ -231,6 +234,7 @@ export class SuperAdminManager {
       }, 'critical');
 
       return {
+        success: false,
         granted: false,
         error: `Emergency access failed: ${errorMessage}`,
         auditId
@@ -247,6 +251,7 @@ export class SuperAdminManager {
       
       if (!sessionValidation.valid || !sessionValidation.session) {
         return {
+          isValid: false,
           valid: false,
           error: 'Invalid session'
         };
@@ -257,6 +262,7 @@ export class SuperAdminManager {
       // Check if it's a super admin session
       if (!this.isSuperAdminSession(session)) {
         return {
+          isValid: false,
           valid: false,
           error: 'Not a super admin session'
         };
@@ -274,6 +280,7 @@ export class SuperAdminManager {
         }, 'medium');
 
         return {
+          isValid: false,
           valid: false,
           error: 'Super admin session expired',
           requiresReauth: true
@@ -281,6 +288,7 @@ export class SuperAdminManager {
       }
 
       return {
+        isValid: true,
         valid: true,
         session: superSession
       };
@@ -293,6 +301,7 @@ export class SuperAdminManager {
       }, 'high');
 
       return {
+        isValid: false,
         valid: false,
         error: `Session validation failed: ${errorMessage}`
       };

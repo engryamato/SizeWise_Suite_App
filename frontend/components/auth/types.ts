@@ -20,6 +20,7 @@ export interface AuthFormData {
 export interface AuthFormErrors {
   email?: string;
   password?: string;
+  rememberMe?: string;
   general?: string;
 }
 

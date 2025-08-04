@@ -1,38 +1,10 @@
 import { Vector3, Euler } from 'three';
+import { Equipment, ConnectionPoint, FlowProperties, ConnectionRelationships, CalculationState } from '@/components/3d/types/Canvas3DTypes';
 
-// Equipment interfaces (imported from Canvas3D)
-export interface Equipment {
-  id: string;
-  type: 'Fan' | 'AHU' | 'VAV Box' | 'Damper' | 'Filter' | 'Coil' | 'Custom';
-  position: Vector3;
-  rotation: Euler;
-  dimensions: {
-    width: number;
-    height: number;
-    depth: number;
-  };
-  properties: {
-    cfmCapacity: number;
-    staticPressureCapacity: number;
-    model?: string;
-    manufacturer?: string;
-    powerConsumption?: number;
-  };
-  material: string;
-  connectionPoints: ConnectionPoint[];
-}
+// Re-export Equipment for external use
+export type { Equipment } from '@/components/3d/types/Canvas3DTypes';
 
-export interface ConnectionPoint {
-  id: string;
-  position: Vector3;
-  direction: Vector3;
-  shape: 'rectangular' | 'round';
-  width?: number;
-  height?: number;
-  diameter?: number;
-  status: 'available' | 'connected' | 'blocked';
-  connectedTo?: string;
-}
+
 
 /**
  * Factory class for creating equipment with automatic connection point generation
@@ -56,7 +28,41 @@ export class EquipmentFactory {
       rotation: new Euler(0, 0, 0),
       dimensions: this.getEquipmentDimensions(equipmentType),
       properties: this.getEquipmentProperties(equipmentType),
-      material: 'Steel'
+      material: 'Steel',
+      flowProperties: {
+        airflow: 0,
+        velocity: 0,
+        pressureDrop: 0,
+        frictionRate: 0.1,
+        reynoldsNumber: 50000,
+        temperature: 70,
+        density: 0.075,
+        isCalculated: false,
+        lastUpdated: new Date()
+      },
+      connectionRelationships: {
+        upstreamSegments: [],
+        downstreamSegments: [],
+        connectedEquipment: [],
+        connectedFittings: [],
+        flowPath: [],
+        branchLevel: 0
+      },
+      calculationState: {
+        needsRecalculation: false,
+        isCalculating: false,
+        lastCalculated: new Date(),
+        calculationDependencies: [],
+        calculationOrder: 0,
+        validationWarnings: [],
+        calculationErrors: []
+      },
+      operatingConditions: {
+        currentAirflow: 0,
+        currentPressure: 0,
+        currentEfficiency: 0.85,
+        loadPercentage: 0
+      }
     };
 
     // Generate connection points based on equipment type

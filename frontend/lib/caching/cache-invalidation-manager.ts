@@ -220,7 +220,7 @@ export class CacheInvalidationManager {
   /**
    * Invalidate patterns across all cache layers
    */
-  private async invalidatePatterns(patterns: string[]): Promise<void> {
+  private async invalidatePatternsInternal(patterns: string[]): Promise<void> {
     const promises: Promise<void>[] = [];
 
     for (const [layerName, layer] of this.cacheLayers) {
@@ -329,7 +329,7 @@ export class CacheInvalidationManager {
    * Manually trigger invalidation for specific patterns
    */
   async invalidatePatterns(patterns: string[]): Promise<void> {
-    await this.invalidatePatterns(patterns);
+    await this.invalidatePatternsInternal(patterns);
   }
 
   /**

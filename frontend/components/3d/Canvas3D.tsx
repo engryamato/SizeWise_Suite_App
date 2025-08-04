@@ -1,6 +1,6 @@
 "use client";
 
-import React, { Suspense, useRef, useState, useCallback, useMemo } from 'react';
+import React, { Suspense, useRef, useState, useCallback, useMemo, useEffect } from 'react';
 import { Vector3 } from 'three';
 import { motion } from 'framer-motion';
 import {
@@ -42,6 +42,8 @@ const defaultGridConfig: GridConfig = {
   size: 100,
   divisions: 50,
   color: '#888888',
+  colorCenterLine: '#444444',
+  colorGrid: '#888888',
   visible: true,
   fadeDistance: 100,
   infiniteGrid: false
@@ -50,16 +52,29 @@ const defaultGridConfig: GridConfig = {
 const defaultEnvironmentConfig: EnvironmentConfig = {
   preset: 'warehouse',
   background: '#f0f0f0',
-  environmentIntensity: 0.5,
-  backgroundBlurriness: 0.1
+  blur: 0.1,
+  intensity: 0.5
 };
 
 const defaultLightingConfig: LightingConfig = {
   ambientIntensity: 0.4,
-  directionalIntensity: 1.0,
-  directionalPosition: new Vector3(10, 10, 5),
-  enableShadows: true,
-  shadowMapSize: 2048
+  ambient: {
+    intensity: 0.4,
+    color: '#ffffff'
+  },
+  directional: {
+    intensity: 1.0,
+    color: '#ffffff',
+    position: new Vector3(10, 10, 5),
+    castShadow: true
+  },
+  point: {
+    intensity: 0.5,
+    color: '#ffffff',
+    position: new Vector3(0, 10, 0),
+    distance: 100,
+    decay: 2
+  }
 };
 
 // Main Canvas3D Component - Refactored to use modular architecture
@@ -87,7 +102,12 @@ export const Canvas3D: React.FC<Canvas3DProps> = ({
   const [selectionState, setSelectionState] = useState<SelectionState>({
     selectedIds,
     hoveredId: null,
-    multiSelect: false
+    multiSelect: false,
+    selectionBox: {
+      start: null,
+      end: null,
+      active: false
+    }
   });
 
   // Real-time calculation integration

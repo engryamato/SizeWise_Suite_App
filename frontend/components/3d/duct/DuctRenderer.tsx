@@ -51,8 +51,8 @@ const DuctSegmentMesh: React.FC<{
   onSegmentHover,
   onConnectionPointClick
 }) => {
-  const meshRef = useRef<any>();
-  const groupRef = useRef<any>();
+  const meshRef = useRef<any>(null);
+  const groupRef = useRef<any>(null);
 
   // Calculate geometry based on duct shape
   const geometry = useMemo(() => {
@@ -219,7 +219,6 @@ const DuctSegmentMesh: React.FC<{
           color="black"
           anchorX="center"
           anchorY="middle"
-          billboard
         >
           {segment.type.toUpperCase()}
         </Text>
@@ -239,7 +238,6 @@ const DuctSegmentMesh: React.FC<{
             color="yellow"
             anchorX="center"
             anchorY="middle"
-            billboard
           >
             {line.label}
           </Text>
@@ -268,7 +266,7 @@ const ConnectionPointMesh: React.FC<{
   connectionPoint: ConnectionPoint;
   onClick?: (pointId: string, event: any) => void;
 }> = ({ connectionPoint, onClick }) => {
-  const meshRef = useRef<any>();
+  const meshRef = useRef<any>(null);
 
   const handleClick = useCallback((event: any) => {
     event.stopPropagation();

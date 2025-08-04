@@ -14,7 +14,7 @@ import {
 import { AnalyticsData, KPIData } from '../types/AnalyticsTypes';
 
 interface KPICardsProps {
-  data: AnalyticsData;
+  data: AnalyticsData | null;
   isLoading?: boolean;
 }
 
@@ -22,6 +22,21 @@ interface KPICardsProps {
  * KPI Cards component
  */
 export const KPICards: React.FC<KPICardsProps> = ({ data, isLoading = false }) => {
+  // Handle loading state
+  if (isLoading || !data) {
+    return (
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        {[...Array(4)].map((_, index) => (
+          <div key={index} className="bg-white p-6 rounded-lg shadow-sm border animate-pulse">
+            <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
+            <div className="h-8 bg-gray-200 rounded w-1/2 mb-2"></div>
+            <div className="h-3 bg-gray-200 rounded w-1/4"></div>
+          </div>
+        ))}
+      </div>
+    );
+  }
+
   // Generate KPI data from analytics data
   const kpis: KPIData[] = [
     {

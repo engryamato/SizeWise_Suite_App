@@ -46,6 +46,10 @@ interface SystemSummary {
   totalPressureDrop: number;
   maxVelocity: number;
   energyConsumption: number;
+  totalFittings?: number;
+  systemEfficiency?: number;
+  totalLength?: number;
+  averageVelocity?: number;
   compliance: {
     smacna: boolean;
     ashrae: boolean;
@@ -56,7 +60,7 @@ interface SystemSummary {
 interface ValidationWarning {
   id: string;
   type: 'error' | 'warning' | 'info';
-  severity: 'high' | 'medium' | 'low';
+  severity: 'high' | 'medium' | 'low' | 'critical';
   title: string;
   message: string;
   elementId?: string;

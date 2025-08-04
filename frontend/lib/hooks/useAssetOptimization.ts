@@ -18,7 +18,7 @@ export interface UseAssetOptimizationOptions {
 
 export interface UseOptimizedImageOptions {
   quality?: number;
-  format?: 'webp' | 'avif' | 'jpeg' | 'png';
+  format?: 'webp' | 'avif' | 'jpeg' | 'png' | 'svg';
   width?: number;
   height?: number;
   progressive?: boolean;
@@ -29,7 +29,7 @@ export interface UseOptimizedImageOptions {
 export interface UseOptimized3DModelOptions {
   compression?: 'gzip' | 'brotli' | 'none';
   lodLevel?: number;
-  format?: 'glb' | 'gltf' | 'obj';
+  format?: 'glb' | 'gltf' | 'obj' | 'fbx';
   preload?: boolean;
 }
 

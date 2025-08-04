@@ -30,7 +30,10 @@ import {
   EmergencyAccessRequest,
   EmergencyAccessResult,
   JWTValidationResult,
-  LicenseValidationResult
+  LicenseValidationResult,
+  UserTier,
+  Permission,
+  PermissionSet
 } from './types/AuthTypes';
 
 // Re-export types from the modular type definitions
@@ -427,7 +430,33 @@ export class AuthenticationManager {
    * Refresh JWT token (delegated to TokenManager)
    */
   async refreshJWTToken(token: string): Promise<string | null> {
-    return await this.tokenManager.refreshJWTToken(token);
+    return await this.tokenManager.refreshJWTToken(token, {} as any); // TODO: Fix token manager interface
+  }
+
+  /**
+   * Authenticate super admin user
+   */
+  async authenticateSuperAdmin(request: any): Promise<any> {
+    // TODO: Implement super admin authentication
+    return { success: false, error: 'Super admin authentication not implemented' };
+  }
+
+  /**
+   * Check if user has super admin permission
+   */
+  hasSuperAdminPermission(permission: string): boolean {
+    // TODO: Implement super admin permission check
+    return false;
+  }
+
+
+
+  /**
+   * Get super admin audit trail
+   */
+  getSuperAdminAuditTrail(limit?: number): any[] {
+    // TODO: Implement audit trail retrieval
+    return [];
   }
 
 }

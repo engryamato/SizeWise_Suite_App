@@ -167,7 +167,7 @@ const DuctSegmentMesh: React.FC<{
   onClick?: (event: any) => void;
   onPointerMove?: (event: any) => void;
 }> = ({ segment, onClick, onPointerMove }) => {
-  const meshRef = useRef<any>();
+  const meshRef = useRef<any>(null);
 
   const geometry = useMemo(() => {
     const start = segment.start;
@@ -217,9 +217,9 @@ const DuctSegmentMesh: React.FC<{
       userData={{ id: segment.id, type: 'duct' }}
     >
       {geometry.type === 'cylinder' ? (
-        <cylinderGeometry args={geometry.args} />
+        <cylinderGeometry args={geometry.args.slice(0, 8) as [number?, number?, number?, number?, number?, boolean?, number?, number?]} />
       ) : (
-        <boxGeometry args={geometry.args} />
+        <boxGeometry args={geometry.args.slice(0, 6) as [number?, number?, number?, number?, number?, number?]} />
       )}
       <meshStandardMaterial {...material} />
     </mesh>
@@ -232,7 +232,7 @@ const EquipmentMesh: React.FC<{
   onClick?: (event: any) => void;
   onPointerMove?: (event: any) => void;
 }> = ({ equipment, onClick, onPointerMove }) => {
-  const meshRef = useRef<any>();
+  const meshRef = useRef<any>(null);
 
   const material = useMemo(() => {
     const colorMap = {
@@ -288,7 +288,7 @@ const FittingMesh: React.FC<{
   onClick?: (event: any) => void;
   onPointerMove?: (event: any) => void;
 }> = ({ fitting, onClick, onPointerMove }) => {
-  const meshRef = useRef<any>();
+  const meshRef = useRef<any>(null);
 
   const geometry = useMemo(() => {
     if (fitting.type === 'transition') {
@@ -318,7 +318,7 @@ const FittingMesh: React.FC<{
       onPointerMove={onPointerMove}
       userData={{ id: fitting.id, type: 'fitting' }}
     >
-      <boxGeometry args={geometry.args} />
+      <boxGeometry args={geometry.args.slice(0, 6) as [number?, number?, number?, number?, number?, number?]} />
       <meshStandardMaterial {...material} />
     </mesh>
   );
@@ -360,9 +360,8 @@ export const Canvas3DCore: React.FC<Canvas3DCoreProps> = ({
         {/* Environment */}
         <Environment
           preset={environmentConfig.preset}
-          background={environmentConfig.background}
+          background={typeof environmentConfig.background === 'boolean' ? environmentConfig.background : false}
           blur={environmentConfig.blur}
-          intensity={environmentConfig.intensity}
         />
 
         {/* Controls */}

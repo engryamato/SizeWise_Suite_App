@@ -21,6 +21,72 @@ export interface AuthSession {
   permissions: string[];
 }
 
+// User tier type
+export type UserTier = 'free' | 'pro' | 'enterprise' | 'super_admin';
+
+// Permission type
+export type Permission =
+  // Basic permissions
+  | 'basic_calculations'
+  | 'unlimited_projects'
+  | 'high_res_export'
+  | 'advanced_analytics'
+  | 'team_collaboration'
+  | 'api_access'
+  // Admin permissions
+  | 'admin:user_management'
+  | 'admin:system_settings'
+  | 'admin:audit_logs'
+  | 'admin:full_access'
+  | 'admin:super_admin_functions';
+
+// Permission set type
+export interface PermissionSet {
+  tier: UserTier;
+  permissions: Permission[];
+  features: string[];
+  limits: {
+    maxProjects: number;
+    maxCalculations: number;
+    maxTeamMembers: number;
+    storageLimit: number;
+    maxApiCalls: number;
+    maxStorageGB: number;
+  };
+}
+
+// Super admin validation result
+export interface SuperAdminValidationResult {
+  isValid: boolean;
+  valid: boolean;
+  session?: SuperAdminSession;
+  error?: string;
+  requiresReauth?: boolean;
+}
+
+// Emergency access request
+export interface EmergencyAccessRequest {
+  userId: string;
+  reason: string;
+  duration: number;
+  justification: string;
+  emergencyCode: string;
+  requestedPermissions?: string[];
+  hardwareKeyProof?: string;
+  contactInfo?: string;
+}
+
+// Emergency access result
+export interface EmergencyAccessResult {
+  success: boolean;
+  granted: boolean;
+  superAdminSession?: SuperAdminSession;
+  sessionId?: string;
+  expiresAt?: number;
+  error?: string;
+  auditId: string;
+}
+
 export interface SuperAdminSession extends AuthSession {
   superAdminSessionId: string;
   hardwareKeyId: string;
@@ -58,28 +124,11 @@ export interface HardwareKeyAuthRequest {
   clientData: string;
 }
 
-export interface SuperAdminValidationResult {
-  valid: boolean;
-  session?: SuperAdminSession;
-  error?: string;
-  requiresReauth?: boolean;
-}
 
-export interface EmergencyAccessRequest {
-  userId: string;
-  reason: string;
-  duration: number;
-  justification: string;
-  emergencyCode: string;
-}
 
-export interface EmergencyAccessResult {
-  granted: boolean;
-  sessionId?: string;
-  expiresAt?: number;
-  error?: string;
-  auditId: string;
-}
+
+
+
 
 // ========================================
 // JWT TOKEN TYPES
@@ -111,7 +160,7 @@ export interface LicenseInfo {
   licenseKey: string;
   userId: string;
   email: string;
-  tier: 'free' | 'pro' | 'enterprise';
+  tier: 'free' | 'pro' | 'enterprise' | 'super_admin';
   permissions: string[];
   issuedAt: number;
   expiresAt: number;
@@ -187,34 +236,9 @@ export interface AuditLogEntry {
 // PERMISSION TYPES
 // ========================================
 
-export type UserTier = 'free' | 'pro' | 'enterprise' | 'super_admin';
 
-export type Permission = 
-  // Basic permissions
-  | 'basic_calculations'
-  | 'unlimited_projects'
-  | 'high_res_export'
-  | 'advanced_analytics'
-  | 'team_collaboration'
-  | 'api_access'
-  // Admin permissions
-  | 'admin:user_management'
-  | 'admin:system_settings'
-  | 'admin:audit_logs'
-  | 'admin:full_access'
-  | 'admin:super_admin_functions';
 
-export interface PermissionSet {
-  tier: UserTier;
-  permissions: Permission[];
-  features: string[];
-  limits: {
-    maxProjects: number;
-    maxTeamMembers: number;
-    maxApiCalls: number;
-    maxStorageGB: number;
-  };
-}
+
 
 // ========================================
 // ERROR TYPES

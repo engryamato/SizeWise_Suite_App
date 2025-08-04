@@ -212,7 +212,9 @@ export class LicenseValidator {
         features: ['basic_hvac_calculations', 'limited_projects'],
         limits: {
           maxProjects: 3,
+          maxCalculations: 50,
           maxTeamMembers: 1,
+          storageLimit: 1024, // 1GB in MB
           maxApiCalls: 100,
           maxStorageGB: 1
         }
@@ -223,7 +225,9 @@ export class LicenseValidator {
         features: ['advanced_hvac_calculations', 'unlimited_projects', 'high_res_export', 'basic_analytics'],
         limits: {
           maxProjects: -1, // unlimited
+          maxCalculations: -1, // unlimited
           maxTeamMembers: 5,
+          storageLimit: 51200, // 50GB in MB
           maxApiCalls: 10000,
           maxStorageGB: 50
         }
@@ -234,7 +238,9 @@ export class LicenseValidator {
         features: ['all_hvac_calculations', 'unlimited_projects', 'high_res_export', 'advanced_analytics', 'team_collaboration', 'api_access', 'priority_support'],
         limits: {
           maxProjects: -1, // unlimited
+          maxCalculations: -1, // unlimited
           maxTeamMembers: 50,
+          storageLimit: 512000, // 500GB in MB
           maxApiCalls: 100000,
           maxStorageGB: 500
         }
@@ -245,7 +251,9 @@ export class LicenseValidator {
         features: ['all_features', 'admin_panel', 'system_management', 'audit_logs', 'user_management'],
         limits: {
           maxProjects: -1, // unlimited
+          maxCalculations: -1, // unlimited
           maxTeamMembers: -1, // unlimited
+          storageLimit: -1, // unlimited
           maxApiCalls: -1, // unlimited
           maxStorageGB: -1 // unlimited
         }

@@ -184,16 +184,25 @@ export interface ElbowFitting extends DuctFitting {
 // Main Canvas3D component props
 export interface Canvas3DProps {
   segments: DuctSegment[];
+  equipment?: Equipment[];
+  fittings?: DuctFitting[];
+  selectedIds?: string[];
   onSegmentAdd?: (segment: DuctSegment) => void;
   onSegmentUpdate?: (id: string, segment: Partial<DuctSegment>) => void;
   onSegmentDelete?: (id: string) => void;
+  onEquipmentAdd?: (equipment: Equipment) => void;
+  onFittingAdd?: (fitting: DuctFitting) => void;
+  onSelectionChange?: (selectedIds: string[]) => void;
+  onCameraChange?: (position: Vector3, target: Vector3) => void;
   className?: string;
   showGrid?: boolean;
   showGizmo?: boolean;
+  showLabels?: boolean;
+  showDimensions?: boolean;
   enableControls?: boolean;
+  enableDrawing?: boolean;
+  drawingTool?: any;
   performanceMode?: boolean;
-  onSelectionChange?: (selectedIds: string[]) => void;
-  onCameraChange?: (position: Vector3, target: Vector3) => void;
 }
 
 // Drawing tool types
@@ -225,6 +234,7 @@ export interface PerformanceConfig {
 export interface SelectionState {
   selectedIds: string[];
   hoveredId: string | null;
+  multiSelect: boolean;
   selectionBox: {
     start: Vector3 | null;
     end: Vector3 | null;
@@ -247,6 +257,7 @@ export interface GridConfig {
   visible: boolean;
   size: number;
   divisions: number;
+  color: string;
   colorCenterLine: string;
   colorGrid: string;
   fadeDistance: number;
@@ -256,13 +267,14 @@ export interface GridConfig {
 // Environment settings
 export interface EnvironmentConfig {
   preset: 'sunset' | 'dawn' | 'night' | 'warehouse' | 'forest' | 'apartment' | 'studio' | 'city' | 'park' | 'lobby';
-  background: boolean;
+  background: boolean | string;
   blur: number;
   intensity: number;
 }
 
 // Lighting configuration
 export interface LightingConfig {
+  ambientIntensity: number;
   ambient: {
     intensity: number;
     color: string;

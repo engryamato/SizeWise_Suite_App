@@ -186,9 +186,9 @@ export function useRealTimeCalculations(
           diameter: segmentData.diameter
         }
       );
-      
+
       topologyManagerRef.current.addNode(enhancedSegment);
-    }, []);
+    }, []),
 
     updateSegment: useCallback((segmentId, updates) => {
       if (!topologyManagerRef.current) return;
@@ -198,12 +198,12 @@ export function useRealTimeCalculations(
         const updatedSegment = { ...node.element, ...updates } as DuctSegment;
         topologyManagerRef.current.updateNode(segmentId, updatedSegment);
       }
-    }, []);
+    }, []),
 
     removeSegment: useCallback((segmentId) => {
       if (!topologyManagerRef.current) return;
       topologyManagerRef.current.removeNode(segmentId);
-    }, []);
+    }, []),
 
     addEquipment: useCallback((equipmentData) => {
       if (!topologyManagerRef.current) return;
@@ -218,26 +218,26 @@ export function useRealTimeCalculations(
       );
       
       topologyManagerRef.current.addNode(enhancedEquipment);
-    }, []);
+    }, []),
 
     updateEquipment: useCallback((equipmentId, updates) => {
       if (!topologyManagerRef.current) return;
-      
+
       const node = topologyManagerRef.current.getNodes().get(equipmentId);
       if (node && node.type === 'equipment') {
         const updatedEquipment = { ...node.element, ...updates } as Equipment;
         topologyManagerRef.current.updateNode(equipmentId, updatedEquipment);
       }
-    }, []);
+    }, []),
 
     removeEquipment: useCallback((equipmentId) => {
       if (!topologyManagerRef.current) return;
       topologyManagerRef.current.removeNode(equipmentId);
-    }, []);
+    }, []),
 
     addFitting: useCallback((fittingData) => {
       if (!topologyManagerRef.current) return;
-      
+
       const enhancedFitting = createEnhancedDuctFitting(
         fittingData.id,
         fittingData.type,
@@ -246,9 +246,9 @@ export function useRealTimeCalculations(
         fittingData.outlet,
         fittingData.material
       );
-      
+
       topologyManagerRef.current.addNode(enhancedFitting);
-    }, []);
+    }, []),
 
     updateFitting: useCallback((fittingId, updates) => {
       if (!topologyManagerRef.current) return;
@@ -258,12 +258,12 @@ export function useRealTimeCalculations(
         const updatedFitting = { ...node.element, ...updates } as DuctFitting;
         topologyManagerRef.current.updateNode(fittingId, updatedFitting);
       }
-    }, []);
+    }, []),
 
     removeFitting: useCallback((fittingId) => {
       if (!topologyManagerRef.current) return;
       topologyManagerRef.current.removeNode(fittingId);
-    }, []);
+    }, []),
 
     createConnection: useCallback((fromElementId, toElementId, fromConnectionPointId, toConnectionPointId) => {
       if (!topologyManagerRef.current) return;
@@ -274,31 +274,31 @@ export function useRealTimeCalculations(
         fromConnectionPointId,
         toConnectionPointId
       );
-    }, []);
+    }, []),
 
     removeConnection: useCallback((connectionId) => {
       if (!topologyManagerRef.current) return;
       topologyManagerRef.current.removeConnection(connectionId);
-    }, []);
+    }, []),
 
     triggerCalculation: useCallback((elementId) => {
       if (!calculationEngineRef.current) return;
-      
+
       if (elementId) {
         calculationEngineRef.current.triggerCalculation(elementId);
       } else {
         calculationEngineRef.current.triggerSystemCalculation();
       }
-    }, []);
+    }, []),
 
     triggerSystemCalculation: useCallback(() => {
       if (!calculationEngineRef.current) return;
       calculationEngineRef.current.triggerSystemCalculation();
-    }, []);
+    }, []),
 
     getElementCalculationResult: useCallback((elementId) => {
       return state.calculationResults.get(elementId) || null;
-    }, [state.calculationResults]);
+    }, [state.calculationResults]),
 
     getSystemTopology: useCallback(() => {
       return topologyManagerRef.current!;

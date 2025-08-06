@@ -23,6 +23,7 @@ SizeWise Suite is specifically crafted for:
 - **3D Workspace**: Interactive Three.js-based 3D environment for duct system design
 - **PDF Integration**: Import and overlay PDF plans in the 3D workspace
 - **Modern Architecture**: Next.js with TypeScript for type safety and performance
+- **🆕 Snap Logic System**: Advanced centerline drawing with magnetic snapping and SMACNA compliance
 
 ## Core Modules (Phase 0.0)
 
@@ -40,6 +41,13 @@ Detailed sizing for Category I–IV appliance vents, incorporating draft pressur
 
 ### Estimating App
 Comprehensive estimating solution addressing labor/material takeoffs and automated bid exports.
+
+### Snap Logic System
+Advanced centerline drawing with magnetic snapping, priority hierarchy, and automatic 3D conversion. Features include:
+- **Magnetic Snapping**: Intelligent cursor attraction to endpoints, centerlines, and intersections
+- **SMACNA Compliance**: Real-time validation against professional engineering standards
+- **3D Conversion**: "Build Ductwork" functionality to convert centerlines to 3D geometry
+- **Mid-span Branching**: Add branches anywhere along centerlines with fitting suggestions
 
 ## Technology Stack
 

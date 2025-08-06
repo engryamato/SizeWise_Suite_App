@@ -122,13 +122,90 @@ export interface SelectionBox {
 }
 
 // Drawing tool types
-export type DrawingTool = 'select' | 'room' | 'duct' | 'equipment' | 'pan' | 'scale'
+export type DrawingTool = 'select' | 'room' | 'duct' | 'equipment' | 'pan' | 'scale' | 'pencil'
 
 export interface DrawingState {
   tool: DrawingTool
   isDrawing: boolean
   startPoint?: { x: number; y: number }
   endPoint?: { x: number; y: number }
+}
+
+// Snap Logic Types
+export type SnapPointType = 'endpoint' | 'centerline' | 'midpoint' | 'intersection'
+
+export interface SnapPoint {
+  id: string
+  type: SnapPointType
+  position: { x: number; y: number }
+  priority: number // 1 = highest (endpoints), 4 = lowest (intersections)
+  elementId: string // ID of the element this snap point belongs to
+  elementType: 'room' | 'segment' | 'equipment' | 'centerline'
+  metadata?: {
+    segmentIndex?: number // For centerline points
+    isStart?: boolean // For endpoints
+    isEnd?: boolean // For endpoints
+    intersectionElements?: string[] // For intersection points
+  }
+}
+
+export interface SnapResult {
+  snapPoint: SnapPoint | null
+  distance: number
+  isSnapped: boolean
+  visualFeedback: {
+    showIndicator: boolean
+    indicatorType: SnapPointType
+    opacity: number
+    size: number
+  }
+}
+
+export interface SnapConfig {
+  enabled: boolean
+  snapThreshold: number // pixels
+  magneticThreshold: number // pixels for magnetic attraction
+  showVisualFeedback: boolean
+  showSnapLegend: boolean
+  priorityOverride?: SnapPointType // Override priority hierarchy
+  modifierKeys: {
+    ctrl: boolean
+    alt: boolean
+    shift: boolean
+  }
+}
+
+// Centerline Types
+export type CenterlineType = 'arc' | 'segmented'
+
+export interface CenterlinePoint {
+  x: number
+  y: number
+  isControlPoint?: boolean // For arc-based centerlines
+  tangent?: { x: number; y: number } // Tangent vector for smooth curves
+}
+
+export interface Centerline {
+  id: string
+  type: CenterlineType
+  points: CenterlinePoint[]
+  isComplete: boolean
+  isSMACNACompliant: boolean
+  warnings: string[]
+  metadata: {
+    totalLength: number
+    segmentCount: number
+    hasArcs: boolean
+    createdAt: Date
+    lastModified: Date
+  }
+}
+
+export interface CenterlineDrawingState {
+  isActive: boolean
+  currentCenterline: Centerline | null
+  previewPoint: CenterlinePoint | null
+  snapTarget: SnapPoint | null
 }
 
 // Calculation types

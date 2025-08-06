@@ -25,6 +25,11 @@ interface DrawingState {
   currentPath: any;
   startPoint?: { x: number; y: number };
   endPoint?: { x: number; y: number };
+  // Snap logic integration
+  snapLogicEnabled: boolean;
+  showSnapIndicators: boolean;
+  showSnapLegend: boolean;
+  magneticSnapping: boolean;
 }
 
 interface SelectionBox {
@@ -94,6 +99,12 @@ interface UIState {
   finishDrawing: () => void;
   cancelDrawing: () => void;
 
+  // Snap logic actions
+  setSnapLogicEnabled: (enabled: boolean) => void;
+  setShowSnapIndicators: (show: boolean) => void;
+  setShowSnapLegend: (show: boolean) => void;
+  setMagneticSnapping: (enabled: boolean) => void;
+
   // Selection actions
   selectObject: (id: string) => void;
   selectObjects: (ids: string[]) => void;
@@ -138,7 +149,11 @@ export const useUIStore = create<UIState>((set, get) => ({
   drawingState: {
     tool: 'select',
     isDrawing: false,
-    currentPath: null
+    currentPath: null,
+    snapLogicEnabled: true,
+    showSnapIndicators: true,
+    showSnapLegend: false,
+    magneticSnapping: true
   },
   selectedObjects: [],
   selectionBox: {
@@ -358,6 +373,43 @@ export const useUIStore = create<UIState>((set, get) => ({
       panels: {
         ...state.panels,
         [panel]: { isOpen: false }
+      }
+    }));
+  },
+
+  // Snap logic actions
+  setSnapLogicEnabled: (enabled: boolean) => {
+    set((state) => ({
+      drawingState: {
+        ...state.drawingState,
+        snapLogicEnabled: enabled
+      }
+    }));
+  },
+
+  setShowSnapIndicators: (show: boolean) => {
+    set((state) => ({
+      drawingState: {
+        ...state.drawingState,
+        showSnapIndicators: show
+      }
+    }));
+  },
+
+  setShowSnapLegend: (show: boolean) => {
+    set((state) => ({
+      drawingState: {
+        ...state.drawingState,
+        showSnapLegend: show
+      }
+    }));
+  },
+
+  setMagneticSnapping: (enabled: boolean) => {
+    set((state) => ({
+      drawingState: {
+        ...state.drawingState,
+        magneticSnapping: enabled
       }
     }));
   }

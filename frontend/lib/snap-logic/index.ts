@@ -139,6 +139,53 @@ export { TouchOptimizedButton } from '../components/snap-logic/TouchOptimizedBut
 export { TouchOptimizedToggle } from '../components/snap-logic/TouchOptimizedToggle';
 export { TouchSnapIndicator } from '../components/snap-logic/TouchSnapIndicator';
 
+// Error handling system
+export { ErrorHandler } from './system/ErrorHandler';
+export {
+  SnapLogicError,
+  SnapLogicValidationError,
+  SnapLogicPerformanceError,
+  TouchGestureError,
+  CenterlineError,
+  SMACNAValidationError
+} from './system/SnapLogicError';
+export { ErrorBoundary, withErrorBoundary } from '../components/snap-logic/ErrorBoundary';
+export { ErrorNotificationSystem } from '../components/snap-logic/ErrorNotificationSystem';
+
+// Input validation and sanitization
+export { ValidationUtils } from './utils/ValidationUtils';
+export { InputSanitizer } from './utils/InputSanitizer';
+export { EdgeCaseHandler } from './system/EdgeCaseHandler';
+
+// SMACNA standards validation
+export { SMACNAValidator } from './standards/SMACNAValidator';
+export {
+  SMACNAStandard,
+  DuctShape,
+  PressureClass
+} from './standards/SMACNAValidator';
+
+// Enhanced centerline utilities with SMACNA integration
+export { CenterlineUtils } from './utils/CenterlineUtils';
+
+// Professional engineering reports
+export { EngineeringReports } from './reports/EngineeringReports';
+export {
+  ReportType,
+  ReportFormat
+} from './reports/EngineeringReports';
+
+// AI-powered suggestions system
+export { MLArchitecture } from './ai/MLArchitecture';
+export { TrainingDataPipeline } from './ai/TrainingDataPipeline';
+export { DesignSuggestions } from './ai/DesignSuggestions';
+export {
+  MLModelType,
+  TrainingDataCategory,
+  ConfidenceLevel,
+  SuggestionType
+} from './ai/MLArchitecture';
+
 // Type exports
 export type {
   SnapPoint,
@@ -288,6 +335,78 @@ export type {
   DebugEventData,
   DebugCollectorConfig
 } from './system/DebugCollector';
+
+export type {
+  ErrorSeverity,
+  ErrorCategory,
+  RecoveryStrategy,
+  ErrorContext,
+  ErrorReportData
+} from './system/SnapLogicError';
+
+export type {
+  ErrorHandlerConfig,
+  ErrorRecoveryResult,
+  ErrorNotification
+} from './system/ErrorHandler';
+
+export type {
+  ValidationResult,
+  ValidationConfig
+} from './utils/ValidationUtils';
+
+export type {
+  SanitizationConfig,
+  SanitizationResult
+} from './utils/InputSanitizer';
+
+export type {
+  EdgeCaseType,
+  EdgeCaseSeverity,
+  EdgeCaseDetectionResult,
+  EdgeCaseHandlingResult,
+  EdgeCaseHandlerConfig
+} from './system/EdgeCaseHandler';
+
+export type {
+  DuctDimensions,
+  SMACNAValidationResult,
+  SMACNAViolation,
+  SMACNAWarning,
+  SMACNARecommendation,
+  SMACNAValidatorConfig
+} from './standards/SMACNAValidator';
+
+export type {
+  CenterlineAnalysis,
+  CenterlineOptimization
+} from './utils/CenterlineUtils';
+
+export type {
+  EngineeringReportConfig,
+  EngineeringReportData
+} from './reports/EngineeringReports';
+
+export type {
+  MLModelConfig,
+  MLPredictionResult,
+  DesignOptimizationSuggestion,
+  HVACDesignPattern,
+  MLArchitectureConfig
+} from './ai/MLArchitecture';
+
+export type {
+  DataSourceType,
+  DataQualityMetrics,
+  TrainingDataPipelineConfig,
+  MLTrainingData
+} from './ai/TrainingDataPipeline';
+
+export type {
+  SuggestionContext,
+  AISuggestionResult,
+  DesignSuggestionsConfig
+} from './ai/DesignSuggestions';
 
 export type {
   SnapLogicSystemConfig,
@@ -440,3 +559,221 @@ export const SNAP_LOGIC_CONSTANTS = {
     BASE_SIZE: 12
   }
 } as const;
+
+// ===== COMPREHENSIVE SYSTEM INTEGRATION =====
+
+/**
+ * Main SizeWise Suite Snap Logic Integration
+ *
+ * Central integration point for all snap logic functionality including
+ * 3D visualization, cloud collaboration, tablet optimization, performance
+ * analytics, and AI-powered suggestions.
+ */
+export class SizeWiseSnapLogicSuite {
+  private snapLogicSystem: SnapLogicSystem;
+  private performanceMonitor: PerformanceMonitor;
+  private errorHandler: ErrorHandler;
+  private spatialIndex: SpatialIndex;
+  private snapCache: SnapCache;
+
+  constructor(config?: {
+    enablePerformanceOptimization?: boolean;
+    enableAdvancedFitting?: boolean;
+    enableTouchOptimization?: boolean;
+    enableDebugMode?: boolean;
+  }) {
+    // Initialize core systems
+    this.snapLogicSystem = new SnapLogicSystem();
+    this.performanceMonitor = new PerformanceMonitor();
+    this.errorHandler = new ErrorHandler();
+    this.spatialIndex = new SpatialIndex();
+    this.snapCache = new SnapCache();
+
+    // Configure optional features
+    if (config?.enablePerformanceOptimization) {
+      this.initializePerformanceOptimization();
+    }
+
+    if (config?.enableAdvancedFitting) {
+      this.initializeAdvancedFitting();
+    }
+
+    if (config?.enableTouchOptimization) {
+      this.initializeTouchOptimization();
+    }
+
+    if (config?.enableDebugMode) {
+      this.initializeDebugMode();
+    }
+  }
+
+  /**
+   * Initialize performance optimization features
+   */
+  private initializePerformanceOptimization(): void {
+    // Connect spatial indexing to snap logic
+    this.snapLogicSystem.setSpatialIndex(this.spatialIndex);
+
+    // Enable caching
+    this.snapLogicSystem.setSnapCache(this.snapCache);
+
+    console.log('Performance optimization features initialized');
+  }
+
+  /**
+   * Initialize advanced fitting features
+   */
+  private initializeAdvancedFitting(): void {
+    // Initialize AI fitting system
+    const fittingAI = new FittingAI();
+    const complexFittings = new ComplexFittings();
+
+    // Connect to snap logic system
+    this.snapLogicSystem.setFittingAI(fittingAI);
+    this.snapLogicSystem.setComplexFittings(complexFittings);
+
+    console.log('Advanced fitting features initialized');
+  }
+
+  /**
+   * Initialize touch optimization features
+   */
+  private initializeTouchOptimization(): void {
+    // Initialize touch gesture handler
+    const touchHandler = new TouchGestureHandler();
+
+    // Connect to snap logic system
+    this.snapLogicSystem.setTouchHandler(touchHandler);
+
+    console.log('Touch optimization features initialized');
+  }
+
+  /**
+   * Initialize debug mode features
+   */
+  private initializeDebugMode(): void {
+    // Initialize debug collector
+    const debugCollector = new DebugCollector();
+
+    // Connect to all systems
+    this.snapLogicSystem.setDebugCollector(debugCollector);
+    this.performanceMonitor.setDebugCollector(debugCollector);
+
+    console.log('Debug mode features initialized');
+  }
+
+  /**
+   * Get core snap logic system
+   */
+  getSnapLogicSystem(): SnapLogicSystem {
+    return this.snapLogicSystem;
+  }
+
+  /**
+   * Get performance monitor
+   */
+  getPerformanceMonitor(): PerformanceMonitor {
+    return this.performanceMonitor;
+  }
+
+  /**
+   * Get error handler
+   */
+  getErrorHandler(): ErrorHandler {
+    return this.errorHandler;
+  }
+
+  /**
+   * Get spatial index
+   */
+  getSpatialIndex(): SpatialIndex {
+    return this.spatialIndex;
+  }
+
+  /**
+   * Get snap cache
+   */
+  getSnapCache(): SnapCache {
+    return this.snapCache;
+  }
+
+  /**
+   * Get system statistics
+   */
+  getSystemStatistics(): {
+    snapPoints: number;
+    cachedResults: number;
+    spatialObjects: number;
+    performanceMetrics: any;
+    errorCount: number;
+  } {
+    return {
+      snapPoints: this.snapLogicSystem.getSnapPointCount(),
+      cachedResults: this.snapCache.getSize(),
+      spatialObjects: this.spatialIndex.getObjectCount(),
+      performanceMetrics: this.performanceMonitor.getMetrics(),
+      errorCount: this.errorHandler.getErrorCount()
+    };
+  }
+
+  /**
+   * Dispose of all resources
+   */
+  dispose(): void {
+    this.snapLogicSystem.dispose();
+    this.performanceMonitor.dispose();
+    this.errorHandler.dispose();
+    this.spatialIndex.dispose();
+    this.snapCache.dispose();
+  }
+}
+
+// ===== DEFAULT EXPORT =====
+export default SizeWiseSnapLogicSuite;
+
+// ===== VERSION INFORMATION =====
+export const VERSION = '2.0.0';
+export const BUILD_DATE = new Date().toISOString();
+export const FEATURES = {
+  CORE_SNAP_LOGIC: true,
+  TOUCH_GESTURES: true,
+  DEBUG_MODE: true,
+  PERFORMANCE_OPTIMIZATION: true,
+  ADVANCED_FITTING_INTELLIGENCE: true,
+  ERROR_HANDLING: true,
+  SMACNA_VALIDATION: true,
+  VANPACKER_INTEGRATION: true,
+  AI_POWERED_SUGGESTIONS: true,
+  ADVANCED_3D_VISUALIZATION: true,
+  CLOUD_COLLABORATION: true,
+  TABLET_OPTIMIZATION: true,
+  PERFORMANCE_ANALYTICS: true
+};
+
+/**
+ * System information and capabilities
+ */
+export const SYSTEM_INFO = {
+  name: 'SizeWise Suite - Snap Logic System',
+  version: VERSION,
+  buildDate: BUILD_DATE,
+  features: FEATURES,
+  description: 'Complete professional HVAC engineering snap logic system with 3D visualization, cloud collaboration, and AI-powered suggestions',
+  author: 'SizeWise Suite Development Team',
+  license: 'Proprietary',
+  compatibility: {
+    browsers: ['Chrome 90+', 'Firefox 88+', 'Safari 14+', 'Edge 90+'],
+    platforms: ['Windows', 'macOS', 'Linux', 'iOS', 'Android'],
+    devices: ['Desktop', 'Laptop', 'Tablet', 'Mobile']
+  },
+  requirements: {
+    webgl: true,
+    webassembly: false,
+    serviceWorker: true,
+    indexedDB: true,
+    webSocket: true
+  }
+};
+
+console.log(`SizeWise Suite Snap Logic System v${VERSION} loaded successfully`);
+console.log('Available features:', Object.keys(FEATURES).filter(key => FEATURES[key as keyof typeof FEATURES]));

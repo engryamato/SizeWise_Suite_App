@@ -43,6 +43,15 @@ import {
 import { SpatialIndex, SpatialIndexConfig, SpatialIndexMetrics } from './system/SpatialIndex';
 import { Bounds2D } from './system/QuadTree';
 import { SnapCache, SnapCacheConfig, CacheStatistics } from './system/SnapCache';
+import { ValidationUtils, ValidationResult } from './utils/ValidationUtils';
+import { InputSanitizer, SanitizationResult } from './utils/InputSanitizer';
+import { ErrorHandler } from './system/ErrorHandler';
+import {
+  SnapLogicError,
+  SnapLogicValidationError,
+  ErrorCategory,
+  ErrorSeverity
+} from './system/SnapLogicError';
 
 /**
  * Priority hierarchy for snap points (lower number = higher priority)
@@ -94,6 +103,10 @@ export class SnapLogicManager {
     searchCount: number;
   } = { linearSearchTime: 0, spatialSearchTime: 0, cachedSearchTime: 0, searchCount: 0 };
 
+  // Validation and sanitization
+  private inputSanitizer: InputSanitizer;
+  private errorHandler: ErrorHandler | null = null;
+
   constructor(initialConfig?: Partial<SnapConfig>) {
     // Initialize spatial index with default bounds
     // These bounds will be expanded automatically as snap points are added
@@ -126,9 +139,29 @@ export class SnapLogicManager {
 
     this.snapCache = new SnapCache(cacheConfig);
 
+    // Initialize input sanitizer
+    this.inputSanitizer = new InputSanitizer({
+      enableXSSProtection: true,
+      enableSQLInjectionProtection: true,
+      enablePathTraversalProtection: true,
+      enableDataNormalization: true,
+      enableCoordinateNormalization: true,
+      enablePrecisionNormalization: true,
+      maxSanitizationTime: 50,
+      enableCaching: true,
+      cacheSize: 500
+    });
+
     if (initialConfig) {
       this.updateConfig(initialConfig);
     }
+  }
+
+  /**
+   * Set error handler for validation integration
+   */
+  setErrorHandler(errorHandler: ErrorHandler): void {
+    this.errorHandler = errorHandler;
   }
 
   /**
@@ -149,6 +182,41 @@ export class SnapLogicManager {
    * Add a snap point to the system
    */
   addSnapPoint(snapPoint: SnapPoint): void {
+    // Validate and sanitize snap point
+    try {
+      const snapPointValidation = ValidationUtils.validateSnapPoint(snapPoint, 'addSnapPoint');
+      if (!snapPointValidation.isValid) {
+        if (this.errorHandler) {
+          this.errorHandler.handleError(
+            ValidationUtils.createValidationError(
+              snapPointValidation,
+              'snap point',
+              'addSnapPoint'
+            )
+          );
+        }
+        return;
+      }
+
+      // Use sanitized snap point
+      snapPoint = snapPointValidation.sanitizedValue!;
+
+    } catch (error) {
+      if (this.errorHandler) {
+        this.errorHandler.handleError(
+          new SnapLogicValidationError(
+            `Snap point validation failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
+            {
+              component: 'SnapLogicManager',
+              operation: 'addSnapPoint',
+              parameters: { snapPointId: snapPoint?.id }
+            }
+          )
+        );
+      }
+      return;
+    }
+
     this.snapPoints.set(snapPoint.id, snapPoint);
 
     // Add to spatial index for optimized queries
@@ -228,6 +296,53 @@ export class SnapLogicManager {
     position: { x: number; y: number },
     excludeTypes?: SnapPointType[]
   ): SnapResult {
+    // Validate and sanitize input position
+    try {
+      const positionValidation = ValidationUtils.validatePoint2D(position, 'snap query position');
+      if (!positionValidation.isValid) {
+        if (this.errorHandler) {
+          this.errorHandler.handleError(
+            ValidationUtils.createValidationError(
+              positionValidation,
+              'snap query position',
+              'findClosestSnapPoint'
+            )
+          );
+        }
+        return this.createEmptySnapResult();
+      }
+
+      // Use sanitized position
+      position = positionValidation.sanitizedValue!;
+
+      // Validate exclude types if provided
+      if (excludeTypes) {
+        const validTypes: SnapPointType[] = ['endpoint', 'centerline', 'midpoint', 'intersection'];
+        excludeTypes = excludeTypes.filter(type => {
+          if (!validTypes.includes(type)) {
+            console.warn(`[SnapLogicManager] Invalid exclude type ignored: ${type}`);
+            return false;
+          }
+          return true;
+        });
+      }
+
+    } catch (error) {
+      if (this.errorHandler) {
+        this.errorHandler.handleError(
+          new SnapLogicValidationError(
+            `Input validation failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
+            {
+              component: 'SnapLogicManager',
+              operation: 'findClosestSnapPoint',
+              parameters: { position, excludeTypes }
+            }
+          )
+        );
+      }
+      return this.createEmptySnapResult();
+    }
+
     if (!this.config.enabled) {
       return this.createEmptySnapResult();
     }

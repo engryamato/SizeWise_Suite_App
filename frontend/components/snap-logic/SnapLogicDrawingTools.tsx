@@ -28,6 +28,9 @@ import { cn } from '@/lib/utils';
 import { DrawingTool } from '@/types/air-duct-sizer';
 import { useUIStore } from '@/stores/ui-store';
 import { useSnapLogic } from '@/lib/hooks/useSnapLogic';
+import { TouchOptimizedButton } from './TouchOptimizedButton';
+import { TouchOptimizedToggle } from './TouchOptimizedToggle';
+import { TouchGestureHandler } from '@/lib/snap-logic';
 
 /**
  * Props for SnapLogicDrawingTools component
@@ -103,6 +106,12 @@ export const SnapLogicDrawingTools: React.FC<SnapLogicDrawingToolsProps> = ({
   className
 }) => {
   const [showSettings, setShowSettings] = useState(false);
+  const [isTouchDevice, setIsTouchDevice] = useState(false);
+
+  // Detect touch device
+  React.useEffect(() => {
+    setIsTouchDevice(TouchGestureHandler.isTouchDevice());
+  }, []);
   
   // UI store
   const {
@@ -173,41 +182,58 @@ export const SnapLogicDrawingTools: React.FC<SnapLogicDrawingToolsProps> = ({
         {DRAWING_TOOLS.map((tool) => {
           const status = getToolStatus(tool);
           const Icon = tool.icon;
-          
+
           return (
-            <motion.button
-              key={tool.id}
-              onClick={() => handleToolSelect(tool.id)}
-              className={cn(
-                "relative flex items-center justify-center w-12 h-12 rounded-lg transition-all duration-200",
-                "hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500",
-                status.isActive 
-                  ? "bg-blue-500 text-white shadow-md" 
-                  : "bg-transparent text-gray-600"
-              )}
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              title={`${tool.label} (${tool.shortcut})\n${tool.description}`}
-            >
-              <Icon size={20} />
-              
+            <div key={tool.id} className="relative">
+              <TouchOptimizedButton
+                onClick={() => handleToolSelect(tool.id)}
+                variant={status.isActive ? 'primary' : 'ghost'}
+                size={isTouchDevice ? 'lg' : 'md'}
+                enableHapticFeedback={true}
+                hapticPattern={status.isActive ? 'medium' : 'light'}
+                enableTouchFeedback={true}
+                showPressedState={true}
+                aria-label={`${tool.label} tool - ${tool.description}`}
+                className={cn(
+                  "relative flex items-center justify-center rounded-lg transition-all duration-200",
+                  isTouchDevice ? "w-14 h-14" : "w-12 h-12",
+                  status.isActive
+                    ? "bg-blue-500 text-white shadow-md"
+                    : "bg-transparent text-gray-600 hover:bg-gray-100"
+                )}
+                icon={<Icon size={isTouchDevice ? 24 : 20} />}
+              />
+
               {/* Snap logic indicator */}
               {status.isSnapSupported && (
                 <div className={cn(
-                  "absolute -top-1 -right-1 w-3 h-3 rounded-full border-2 border-white",
+                  "absolute -top-1 -right-1 rounded-full border-2 border-white",
+                  isTouchDevice ? "w-4 h-4" : "w-3 h-3",
                   status.isSnapActive ? "bg-green-500" : "bg-gray-400"
                 )} />
               )}
-              
+
               {/* Drawing indicator */}
               {status.isDrawing && (
                 <motion.div
-                  className="absolute inset-0 rounded-lg border-2 border-blue-300"
+                  className={cn(
+                    "absolute inset-0 rounded-lg border-2 border-blue-300 pointer-events-none",
+                    isTouchDevice && "border-4"
+                  )}
                   animate={{ opacity: [0.5, 1, 0.5] }}
                   transition={{ duration: 1, repeat: Infinity }}
                 />
               )}
-            </motion.button>
+
+              {/* Touch device tooltip */}
+              {isTouchDevice && status.isActive && (
+                <div className="absolute -bottom-8 left-1/2 transform -translate-x-1/2 z-50">
+                  <div className="bg-black/80 text-white text-xs px-2 py-1 rounded whitespace-nowrap">
+                    {tool.label}
+                  </div>
+                </div>
+              )}
+            </div>
           );
         })}
         
@@ -242,75 +268,55 @@ export const SnapLogicDrawingTools: React.FC<SnapLogicDrawingToolsProps> = ({
             
             <div className="space-y-3">
               {/* Snap logic enabled */}
-              <div className="flex items-center justify-between">
-                <label className="text-xs text-gray-700">Enable Snap Logic</label>
-                <button
-                  onClick={handleSnapLogicToggle}
-                  className={cn(
-                    "relative w-8 h-4 rounded-full transition-colors duration-200",
-                    drawingState.snapLogicEnabled ? "bg-blue-500" : "bg-gray-300"
-                  )}
-                >
-                  <div className={cn(
-                    "absolute top-0.5 w-3 h-3 bg-white rounded-full transition-transform duration-200",
-                    drawingState.snapLogicEnabled ? "translate-x-4" : "translate-x-0.5"
-                  )} />
-                </button>
-              </div>
+              <TouchOptimizedToggle
+                checked={drawingState.snapLogicEnabled}
+                onChange={handleSnapLogicToggle}
+                size={isTouchDevice ? 'md' : 'sm'}
+                enableHapticFeedback={true}
+                enableTouchFeedback={true}
+                label="Enable Snap Logic"
+                aria-label="Toggle snap logic system"
+                id="snap-logic-toggle"
+              />
 
               {/* Show snap indicators */}
-              <div className="flex items-center justify-between">
-                <label className="text-xs text-gray-700">Show Indicators</label>
-                <button
-                  onClick={() => setShowSnapIndicators(!drawingState.showSnapIndicators)}
-                  className={cn(
-                    "relative w-8 h-4 rounded-full transition-colors duration-200",
-                    drawingState.showSnapIndicators ? "bg-blue-500" : "bg-gray-300"
-                  )}
-                  disabled={!drawingState.snapLogicEnabled}
-                >
-                  <div className={cn(
-                    "absolute top-0.5 w-3 h-3 bg-white rounded-full transition-transform duration-200",
-                    drawingState.showSnapIndicators ? "translate-x-4" : "translate-x-0.5"
-                  )} />
-                </button>
-              </div>
+              <TouchOptimizedToggle
+                checked={drawingState.showSnapIndicators}
+                onChange={(checked) => setShowSnapIndicators(checked)}
+                size={isTouchDevice ? 'md' : 'sm'}
+                enableHapticFeedback={true}
+                enableTouchFeedback={true}
+                disabled={!drawingState.snapLogicEnabled}
+                label="Show Indicators"
+                aria-label="Toggle snap point indicators"
+                id="snap-indicators-toggle"
+              />
 
               {/* Show snap legend */}
-              <div className="flex items-center justify-between">
-                <label className="text-xs text-gray-700">Show Legend</label>
-                <button
-                  onClick={() => setShowSnapLegend(!drawingState.showSnapLegend)}
-                  className={cn(
-                    "relative w-8 h-4 rounded-full transition-colors duration-200",
-                    drawingState.showSnapLegend ? "bg-blue-500" : "bg-gray-300"
-                  )}
-                  disabled={!drawingState.snapLogicEnabled}
-                >
-                  <div className={cn(
-                    "absolute top-0.5 w-3 h-3 bg-white rounded-full transition-transform duration-200",
-                    drawingState.showSnapLegend ? "translate-x-4" : "translate-x-0.5"
-                  )} />
-                </button>
-              </div>
+              <TouchOptimizedToggle
+                checked={drawingState.showSnapLegend}
+                onChange={(checked) => setShowSnapLegend(checked)}
+                size={isTouchDevice ? 'md' : 'sm'}
+                enableHapticFeedback={true}
+                enableTouchFeedback={true}
+                disabled={!drawingState.snapLogicEnabled}
+                label="Show Legend"
+                aria-label="Toggle snap legend display"
+                id="snap-legend-toggle"
+              />
 
               {/* Magnetic snapping */}
-              <div className="flex items-center justify-between">
-                <label className="text-xs text-gray-700">Magnetic Snap</label>
-                <button
-                  onClick={() => setMagneticSnapping(!drawingState.magneticSnapping)}
-                  className={cn(
-                    "relative w-8 h-4 rounded-full transition-colors duration-200",
-                    drawingState.magneticSnapping ? "bg-blue-500" : "bg-gray-300"
-                  )}
-                  disabled={!drawingState.snapLogicEnabled}
-                >
-                  <div className={cn(
-                    "absolute top-0.5 w-3 h-3 bg-white rounded-full transition-transform duration-200",
-                    drawingState.magneticSnapping ? "translate-x-4" : "translate-x-0.5"
-                  )} />
-                </button>
-              </div>
+              <TouchOptimizedToggle
+                checked={drawingState.magneticSnapping}
+                onChange={(checked) => setMagneticSnapping(checked)}
+                size={isTouchDevice ? 'md' : 'sm'}
+                enableHapticFeedback={true}
+                enableTouchFeedback={true}
+                disabled={!drawingState.snapLogicEnabled}
+                label="Magnetic Snap"
+                aria-label="Toggle magnetic snapping"
+                id="magnetic-snap-toggle"
+              />
             </div>
 
             {/* Status indicators */}

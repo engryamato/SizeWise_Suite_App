@@ -134,6 +134,11 @@ export { TouchGestureHandler } from './system/TouchGestureHandler';
 // Touch event processing utilities
 export { TouchEventProcessor } from './utils/TouchEventProcessor';
 
+// Touch-specific UI components
+export { TouchOptimizedButton } from '../components/snap-logic/TouchOptimizedButton';
+export { TouchOptimizedToggle } from '../components/snap-logic/TouchOptimizedToggle';
+export { TouchSnapIndicator } from '../components/snap-logic/TouchSnapIndicator';
+
 // Type exports
 export type {
   SnapPoint,
@@ -256,6 +261,33 @@ export type {
   TouchActionResult,
   TouchFeedbackData
 } from './utils/TouchEventProcessor';
+
+export type {
+  TouchButtonVariant,
+  TouchButtonSize,
+  HapticPattern,
+  TouchOptimizedButtonProps
+} from '../components/snap-logic/TouchOptimizedButton';
+
+export type {
+  TouchToggleSize,
+  TouchOptimizedToggleProps
+} from '../components/snap-logic/TouchOptimizedToggle';
+
+export type {
+  TouchSnapSize,
+  TouchSnapIndicatorProps
+} from '../components/snap-logic/TouchSnapIndicator';
+
+export type {
+  DebugEventType,
+  PerformanceTimingData,
+  SnapStatistics,
+  ErrorTrackingData,
+  SystemStateData,
+  DebugEventData,
+  DebugCollectorConfig
+} from './system/DebugCollector';
 
 export type {
   SnapLogicSystemConfig,

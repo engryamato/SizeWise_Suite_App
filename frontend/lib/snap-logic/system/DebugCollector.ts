@@ -30,6 +30,112 @@ import { SnapPoint, SnapResult, Centerline, DrawingTool } from '@/types/air-duct
 import { DebugData } from '../../components/snap-logic/DebugOverlay';
 
 /**
+ * Debug event types
+ */
+export type DebugEventType =
+  | 'snap_query'
+  | 'snap_result'
+  | 'centerline_added'
+  | 'centerline_removed'
+  | 'performance_metric'
+  | 'error'
+  | 'warning'
+  | 'user_interaction'
+  | 'system_state_change'
+  | 'cache_operation'
+  | 'spatial_index_operation'
+  | 'touch_gesture'
+  | 'fitting_recommendation'
+  | 'debug_mode_toggle';
+
+/**
+ * Performance timing data
+ */
+export interface PerformanceTimingData {
+  operation: string;
+  startTime: number;
+  endTime: number;
+  duration: number;
+  metadata?: Record<string, any>;
+}
+
+/**
+ * Snap statistics data
+ */
+export interface SnapStatistics {
+  totalQueries: number;
+  successfulSnaps: number;
+  snapsByType: Record<string, number>;
+  averageQueryTime: number;
+  cacheHitRate: number;
+  spatialIndexQueries: number;
+  averageSnapDistance: number;
+  mostUsedSnapTypes: Array<{ type: string; count: number }>;
+}
+
+/**
+ * Error tracking data
+ */
+export interface ErrorTrackingData {
+  errorId: string;
+  timestamp: number;
+  type: 'error' | 'warning' | 'info';
+  message: string;
+  stack?: string;
+  context: Record<string, any>;
+  userAgent?: string;
+  url?: string;
+  userId?: string;
+}
+
+/**
+ * System state data
+ */
+export interface SystemStateData {
+  timestamp: number;
+  snapLogicEnabled: boolean;
+  magneticSnapping: boolean;
+  showSnapIndicators: boolean;
+  showSnapLegend: boolean;
+  snapDistance: number;
+  activeTool: string;
+  centerlineCount: number;
+  snapPointCount: number;
+  cacheSize: number;
+  memoryUsage?: number;
+  performanceScore: number;
+}
+
+/**
+ * Debug event data
+ */
+export interface DebugEventData {
+  id: string;
+  timestamp: number;
+  type: DebugEventType;
+  data: any;
+  context?: Record<string, any>;
+  performance?: PerformanceTimingData;
+}
+
+/**
+ * Debug collection configuration
+ */
+export interface DebugCollectorConfig {
+  enabled: boolean;
+  maxEvents: number;
+  maxErrors: number;
+  collectPerformance: boolean;
+  collectSnapStatistics: boolean;
+  collectErrorTracking: boolean;
+  collectSystemState: boolean;
+  collectUserInteractions: boolean;
+  autoExport: boolean;
+  exportInterval: number; // milliseconds
+  verboseLogging: boolean;
+}
+
+/**
  * Performance metrics tracking
  */
 interface PerformanceMetrics {
@@ -102,7 +208,16 @@ export class DebugCollector {
   private monitoringInterval: NodeJS.Timeout | null = null;
   private maxHistoryLength = 100; // Keep last 100 measurements
 
-  constructor() {
+  constructor(config?: Partial<DebugCollectorConfig>) {
+    // Initialize enhanced debug collection system
+    this.config = { ...DEFAULT_DEBUG_CONFIG, ...config };
+    this.snapStatistics = this.initializeSnapStatistics();
+
+    if (this.config.autoExport) {
+      this.startAutoExport();
+    }
+
+    // Initialize legacy properties for backward compatibility
     this.performanceMetrics = {
       snapTimes: [],
       renderTimes: [],
@@ -502,11 +617,272 @@ export class DebugCollector {
     return { status, issues, recommendations };
   }
 
+  // ========================================
+  // Enhanced Debug Collection Methods
+  // ========================================
+
+  /**
+   * Enable enhanced debug collection
+   */
+  enableEnhancedDebug(): void {
+    this.config.enabled = true;
+    this.isEnabled = true;
+    this.logEvent('debug_mode_toggle', { enabled: true, enhanced: true });
+  }
+
+  /**
+   * Disable enhanced debug collection
+   */
+  disableEnhancedDebug(): void {
+    this.config.enabled = false;
+    this.isEnabled = false;
+    this.logEvent('debug_mode_toggle', { enabled: false, enhanced: true });
+  }
+
+  /**
+   * Start performance timing
+   */
+  startTiming(operation: string, metadata?: Record<string, any>): string {
+    if (!this.config.enabled || !this.config.collectPerformance) return '';
+
+    const timerId = `${operation}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    this.activeTimers.set(timerId, performance.now());
+
+    if (this.config.verboseLogging) {
+      console.debug(`[DebugCollector] Started timing: ${operation}`, metadata);
+    }
+
+    return timerId;
+  }
+
+  /**
+   * End performance timing
+   */
+  endTiming(timerId: string, operation?: string, metadata?: Record<string, any>): PerformanceTimingData | null {
+    if (!this.config.enabled || !this.config.collectPerformance || !timerId) return null;
+
+    const startTime = this.activeTimers.get(timerId);
+    if (startTime === undefined) return null;
+
+    const endTime = performance.now();
+    const duration = endTime - startTime;
+
+    const timingData: PerformanceTimingData = {
+      operation: operation || timerId.split('_')[0],
+      startTime,
+      endTime,
+      duration,
+      metadata
+    };
+
+    this.performanceTimings.push(timingData);
+    this.activeTimers.delete(timerId);
+
+    // Keep only recent timings
+    if (this.performanceTimings.length > this.config.maxEvents) {
+      this.performanceTimings = this.performanceTimings.slice(-this.config.maxEvents);
+    }
+
+    if (this.config.verboseLogging) {
+      console.debug(`[DebugCollector] Ended timing: ${timingData.operation} (${duration.toFixed(2)}ms)`, metadata);
+    }
+
+    return timingData;
+  }
+
+  /**
+   * Log debug event
+   */
+  logEvent(type: DebugEventType, data: any, context?: Record<string, any>, performance?: PerformanceTimingData): void {
+    if (!this.config.enabled) return;
+
+    const event: DebugEventData = {
+      id: `event_${++this.eventCounter}`,
+      timestamp: Date.now(),
+      type,
+      data,
+      context,
+      performance
+    };
+
+    this.events.push(event);
+
+    // Keep only recent events
+    if (this.events.length > this.config.maxEvents) {
+      this.events = this.events.slice(-this.config.maxEvents);
+    }
+
+    if (this.config.verboseLogging) {
+      console.debug(`[DebugCollector] Event: ${type}`, data, context);
+    }
+  }
+
+  /**
+   * Log snap query with enhanced tracking
+   */
+  logSnapQuery(position: { x: number; y: number }, snapDistance: number, context?: Record<string, any>): string {
+    const timerId = this.startTiming('snap_query', { position, snapDistance });
+
+    this.logEvent('snap_query', {
+      position,
+      snapDistance,
+      timestamp: Date.now()
+    }, context);
+
+    this.snapStatistics.totalQueries++;
+    return timerId;
+  }
+
+  /**
+   * Log snap result with enhanced tracking
+   */
+  logSnapResult(timerId: string, result: SnapResult | null, context?: Record<string, any>): void {
+    const timing = this.endTiming(timerId, 'snap_query');
+
+    this.logEvent('snap_result', {
+      result,
+      successful: result !== null,
+      snapType: result?.snapPoint?.type,
+      distance: result?.distance
+    }, context, timing || undefined);
+
+    // Update snap statistics
+    if (result) {
+      this.snapStatistics.successfulSnaps++;
+      const snapType = result.snapPoint.type;
+      this.snapStatistics.snapsByType[snapType] = (this.snapStatistics.snapsByType[snapType] || 0) + 1;
+
+      // Update average snap distance
+      const totalDistance = this.snapStatistics.averageSnapDistance * (this.snapStatistics.successfulSnaps - 1) + result.distance;
+      this.snapStatistics.averageSnapDistance = totalDistance / this.snapStatistics.successfulSnaps;
+    }
+
+    // Update average query time
+    if (timing) {
+      const totalTime = this.snapStatistics.averageQueryTime * (this.snapStatistics.totalQueries - 1) + timing.duration;
+      this.snapStatistics.averageQueryTime = totalTime / this.snapStatistics.totalQueries;
+    }
+  }
+
+  /**
+   * Log error with enhanced tracking
+   */
+  logError(error: Error | string, context?: Record<string, any>, type: 'error' | 'warning' | 'info' = 'error'): void {
+    if (!this.config.enabled || !this.config.collectErrorTracking) return;
+
+    const errorData: ErrorTrackingData = {
+      errorId: `error_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      timestamp: Date.now(),
+      type,
+      message: typeof error === 'string' ? error : error.message,
+      stack: typeof error === 'object' ? error.stack : undefined,
+      context: context || {},
+      userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : undefined,
+      url: typeof window !== 'undefined' ? window.location.href : undefined
+    };
+
+    this.errors.push(errorData);
+    this.logEvent('error', errorData, context);
+
+    // Keep only recent errors
+    if (this.errors.length > this.config.maxErrors) {
+      this.errors = this.errors.slice(-this.config.maxErrors);
+    }
+
+    if (this.config.verboseLogging || type === 'error') {
+      console.error(`[DebugCollector] ${type.toUpperCase()}:`, errorData.message, context);
+    }
+  }
+
+  /**
+   * Initialize snap statistics
+   */
+  private initializeSnapStatistics(): SnapStatistics {
+    return {
+      totalQueries: 0,
+      successfulSnaps: 0,
+      snapsByType: {},
+      averageQueryTime: 0,
+      cacheHitRate: 0,
+      spatialIndexQueries: 0,
+      averageSnapDistance: 0,
+      mostUsedSnapTypes: []
+    };
+  }
+
+  /**
+   * Start auto export
+   */
+  private startAutoExport(): void {
+    if (this.exportTimer) return;
+
+    this.exportTimer = setInterval(() => {
+      if (this.config.enabled) {
+        const data = this.exportEnhancedDebugData();
+        console.log('[DebugCollector] Auto export:', data.length, 'characters');
+        // Could save to localStorage or send to server
+      }
+    }, this.config.exportInterval);
+  }
+
+  /**
+   * Stop auto export
+   */
+  private stopAutoExport(): void {
+    if (this.exportTimer) {
+      clearInterval(this.exportTimer);
+      this.exportTimer = null;
+    }
+  }
+
+  /**
+   * Export enhanced debug data
+   */
+  exportEnhancedDebugData(): string {
+    const debugData = this.getEnhancedDebugData();
+    const exportData = {
+      timestamp: Date.now(),
+      version: '1.1.0',
+      legacy: this.getDebugData(),
+      enhanced: debugData
+    };
+
+    return JSON.stringify(exportData, null, 2);
+  }
+
+  /**
+   * Get enhanced debug data
+   */
+  getEnhancedDebugData(): {
+    events: DebugEventData[];
+    errors: ErrorTrackingData[];
+    performanceTimings: PerformanceTimingData[];
+    snapStatistics: SnapStatistics;
+    systemState: SystemStateData | null;
+    config: DebugCollectorConfig;
+  } {
+    return {
+      events: [...this.events],
+      errors: [...this.errors],
+      performanceTimings: [...this.performanceTimings],
+      snapStatistics: { ...this.snapStatistics },
+      systemState: this.systemStateData ? { ...this.systemStateData } : null,
+      config: { ...this.config }
+    };
+  }
+
   /**
    * Cleanup and destroy
    */
   destroy(): void {
     this.stopPerformanceMonitoring();
+    this.stopAutoExport();
+    this.activeTimers.clear();
+    this.events = [];
+    this.errors = [];
+    this.performanceTimings = [];
+    this.config.enabled = false;
+    this.isEnabled = false;
     this.reset();
   }
 }

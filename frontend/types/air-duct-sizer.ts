@@ -141,6 +141,7 @@ export interface SnapPoint {
   priority: number // 1 = highest (endpoints), 4 = lowest (intersections)
   elementId: string // ID of the element this snap point belongs to
   elementType: 'room' | 'segment' | 'equipment' | 'centerline'
+  distance?: number // Distance from cursor/target point
   metadata?: {
     segmentIndex?: number // For centerline points
     isStart?: boolean // For endpoints
@@ -192,6 +193,9 @@ export interface Centerline {
   isComplete: boolean
   isSMACNACompliant: boolean
   warnings: string[]
+  radius?: number // For arc-type centerlines
+  width?: number // Duct width
+  height?: number // Duct height
   metadata: {
     totalLength: number
     segmentCount: number
@@ -317,4 +321,24 @@ export interface TierLimits {
   canExportWithoutWatermark: boolean
   canUseSimulation: boolean
   canUseCatalog: boolean
+}
+
+// Essential geometric types for snap logic
+export interface Point2D {
+  x: number
+  y: number
+}
+
+// Additional properties for Equipment interface
+export interface EquipmentDimensions {
+  width: number
+  height: number
+  depth: number
+}
+
+// Enhanced Equipment interface with missing properties
+export interface EnhancedEquipment extends Equipment {
+  dimensions?: EquipmentDimensions
+  isSource?: boolean
+  isTerminal?: boolean
 }

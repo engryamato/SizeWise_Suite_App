@@ -76,6 +76,10 @@ export interface Equipment {
   x?: number
   y?: number
   selected?: boolean
+  // Additional properties for snap logic integration
+  dimensions?: EquipmentDimensions
+  isSource?: boolean
+  isTerminal?: boolean
 }
 
 export interface Outlet {
@@ -177,7 +181,7 @@ export interface SnapConfig {
 }
 
 // Centerline Types
-export type CenterlineType = 'arc' | 'segmented'
+export type CenterlineType = 'straight' | 'arc' | 'segmented'
 
 export interface CenterlinePoint {
   x: number
@@ -334,6 +338,7 @@ export interface EquipmentDimensions {
   width: number
   height: number
   depth: number
+  length?: number // Optional length property for compatibility
 }
 
 // Enhanced Equipment interface with missing properties

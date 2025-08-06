@@ -385,19 +385,19 @@ export class AlertManager implements IAlertManager {
     }
   }
 
-  addAlert(alert: PerformanceAlert): void {
+  async addAlert(alert: PerformanceAlert): Promise<void> {
     this.alerts.set(alert.id, alert);
   }
 
-  removeAlert(alertId: string): boolean {
+  async removeAlert(alertId: string): Promise<boolean> {
     return this.alerts.delete(alertId);
   }
 
-  getAlert(alertId: string): PerformanceAlert | undefined {
-    return this.alerts.get(alertId);
+  async getAlert(alertId: string): Promise<PerformanceAlert | null> {
+    return this.alerts.get(alertId) || null;
   }
 
-  getAllAlerts(): PerformanceAlert[] {
+  async getAllAlerts(): Promise<PerformanceAlert[]> {
     return Array.from(this.alerts.values());
   }
 
@@ -405,7 +405,7 @@ export class AlertManager implements IAlertManager {
     return Array.from(this.triggeredAlerts.values());
   }
 
-  acknowledgeAlert(alertId: string, userId: string): void {
+  async acknowledgeAlert(alertId: string, userId: string): Promise<void> {
     const alert = this.triggeredAlerts.get(alertId);
     if (alert) {
       alert.acknowledged = true;
@@ -528,20 +528,20 @@ export class BudgetManager implements IBudgetManager {
     return status;
   }
 
-  addBudget(budget: PerformanceBudget): void {
+  async addBudget(budget: PerformanceBudget): Promise<void> {
     this.budgets.set(budget.id, budget);
   }
 
-  removeBudget(budgetId: string): boolean {
+  async removeBudget(budgetId: string): Promise<boolean> {
     this.violations.delete(budgetId);
     return this.budgets.delete(budgetId);
   }
 
-  getBudget(budgetId: string): PerformanceBudget | undefined {
-    return this.budgets.get(budgetId);
+  async getBudget(budgetId: string): Promise<PerformanceBudget | null> {
+    return this.budgets.get(budgetId) || null;
   }
 
-  getAllBudgets(): PerformanceBudget[] {
+  async getAllBudgets(): Promise<PerformanceBudget[]> {
     return Array.from(this.budgets.values());
   }
 
@@ -771,25 +771,25 @@ export class PerformanceMonitoringService implements IPerformanceMonitoringServi
     const id = this.generateAlertId();
     const fullAlert: PerformanceAlert = { ...alert, id };
 
-    this.alertManager.addAlert(fullAlert);
+    await this.alertManager.addAlert(fullAlert);
     this.logger.info(`Created performance alert: ${alert.name}`);
 
     return id;
   }
 
   async updateAlert(alertId: string, updates: Partial<PerformanceAlert>): Promise<void> {
-    const alert = this.alertManager.getAlert(alertId);
+    const alert = await this.alertManager.getAlert(alertId);
     if (!alert) {
       throw new Error(`Alert not found: ${alertId}`);
     }
 
     const updatedAlert = { ...alert, ...updates };
-    this.alertManager.addAlert(updatedAlert);
+    await this.alertManager.addAlert(updatedAlert);
     this.logger.info(`Updated performance alert: ${alertId}`);
   }
 
   async deleteAlert(alertId: string): Promise<boolean> {
-    const deleted = this.alertManager.removeAlert(alertId);
+    const deleted = await this.alertManager.removeAlert(alertId);
     if (deleted) {
       this.logger.info(`Deleted performance alert: ${alertId}`);
     }
@@ -797,7 +797,7 @@ export class PerformanceMonitoringService implements IPerformanceMonitoringServi
   }
 
   async getAlerts(): Promise<PerformanceAlert[]> {
-    return this.alertManager.getAllAlerts();
+    return await this.alertManager.getAllAlerts();
   }
 
   async getTriggeredAlerts(timeRange?: TimeRange): Promise<TriggeredAlert[]> {
@@ -813,7 +813,7 @@ export class PerformanceMonitoringService implements IPerformanceMonitoringServi
   }
 
   async acknowledgeAlert(alertId: string, userId: string): Promise<void> {
-    this.alertManager.acknowledgeAlert(alertId, userId);
+    await this.alertManager.acknowledgeAlert(alertId, userId);
     this.logger.info(`Alert acknowledged: ${alertId} by ${userId}`);
   }
 
@@ -821,25 +821,25 @@ export class PerformanceMonitoringService implements IPerformanceMonitoringServi
     const id = this.generateBudgetId();
     const fullBudget: PerformanceBudget = { ...budget, id };
 
-    this.budgetManager.addBudget(fullBudget);
+    await this.budgetManager.addBudget(fullBudget);
     this.logger.info(`Created performance budget: ${budget.name}`);
 
     return id;
   }
 
   async updateBudget(budgetId: string, updates: Partial<PerformanceBudget>): Promise<void> {
-    const budget = this.budgetManager.getBudget(budgetId);
+    const budget = await this.budgetManager.getBudget(budgetId);
     if (!budget) {
       throw new Error(`Budget not found: ${budgetId}`);
     }
 
     const updatedBudget = { ...budget, ...updates };
-    this.budgetManager.addBudget(updatedBudget);
+    await this.budgetManager.addBudget(updatedBudget);
     this.logger.info(`Updated performance budget: ${budgetId}`);
   }
 
   async deleteBudget(budgetId: string): Promise<boolean> {
-    const deleted = this.budgetManager.removeBudget(budgetId);
+    const deleted = await this.budgetManager.removeBudget(budgetId);
     if (deleted) {
       this.logger.info(`Deleted performance budget: ${budgetId}`);
     }
@@ -847,7 +847,7 @@ export class PerformanceMonitoringService implements IPerformanceMonitoringServi
   }
 
   async getBudgets(): Promise<PerformanceBudget[]> {
-    return this.budgetManager.getAllBudgets();
+    return await this.budgetManager.getAllBudgets();
   }
 
   async checkBudgetViolations(): Promise<BudgetViolation[]> {

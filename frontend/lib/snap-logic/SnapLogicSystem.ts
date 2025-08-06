@@ -25,7 +25,7 @@ import { MagneticSnappingIntegration } from './MagneticSnappingIntegration';
 import { MidSpanBranchingManager, BranchPoint } from './MidSpanBranchingManager';
 import { CenterlineTo3DConverter } from './CenterlineTo3DConverter';
 import { DebugCollector } from './system/DebugCollector';
-import { DebugData } from '../components/snap-logic/DebugOverlay';
+import { DebugData } from '../../components/snap-logic/DebugOverlay';
 import { PerformanceOptimizer, PerformanceOptimizerConfig } from './system/PerformanceOptimizer';
 import { PerformanceMonitor, PerformanceMonitorConfig } from './system/PerformanceMonitor';
 

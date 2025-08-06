@@ -66,13 +66,13 @@ export interface ISnapResult {
  * Snap detection configuration
  */
 export interface ISnapDetectionConfig {
-  readonly enabled: boolean;
-  readonly snapThreshold: number;
-  readonly magneticThreshold: number;
-  readonly priorityWeighting: boolean;
-  readonly excludeTypes: SnapPointType[];
-  readonly maxSnapPoints: number;
-  readonly spatialOptimization: boolean;
+  enabled: boolean;
+  snapThreshold: number;
+  magneticThreshold: number;
+  priorityWeighting: boolean;
+  excludeTypes: SnapPointType[];
+  maxSnapPoints: number;
+  spatialOptimization: boolean;
 }
 
 /**
@@ -286,14 +286,14 @@ export interface ISnapDetectionServiceFactory {
  * Snap detection performance metrics
  */
 export interface ISnapDetectionMetrics {
-  readonly detectionCount: number;
-  readonly averageDetectionTime: number;
-  readonly maxDetectionTime: number;
-  readonly minDetectionTime: number;
-  readonly cacheHitRate: number;
-  readonly spatialIndexEfficiency: number;
-  readonly memoryUsage: number;
-  readonly errorCount: number;
+  detectionCount: number;
+  averageDetectionTime: number;
+  maxDetectionTime: number;
+  minDetectionTime: number;
+  cacheHitRate: number;
+  spatialIndexEfficiency: number;
+  memoryUsage: number;
+  errorCount: number;
 }
 
 /**
@@ -333,4 +333,24 @@ export interface ISnapDetectionPerformanceMonitor {
    * Check if performance is within acceptable limits
    */
   isPerformanceAcceptable(): boolean;
+
+  /**
+   * Record a detection operation time
+   */
+  recordDetection(time: number): void;
+
+  /**
+   * Record a cache hit
+   */
+  recordCacheHit(): void;
+
+  /**
+   * Record a cache miss
+   */
+  recordCacheMiss(): void;
+
+  /**
+   * Record an error
+   */
+  recordError(): void;
 }

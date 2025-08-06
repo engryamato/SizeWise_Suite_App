@@ -480,6 +480,36 @@ export interface IAlertManager {
    * Process alert rules
    */
   processAlertRules(): Promise<void>;
+
+  /**
+   * Add a new alert
+   */
+  addAlert(alert: PerformanceAlert): Promise<void>;
+
+  /**
+   * Get alert by ID
+   */
+  getAlert(alertId: string): Promise<PerformanceAlert | null>;
+
+  /**
+   * Remove alert by ID
+   */
+  removeAlert(alertId: string): Promise<boolean>;
+
+  /**
+   * Get all alerts
+   */
+  getAllAlerts(): Promise<PerformanceAlert[]>;
+
+  /**
+   * Get triggered alerts
+   */
+  getTriggeredAlerts(): TriggeredAlert[];
+
+  /**
+   * Acknowledge an alert
+   */
+  acknowledgeAlert(alertId: string, userId: string): Promise<void>;
 }
 
 /**
@@ -500,4 +530,29 @@ export interface IBudgetManager {
    * Get budget status
    */
   getBudgetStatus(): Promise<Record<string, { status: 'ok' | 'warning' | 'violation'; usage: number }>>;
+
+  /**
+   * Add a new budget
+   */
+  addBudget(budget: PerformanceBudget): Promise<void>;
+
+  /**
+   * Get budget by ID
+   */
+  getBudget(budgetId: string): Promise<PerformanceBudget | null>;
+
+  /**
+   * Remove budget by ID
+   */
+  removeBudget(budgetId: string): Promise<boolean>;
+
+  /**
+   * Get all budgets
+   */
+  getAllBudgets(): Promise<PerformanceBudget[]>;
+
+  /**
+   * Get budget violations
+   */
+  getBudgetViolations(): BudgetViolation[];
 }

@@ -172,9 +172,15 @@ export class SecurityService {
           details: { method: 'totp' },
           riskLevel: 'LOW'
         });
+        
+        return {
+          secret: result.secret,
+          qrCodeUrl: result.provisioning_uri,
+          backupCodes: result.backup_codes
+        };
+      } else {
+        throw new Error(result.error || 'Failed to setup MFA');
       }
-
-      return result;
     } catch (error) {
       console.error('MFA setup error:', error);
       throw new Error('Failed to setup MFA');
@@ -188,7 +194,7 @@ export class SecurityService {
     try {
       mfaTokenSchema.parse(token);
 
-      const response = await fetch(`${this.baseUrl}/auth/mfa/verify-setup`, {
+      const response = await fetch(`${this.baseUrl}/auth/mfa/verify`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${this.getToken()}`,
@@ -210,6 +216,57 @@ export class SecurityService {
       return result.success;
     } catch (error) {
       console.error('MFA verification error:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Get MFA status for current user
+   */
+  async getMFAStatus(): Promise<{ is_mfa_enabled: boolean; has_mfa_secret: boolean; backup_codes_remaining: number }> {
+    try {
+      const response = await fetch(`${this.baseUrl}/auth/mfa/status`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${this.getToken()}`,
+        },
+      });
+
+      const result = await response.json();
+      return result.success ? result : { is_mfa_enabled: false, has_mfa_secret: false, backup_codes_remaining: 0 };
+    } catch (error) {
+      console.error('MFA status error:', error);
+      return { is_mfa_enabled: false, has_mfa_secret: false, backup_codes_remaining: 0 };
+    }
+  }
+
+  /**
+   * Disable MFA for current user
+   */
+  async disableMFA(password: string): Promise<boolean> {
+    try {
+      const response = await fetch(`${this.baseUrl}/auth/mfa/disable`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${this.getToken()}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ password }),
+      });
+
+      const result = await response.json();
+
+      await this.logSecurityEvent({
+        action: 'mfa_disabled',
+        resourceType: 'user',
+        resourceId: this.currentUser?.id,
+        details: { success: result.success },
+        riskLevel: 'HIGH'
+      });
+
+      return result.success;
+    } catch (error) {
+      console.error('MFA disable error:', error);
       return false;
     }
   }

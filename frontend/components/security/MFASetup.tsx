@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { QRCodeSVG } from 'qrcode.react';
 import { securityService, MFASetupResult } from '@/lib/services/SecurityService';
 
 interface MFASetupProps {
@@ -168,12 +167,17 @@ export const MFASetup: React.FC<MFASetupProps> = ({ onComplete, onCancel }) => {
           <div>
             <h3 className="text-lg font-semibold mb-2">2. Scan QR Code</h3>
             <div className="flex justify-center p-4 bg-gray-50 rounded-lg">
-              <QRCodeSVG 
-                value={mfaData.qrCodeUrl} 
-                size={200}
-                level="M"
-                includeMargin={true}
-              />
+              <div className="w-48 h-48 border-2 border-gray-300 rounded-lg flex items-center justify-center">
+                <div className="text-center">
+                  <div className="text-xs text-gray-500 mb-2">QR Code</div>
+                  <div className="text-xs text-gray-400">
+                    Use your authenticator app to scan:
+                  </div>
+                  <div className="text-xs text-gray-600 font-mono mt-2 break-all px-2">
+                    {mfaData.qrCodeUrl}
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
 

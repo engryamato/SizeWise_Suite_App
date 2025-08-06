@@ -1,0 +1,293 @@
+{
+  "info": {
+    "name": "SizeWise Suite MFA API",
+    "description": "Multi-Factor Authentication endpoints for SizeWise Suite",
+    "version": "1.0.0",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{auth_token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:5000",
+      "type": "string"
+    },
+    {
+      "key": "auth_token",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Authentication",
+      "item": [
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const response = pm.response.json();",
+                  "    if (response.success && response.token) {",
+                  "        pm.collectionVariables.set('auth_token', response.token);",
+                  "    }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"test@example.com\",\n  \"password\": \"testpassword123\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/auth/login",
+              "host": ["{{base_url}}"],
+              "path": ["api", "auth", "login"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "MFA Management",
+      "item": [
+        {
+          "name": "Setup MFA",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Response contains MFA setup data', function () {",
+                  "    const response = pm.response.json();",
+                  "    pm.expect(response).to.have.property('success', true);",
+                  "    pm.expect(response).to.have.property('secret');",
+                  "    pm.expect(response).to.have.property('qr_code');",
+                  "    pm.expect(response).to.have.property('backup_codes');",
+                  "    pm.expect(response).to.have.property('provisioning_uri');",
+                  "    pm.expect(response.backup_codes).to.be.an('array').with.length(10);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": ""
+            },
+            "url": {
+              "raw": "{{base_url}}/api/auth/mfa/setup",
+              "host": ["{{base_url}}"],
+              "path": ["api", "auth", "mfa", "setup"]
+            },
+            "description": "Initialize MFA setup for the authenticated user. Returns QR code, secret, and backup codes."
+          },
+          "response": []
+        },
+        {
+          "name": "Verify MFA Setup",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200 or 401', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 401]);",
+                  "});",
+                  "",
+                  "if (pm.response.code === 200) {",
+                  "    pm.test('MFA verification successful', function () {",
+                  "        const response = pm.response.json();",
+                  "        pm.expect(response).to.have.property('success', true);",
+                  "        pm.expect(response).to.have.property('message');",
+                  "    });",
+                  "} else {",
+                  "    pm.test('Invalid MFA token', function () {",
+                  "        const response = pm.response.json();",
+                  "        pm.expect(response).to.have.property('error');",
+                  "    });",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"token\": \"123456\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/auth/mfa/verify",
+              "host": ["{{base_url}}"],
+              "path": ["api", "auth", "mfa", "verify"]
+            },
+            "description": "Verify MFA setup with TOTP token from authenticator app. Replace '123456' with actual token from your authenticator app."
+          },
+          "response": []
+        },
+        {
+          "name": "Get MFA Status",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Response contains MFA status', function () {",
+                  "    const response = pm.response.json();",
+                  "    pm.expect(response).to.have.property('success', true);",
+                  "    pm.expect(response).to.have.property('is_mfa_enabled');",
+                  "    pm.expect(response).to.have.property('has_mfa_secret');",
+                  "    pm.expect(response).to.have.property('backup_codes_remaining');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/auth/mfa/status",
+              "host": ["{{base_url}}"],
+              "path": ["api", "auth", "mfa", "status"]
+            },
+            "description": "Get current MFA status for the authenticated user."
+          },
+          "response": []
+        },
+        {
+          "name": "Disable MFA",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200 or 401', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 401]);",
+                  "});",
+                  "",
+                  "if (pm.response.code === 200) {",
+                  "    pm.test('MFA disabled successfully', function () {",
+                  "        const response = pm.response.json();",
+                  "        pm.expect(response).to.have.property('success', true);",
+                  "        pm.expect(response).to.have.property('message');",
+                  "    });",
+                  "} else {",
+                  "    pm.test('Invalid password', function () {",
+                  "        const response = pm.response.json();",
+                  "        pm.expect(response).to.have.property('error', 'Invalid password');",
+                  "    });",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"password\": \"testpassword123\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/auth/mfa/disable",
+              "host": ["{{base_url}}"],
+              "path": ["api", "auth", "mfa", "disable"]
+            },
+            "description": "Disable MFA for the authenticated user. Requires password confirmation."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Test Workflows",
+      "item": [
+        {
+          "name": "Complete MFA Setup Workflow",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "// This is a test workflow to demonstrate the complete MFA setup process",
+                  "// 1. First run 'Setup MFA' to get the secret and backup codes",
+                  "// 2. Use an authenticator app to scan the QR code or enter the secret manually",
+                  "// 3. Then run 'Verify MFA Setup' with a valid TOTP token",
+                  "// 4. Finally check 'Get MFA Status' to confirm MFA is enabled"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/health",
+              "host": ["{{base_url}}"],
+              "path": ["api", "health"]
+            },
+            "description": "This is a placeholder request. Follow the workflow described in the pre-request script."
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}

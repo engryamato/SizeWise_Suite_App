@@ -15,7 +15,8 @@
 import * as THREE from 'three';
 import { Point2D, Centerline } from '@/types/air-duct-sizer';
 import { DuctDimensions, DuctShape } from '../standards/SMACNAValidator';
-import { SnapLogicManager, SnapPoint, SnapType } from '../core/SnapLogicManager';
+import { SnapLogicManager } from '../SnapLogicManager';
+import { SnapPoint } from '@/types/air-duct-sizer';
 import { Renderer3D } from './3DRenderer';
 import { Scene3D, SceneLayer } from './Scene3D';
 import { Camera3D } from './Camera3D';
@@ -588,7 +589,17 @@ export class SnapLogic3DIntegration {
       points: [
         { x: center.x - size.z / 2, y: center.y },
         { x: center.x + size.z / 2, y: center.y }
-      ]
+      ],
+      isComplete: true,
+      isSMACNACompliant: true,
+      warnings: [],
+      metadata: {
+        totalLength: size.z,
+        segmentCount: 1,
+        hasArcs: false,
+        createdAt: new Date(),
+        lastModified: new Date()
+      }
     };
     
     return centerline;

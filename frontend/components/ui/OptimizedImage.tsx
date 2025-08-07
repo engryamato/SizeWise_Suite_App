@@ -79,7 +79,7 @@ export const OptimizedImage = forwardRef<HTMLImageElement, OptimizedImageProps>(
     onLoadComplete?.();
   }, [onLoadComplete]);
 
-  const handleError = useCallback((event: React.SyntheticEvent<HTMLImageElement, Event>) => {
+  const handleImageError = useCallback((event: React.SyntheticEvent<HTMLImageElement, Event>) => {
     setImageError(true);
     setIsLoading(false);
     if (optimizationError) {
@@ -89,10 +89,6 @@ export const OptimizedImage = forwardRef<HTMLImageElement, OptimizedImageProps>(
       onError?.(error);
     }
   }, [optimizationError, onError, src]);
-
-  const handleImageError = useCallback((event: React.SyntheticEvent<HTMLImageElement, Event>) => {
-    handleError(event);
-  }, [handleError]);
 
   const displaySrc = imageError && fallbackSrc ? fallbackSrc : optimizedSrc;
 
@@ -179,10 +175,11 @@ export const ResponsiveImage = forwardRef<HTMLImageElement, ResponsiveImageProps
     setIsLoading(false);
   }, []);
 
-  const handleError = useCallback((event: React.SyntheticEvent<HTMLImageElement, Event>) => {
+  const handleResponsiveImageError = useCallback((event: React.SyntheticEvent<HTMLImageElement, Event>) => {
     setImageError(true);
     setIsLoading(false);
   }, []);
+
 
   if (!responsive) {
     return (
@@ -222,11 +219,14 @@ export const ResponsiveImage = forwardRef<HTMLImageElement, ResponsiveImageProps
         <Image
           ref={ref}
           src={responsiveImages[0]?.optimizedUrl || src}
-          srcSet={srcSet}
-          sizes={sizes}
           alt={alt}
           onLoad={handleLoad}
-          onError={handleError}
+          onError={handleResponsiveImageError}
+          {...(srcSet && {
+            // @ts-ignore - Next.js Image doesn't have srcSet in types but supports it
+            srcSet
+          })}
+          {...(sizes && { sizes })}
           className={cn(
             'transition-opacity duration-300',
             (isLoading || isGenerating) && 'opacity-0',

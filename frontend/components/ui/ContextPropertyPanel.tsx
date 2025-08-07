@@ -2,13 +2,13 @@
 
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  X, 
-  Edit, 
-  Copy, 
-  Trash2, 
-  RotateCw, 
-  Move, 
+import {
+  X,
+  Edit,
+  Copy,
+  Trash2,
+  RotateCw,
+  Move,
   Layers,
   Palette,
   Settings,
@@ -16,11 +16,12 @@ import {
   Wind,
   Thermometer,
   Zap,
-  Info
+  Info,
+  Wrench
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-export type ElementType = 'room' | 'duct' | 'equipment' | 'annotation' | 'group';
+export type ElementType = 'room' | 'duct' | 'equipment' | 'fitting' | 'annotation' | 'group';
 
 export interface ElementProperties {
   id: string;
@@ -49,6 +50,15 @@ export interface ElementProperties {
   capacity?: number;
   power?: number;
   efficiency?: number;
+  // Fitting specific
+  fittingType?: string;
+  angle?: number;
+  bendRadius?: number;
+  diameter?: number;
+  gauge?: string;
+  pressureLoss?: number;
+  fabricationType?: 'standard' | 'custom';
+  smacnaCompliant?: boolean;
 }
 
 interface ContextPropertyPanelProps {
@@ -412,6 +422,99 @@ export const ContextPropertyPanel: React.FC<ContextPropertyPanelProps> = ({
                     type="number"
                     unit="kW"
                   />
+                </>
+              )}
+
+              {selectedElement.type === 'fitting' && (
+                <>
+                  <div className="flex items-center gap-2 mb-3">
+                    <Wrench className="w-4 h-4 text-blue-500" />
+                    <span className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
+                      Fitting Properties
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-medium text-neutral-600 dark:text-neutral-400">
+                        Fitting Type
+                      </label>
+                      <select
+                        value={selectedElement.fittingType || 'elbow'}
+                        onChange={(e) => handlePropertyChange('fittingType', e.target.value)}
+                        className="w-full px-2 py-1 text-sm rounded border border-white/20 bg-white/10 backdrop-blur-sm text-neutral-800 dark:text-white"
+                        title="Select fitting type"
+                      >
+                        <option value="elbow">Elbow</option>
+                        <option value="tee">Tee</option>
+                        <option value="wye">Wye</option>
+                        <option value="reducer">Reducer</option>
+                        <option value="transition">Transition</option>
+                        <option value="cap">Cap</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-medium text-neutral-600 dark:text-neutral-400">
+                        Fabrication
+                      </label>
+                      <select
+                        value={selectedElement.fabricationType || 'standard'}
+                        onChange={(e) => handlePropertyChange('fabricationType', e.target.value)}
+                        className="w-full px-2 py-1 text-sm rounded border border-white/20 bg-white/10 backdrop-blur-sm text-neutral-800 dark:text-white"
+                        title="Select fabrication type"
+                      >
+                        <option value="standard">Standard</option>
+                        <option value="custom">Custom</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <InputField
+                    label="Angle"
+                    value={selectedElement.angle || 90}
+                    onChange={(value) => handlePropertyChange('angle', parseFloat(value) || 90)}
+                    type="number"
+                    unit="degrees"
+                  />
+
+                  <InputField
+                    label="Bend Radius"
+                    value={selectedElement.bendRadius || 12}
+                    onChange={(value) => handlePropertyChange('bendRadius', parseFloat(value) || 12)}
+                    type="number"
+                    unit="inches"
+                  />
+
+                  <InputField
+                    label="Diameter"
+                    value={selectedElement.diameter || 12}
+                    onChange={(value) => handlePropertyChange('diameter', parseFloat(value) || 12)}
+                    type="number"
+                    unit="inches"
+                  />
+
+                  <InputField
+                    label="Gauge"
+                    value={selectedElement.gauge || '26'}
+                    onChange={(value) => handlePropertyChange('gauge', value)}
+                    type="text"
+                  />
+
+                  <InputField
+                    label="Pressure Loss"
+                    value={selectedElement.pressureLoss || 0}
+                    onChange={(value) => handlePropertyChange('pressureLoss', parseFloat(value) || 0)}
+                    type="number"
+                    unit="in. w.g."
+                  />
+
+                  <div className="flex items-center gap-2 p-2 rounded bg-white/5">
+                    <Zap className={`w-4 h-4 ${selectedElement.smacnaCompliant ? 'text-green-500' : 'text-yellow-500'}`} />
+                    <span className="text-xs text-neutral-600 dark:text-neutral-400">
+                      {selectedElement.smacnaCompliant ? 'SMACNA Compliant' : 'Check SMACNA Compliance'}
+                    </span>
+                  </div>
                 </>
               )}
             </div>

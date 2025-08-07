@@ -107,7 +107,28 @@ const DEFAULT_ERROR_CONFIG: ErrorHandlerConfig = {
   },
   
   enableGracefulDegradation: true,
-  fallbackStrategies: {}
+  fallbackStrategies: {
+    [ErrorCategory.SNAP_LOGIC]: () => console.log('Snap logic fallback'),
+    [ErrorCategory.PERFORMANCE]: () => console.log('Performance fallback'),
+    [ErrorCategory.VALIDATION]: () => console.log('Validation fallback'),
+    [ErrorCategory.CENTERLINE]: () => console.log('Centerline fallback'),
+    [ErrorCategory.GEOMETRY]: () => console.log('Geometry fallback'),
+    [ErrorCategory.SPATIAL_INDEX]: () => console.log('Spatial index fallback'),
+    [ErrorCategory.TOUCH_GESTURE]: () => console.log('Touch gesture fallback'),
+    [ErrorCategory.USER_INPUT]: () => console.log('User input fallback'),
+    [ErrorCategory.UI_COMPONENT]: () => console.log('UI component fallback'),
+    [ErrorCategory.CACHE]: () => console.log('Cache fallback'),
+    [ErrorCategory.STORAGE]: () => console.log('Storage fallback'),
+    [ErrorCategory.NETWORK]: () => console.log('Network fallback'),
+    [ErrorCategory.SMACNA_VALIDATION]: () => console.log('SMACNA validation fallback'),
+    [ErrorCategory.FITTING_CALCULATION]: () => console.log('Fitting calculation fallback'),
+    [ErrorCategory.BRANCH_ANALYSIS]: () => console.log('Branch analysis fallback'),
+    [ErrorCategory.DEBUG_COLLECTION]: () => console.log('Debug collection fallback'),
+    [ErrorCategory.PERFORMANCE_MONITORING]: () => console.log('Performance monitoring fallback'),
+    [ErrorCategory.CONFIGURATION]: () => console.log('Configuration fallback'),
+    [ErrorCategory.INITIALIZATION]: () => console.log('Initialization fallback'),
+    [ErrorCategory.UNKNOWN]: () => console.log('Unknown error fallback')
+  }
 };
 
 /**

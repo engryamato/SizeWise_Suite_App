@@ -33,6 +33,7 @@ export interface DuctProperties {
   insulation: boolean;
   insulationThickness?: number;
   name: string; // Keep for backward compatibility, but will be auto-generated
+  ductType: 'supply' | 'return' | 'exhaust'; // Duct type selection
 }
 
 export const DrawingToolFAB: React.FC<DrawingToolFABProps> = ({
@@ -274,6 +275,25 @@ export const DrawingToolFAB: React.FC<DrawingToolFABProps> = ({
                     />
                   </div>
                 )}
+              </div>
+
+              {/* Duct Type Selection */}
+              <div>
+                <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">
+                  Duct Type
+                </label>
+                <select
+                  value={ductProperties.ductType}
+                  onChange={(e) => onDuctPropertiesChange({
+                    ...ductProperties,
+                    ductType: e.target.value as 'supply' | 'return' | 'exhaust'
+                  })}
+                  className="w-full px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-lg bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white"
+                >
+                  <option value="supply">Supply Air</option>
+                  <option value="return">Return Air</option>
+                  <option value="exhaust">Exhaust Air</option>
+                </select>
               </div>
 
               {/* Duct Name - Hidden, auto-generated */}

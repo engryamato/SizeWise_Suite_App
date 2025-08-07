@@ -15,16 +15,12 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { AuthenticationManager, SuperAdminSession, HardwareKeyAuthRequest } from '../../lib/auth/AuthenticationManager';
-
-// Local interface for emergency access
-interface EmergencyAccessRequest {
-  reason: string;
-  contactInfo: string;
-  timestamp?: string;
-  requestedPermissions?: string[];
-  hardwareKeyProof?: string;
-}
+import {
+  AuthenticationManager,
+  SuperAdminSession,
+  HardwareKeyAuthRequest,
+  EmergencyAccessRequest
+} from '../../lib/auth/AuthenticationManager';
 
 // Build flag check function - only show in development or with explicit flag
 const isSuperAdminEnabled = () => {

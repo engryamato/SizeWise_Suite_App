@@ -22,9 +22,8 @@ import {
   TouchGestureHandler,
   TouchGestureEvent,
   TouchGestureConfig,
-  TouchGestureType,
-  SwipeDirection
-} from './magnetic/TouchGestureHandler';
+  TouchGestureType
+} from './system/TouchGestureHandler';
 
 /**
  * Magnetic snapping configuration
@@ -130,7 +129,7 @@ export class MagneticSnappingIntegration {
    * Initialize touch gesture handling
    */
   private initializeTouchGestures(): void {
-    if (!this.config.touchGestures.enabled || !TouchGestureHandler.isSupported()) {
+    if (!this.config.touchGestures.enabled || !TouchGestureHandler.isTouchDevice()) {
       return;
     }
 
@@ -611,7 +610,7 @@ export class MagneticSnappingIntegration {
    * Get touch gesture support status
    */
   isTouchGestureSupported(): boolean {
-    return TouchGestureHandler.isSupported();
+    return TouchGestureHandler.isTouchDevice();
   }
 
   /**

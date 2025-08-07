@@ -11,6 +11,7 @@
 'use client';
 
 import React, { useCallback, useEffect, useState, useRef } from 'react';
+import { Vector3, Euler } from 'three';
 import { CanvasContainerProps } from '../../types/component-interfaces';
 import { useServices } from '../../lib/hooks/useServiceIntegration';
 import { useUIStore } from '../../stores/ui-store';
@@ -280,11 +281,53 @@ export const CanvasSystemContainer: React.FC<CanvasContainerProps> = ({
 
   const createEquipment = useCallback((point: { x: number; y: number }) => {
     const newEquipment: Equipment = {
-      equipment_id: `equipment_${Date.now()}`,
-      type: 'Air Handler',
-      airflow: 1000, // Default airflow
-      x: point.x,
-      y: point.y
+      id: `equipment_${Date.now()}`,
+      type: 'AHU', // Air Handling Unit
+      position: new Vector3(point.x, point.y, 0),
+      rotation: new Euler(0, 0, 0),
+      dimensions: { width: 4, height: 3, depth: 2 },
+      properties: {
+        cfmCapacity: 1000,
+        staticPressureCapacity: 2.0
+      },
+      material: 'steel',
+      flowProperties: {
+        airflow: 1000,
+        velocity: 0,
+        pressureDrop: 0,
+        frictionRate: 0.1,
+        reynoldsNumber: 50000,
+        temperature: 70,
+        density: 0.075,
+        isCalculated: false,
+        lastUpdated: new Date()
+      },
+      connectionRelationships: {
+        upstreamSegments: [],
+        downstreamSegments: [],
+        connectedEquipment: [],
+        connectedFittings: [],
+        flowPath: [],
+        branchLevel: 0
+      },
+      calculationState: {
+        needsRecalculation: false,
+        isCalculating: false,
+        lastCalculated: new Date(),
+        calculationDependencies: [],
+        calculationOrder: 0,
+        validationWarnings: [],
+        calculationErrors: []
+      },
+      connectionPoints: [],
+      operatingConditions: {
+        currentAirflow: 0,
+        currentPressure: 0,
+        currentEfficiency: 0.85,
+        loadPercentage: 0
+      },
+      isSource: true,
+      isTerminal: false
     };
 
     addEquipment(newEquipment);

@@ -21,13 +21,10 @@ const ProjectPropertiesManager = lazy(() =>
 
 // Import types
 import type { DrawingMode } from '@/components/ui/DrawingToolFAB'
+import type { SystemSummary } from '@/components/ui/ModelSummaryPanel'
 
-export interface SystemSummary {
-  totalAirflow: number;
-  totalPressureDrop: number;
-  systemEfficiency: number;
-  complianceStatus: 'compliant' | 'non-compliant' | 'pending';
-}
+// Re-export the comprehensive SystemSummary interface for other components
+export type { SystemSummary } from '@/components/ui/ModelSummaryPanel';
 
 export interface AirDuctSizerToolbarProps {
   drawingMode: DrawingMode;
@@ -62,6 +59,15 @@ export const AirDuctSizerToolbar: React.FC<AirDuctSizerToolbarProps> = ({
   const handleRefreshCalculations = () => {
     // Implement calculation refresh
     console.log('Refreshing calculations...');
+  };
+
+  // Helper function to determine overall compliance status from unified SystemSummary
+  const getComplianceStatus = (): 'compliant' | 'non-compliant' | 'pending' => {
+    if (!systemSummary.compliance) return 'pending';
+    const { smacna, ashrae, local } = systemSummary.compliance;
+    if (smacna && ashrae && local) return 'compliant';
+    if (!smacna || !ashrae) return 'non-compliant';
+    return 'pending';
   };
 
   const getComplianceStatusColor = (status: string) => {
@@ -127,8 +133,8 @@ export const AirDuctSizerToolbar: React.FC<AirDuctSizerToolbarProps> = ({
           {/* Compliance Status */}
           <div className="flex items-center space-x-2">
             <Info className="w-4 h-4 text-neutral-500" />
-            <span className={`text-sm font-medium ${getComplianceStatusColor(systemSummary.complianceStatus)}`}>
-              {getComplianceStatusText(systemSummary.complianceStatus)}
+            <span className={`text-sm font-medium ${getComplianceStatusColor(getComplianceStatus())}`}>
+              {getComplianceStatusText(getComplianceStatus())}
             </span>
           </div>
         </div>

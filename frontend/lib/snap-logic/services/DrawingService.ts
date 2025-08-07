@@ -302,7 +302,17 @@ export class DrawingService implements IDrawingService {
       const centerline: Centerline = {
         id: this.generateCenterlineId(),
         type: this.determineCenterlineType(),
-        points: this.config.smoothingEnabled ? this.previewPoints : this.currentPoints
+        points: this.config.smoothingEnabled ? this.previewPoints : this.currentPoints,
+        isComplete: true,
+        isSMACNACompliant: true,
+        warnings: [],
+        metadata: {
+          totalLength: this.calculateTotalLength(this.config.smoothingEnabled ? this.previewPoints : this.currentPoints),
+          segmentCount: (this.config.smoothingEnabled ? this.previewPoints : this.currentPoints).length - 1,
+          hasArcs: this.determineCenterlineType() === 'arc',
+          createdAt: new Date(),
+          lastModified: new Date()
+        }
       };
 
       // Validate centerline
@@ -650,5 +660,18 @@ export class DrawingService implements IDrawingService {
 
   private generateCenterlineId(): string {
     return `cl_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
+  }
+
+  /**
+   * Calculate total length of points
+   */
+  private calculateTotalLength(points: Point2D[]): number {
+    let totalLength = 0;
+    for (let i = 0; i < points.length - 1; i++) {
+      const dx = points[i + 1].x - points[i].x;
+      const dy = points[i + 1].y - points[i].y;
+      totalLength += Math.sqrt(dx * dx + dy * dy);
+    }
+    return totalLength;
   }
 }

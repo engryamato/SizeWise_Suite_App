@@ -62,7 +62,9 @@ export class EquipmentFactory {
         currentPressure: 0,
         currentEfficiency: 0.85,
         loadPercentage: 0
-      }
+      },
+      isSource: this.isSourceEquipment(equipmentType),
+      isTerminal: this.isTerminalEquipment(equipmentType)
     };
 
     // Generate connection points based on equipment type
@@ -88,6 +90,20 @@ export class EquipmentFactory {
       'Custom': { width: 2, height: 2, depth: 2 }
     };
     return dimensionMap[type];
+  }
+
+  /**
+   * Check if equipment type is a source (generates airflow)
+   */
+  private static isSourceEquipment(type: Equipment['type']): boolean {
+    return ['Fan', 'AHU'].includes(type);
+  }
+
+  /**
+   * Check if equipment type is terminal (end point)
+   */
+  private static isTerminalEquipment(type: Equipment['type']): boolean {
+    return ['VAV Box', 'Filter', 'Coil'].includes(type);
   }
 
   /**

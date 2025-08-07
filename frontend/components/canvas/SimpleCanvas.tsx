@@ -191,14 +191,14 @@ export const SimpleCanvas: React.FC<SimpleCanvasProps> = ({ width, height }) => 
     if (!currentProject) return
 
     currentProject.equipment.forEach((equipment) => {
-      const x = equipment.x || 0
-      const y = equipment.y || 0
+      const x = equipment.position?.x || 0
+      const y = equipment.position?.y || 0
       const size = 20
 
       // Equipment rectangle
-      ctx.fillStyle = selectedObjects.includes(equipment.equipment_id) ? '#8b5cf6' : '#e5e7eb'
-      ctx.strokeStyle = selectedObjects.includes(equipment.equipment_id) ? '#7c3aed' : '#6b7280'
-      ctx.lineWidth = selectedObjects.includes(equipment.equipment_id) ? 2 : 1
+      ctx.fillStyle = selectedObjects.includes(equipment.id) ? '#8b5cf6' : '#e5e7eb'
+      ctx.strokeStyle = selectedObjects.includes(equipment.id) ? '#7c3aed' : '#6b7280'
+      ctx.lineWidth = selectedObjects.includes(equipment.id) ? 2 : 1
 
       ctx.fillRect(x - size/2, y - size/2, size, size)
       ctx.strokeRect(x - size/2, y - size/2, size, size)

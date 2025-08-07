@@ -848,7 +848,7 @@ export class ErrorRecoveryService implements IErrorRecoveryService {
       enableErrorReporting: true,
       enableAnalytics: true,
       patterns: this.getDefaultErrorPatterns(),
-      guidanceTemplates: {},
+      guidanceTemplates: this.getDefaultGuidanceTemplates(),
       contactInfo: {
         email: 'support@sizewise.com',
         chatUrl: '/support/chat'
@@ -1308,5 +1308,53 @@ export class ErrorRecoveryService implements IErrorRecoveryService {
 
   private generateSessionId(): string {
     return `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  }
+
+  /**
+   * Get default guidance templates for all error categories
+   */
+  private getDefaultGuidanceTemplates(): Record<ErrorCategory, UserGuidance> {
+    const defaultGuidance: UserGuidance = {
+      title: 'Error Guidance',
+      description: 'Please try the following steps to resolve this issue.',
+      steps: [
+        {
+          title: 'Refresh the page',
+          description: 'Try refreshing the page to see if the issue resolves.',
+          action: 'refresh'
+        }
+      ],
+      helpLinks: [
+        {
+          title: 'Contact Support',
+          url: '/support',
+          description: 'Get help from our support team'
+        }
+      ],
+      estimatedTime: '2-5 minutes'
+    };
+
+    return {
+      [ErrorCategory.SNAP_LOGIC]: { ...defaultGuidance, title: 'Snap Logic Error Guidance' },
+      [ErrorCategory.PERFORMANCE]: { ...defaultGuidance, title: 'Performance Error Guidance' },
+      [ErrorCategory.VALIDATION]: { ...defaultGuidance, title: 'Validation Error Guidance' },
+      [ErrorCategory.CENTERLINE]: { ...defaultGuidance, title: 'Centerline Error Guidance' },
+      [ErrorCategory.GEOMETRY]: { ...defaultGuidance, title: 'Geometry Error Guidance' },
+      [ErrorCategory.SPATIAL_INDEX]: { ...defaultGuidance, title: 'Spatial Index Error Guidance' },
+      [ErrorCategory.TOUCH_GESTURE]: { ...defaultGuidance, title: 'Touch Gesture Error Guidance' },
+      [ErrorCategory.USER_INPUT]: { ...defaultGuidance, title: 'User Input Error Guidance' },
+      [ErrorCategory.UI_COMPONENT]: { ...defaultGuidance, title: 'UI Component Error Guidance' },
+      [ErrorCategory.CACHE]: { ...defaultGuidance, title: 'Cache Error Guidance' },
+      [ErrorCategory.STORAGE]: { ...defaultGuidance, title: 'Storage Error Guidance' },
+      [ErrorCategory.NETWORK]: { ...defaultGuidance, title: 'Network Error Guidance' },
+      [ErrorCategory.SMACNA_VALIDATION]: { ...defaultGuidance, title: 'SMACNA Validation Error Guidance' },
+      [ErrorCategory.FITTING_CALCULATION]: { ...defaultGuidance, title: 'Fitting Calculation Error Guidance' },
+      [ErrorCategory.BRANCH_ANALYSIS]: { ...defaultGuidance, title: 'Branch Analysis Error Guidance' },
+      [ErrorCategory.DEBUG_COLLECTION]: { ...defaultGuidance, title: 'Debug Collection Error Guidance' },
+      [ErrorCategory.PERFORMANCE_MONITORING]: { ...defaultGuidance, title: 'Performance Monitoring Error Guidance' },
+      [ErrorCategory.CONFIGURATION]: { ...defaultGuidance, title: 'Configuration Error Guidance' },
+      [ErrorCategory.INITIALIZATION]: { ...defaultGuidance, title: 'Initialization Error Guidance' },
+      [ErrorCategory.UNKNOWN]: { ...defaultGuidance, title: 'Unknown Error Guidance' }
+    };
   }
 }

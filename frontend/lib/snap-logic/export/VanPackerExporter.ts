@@ -485,7 +485,17 @@ export class VanPackerExporter {
       const segmentCenterline: Centerline = {
         id: `${centerline.id}_segment_${i}`,
         type: 'straight',
-        points: [centerline.points[i], centerline.points[i + 1]]
+        points: [centerline.points[i], centerline.points[i + 1]],
+        isComplete: true,
+        isSMACNACompliant: centerline.isSMACNACompliant,
+        warnings: [],
+        metadata: {
+          totalLength: this.calculateLength(centerline.points[i], centerline.points[i + 1]),
+          segmentCount: 1,
+          hasArcs: false,
+          createdAt: new Date(),
+          lastModified: new Date()
+        }
       };
 
       const element = this.createStraightElement(segmentCenterline, dimensions, shape, index * 1000 + i);
@@ -1114,5 +1124,14 @@ class PartNumberGenerator {
       [FabricationMaterial.FLEXIBLE_DUCT]: 'FL'
     };
     return codes[material] || 'UN';
+  }
+
+  /**
+   * Calculate distance between two points
+   */
+  private calculateLength(point1: any, point2: any): number {
+    const dx = point2.x - point1.x;
+    const dy = point2.y - point1.y;
+    return Math.sqrt(dx * dx + dy * dy);
   }
 }

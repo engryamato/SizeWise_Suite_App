@@ -104,27 +104,27 @@ export {
 
 // ===== LEGACY COMPATIBILITY LAYER =====
 // Export legacy components for backward compatibility during migration
-export { SnapLogicManager } from './core/SnapLogicManager';
-export { SnapLogicSystem } from './core/SnapLogicSystem';
-export { CenterlineDrawingManager } from './core/CenterlineDrawingManager';
-export { MidSpanBranchingManager } from './core/MidSpanBranchingManager';
-export { MagneticSnappingIntegration } from './core/MagneticSnappingIntegration';
+export { SnapLogicManager } from './SnapLogicManager';
+export { SnapLogicSystem } from './SnapLogicSystem';
+export { CenterlineDrawingManager } from './CenterlineDrawingManager';
+export { MidSpanBranchingManager } from './MidSpanBranchingManager';
+export { MagneticSnappingIntegration } from './MagneticSnappingIntegration';
 
 // Legacy UI Components
-export { SnapVisualFeedback } from './ui/SnapVisualFeedback';
-export { SnapLogicCanvas } from './ui/SnapLogicCanvas';
-export { SnapLogicDrawingTools } from './ui/SnapLogicDrawingTools';
-export { DebugOverlay } from './ui/DebugOverlay';
+export { SnapVisualFeedback } from '../../components/snap-logic/SnapVisualFeedback';
+export { SnapLogicCanvas } from '../../components/snap-logic/SnapLogicCanvas';
+export { SnapLogicDrawingTools } from '../../components/snap-logic/SnapLogicDrawingTools';
+export { DebugOverlay } from '../../components/snap-logic/DebugOverlay';
 
 // Legacy Performance Components
-export { SpatialIndex } from './performance/SpatialIndex';
-export { SnapCache } from './performance/SnapCache';
-export { PerformanceOptimizer } from './performance/PerformanceOptimizer';
-export { PerformanceMonitor } from './performance/PerformanceMonitor';
+export { SpatialIndex } from './system/SpatialIndex';
+export { SnapCache } from './system/SnapCache';
+export { PerformanceOptimizer } from './system/PerformanceOptimizer';
+export { PerformanceMonitor } from './system/PerformanceMonitor';
 
 // Legacy AI Components
-export { FittingAI } from './ai/FittingAI';
-export { ComplexFittings } from './ai/ComplexFittings';
+export { FittingAI } from './system/FittingAI';
+export { ComplexFittings } from './system/ComplexFittings';
 export { MLArchitecture } from './ai/MLArchitecture';
 export { TrainingDataPipeline } from './ai/TrainingDataPipeline';
 export { DesignSuggestions } from './ai/DesignSuggestions';

@@ -125,7 +125,7 @@ export class PerformanceBenchmark {
         },
         priority: Math.floor(Math.random() * 10) + 1,
         elementId: `element_${Math.floor(i / 10)}`,
-        elementType: 'test'
+        elementType: 'centerline'
       };
       snapPoints.push(snapPoint);
     }

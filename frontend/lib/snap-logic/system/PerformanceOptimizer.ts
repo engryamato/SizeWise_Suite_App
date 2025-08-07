@@ -312,7 +312,7 @@ export class PerformanceOptimizer {
    * Batch spatial index updates
    */
   batchSpatialIndexUpdate(
-    operation: 'add' | 'remove' | 'rebuild',
+    operation: BatchOperationType,
     data: SnapPoint | string | null,
     priority: number = 3
   ): void {

@@ -232,7 +232,7 @@ const FabricationDetails: React.FC<FabricationDetailsProps> = ({ fitting }) => {
           Materials Required
         </h4>
         <div className="space-y-2">
-          {isComplexSolution && fabrication.materialRequirements ? (
+          {isComplexSolution && 'materialRequirements' in fabrication && fabrication.materialRequirements ? (
             fabrication.materialRequirements.map((material, index) => (
               <div key={index} className="flex items-center justify-between p-2 bg-gray-50 rounded">
                 <span className="text-sm">{material.material}</span>
@@ -332,10 +332,10 @@ const ComplianceInfo: React.FC<ComplianceInfoProps> = ({ fitting }) => {
 
         <div className={cn(
           "p-3 rounded-lg border",
-          compliance.energyCompliant ? "bg-green-50 border-green-200" : "bg-yellow-50 border-yellow-200"
+          ('energyCompliant' in compliance ? compliance.energyCompliant : compliance.energyEfficient) ? "bg-green-50 border-green-200" : "bg-yellow-50 border-yellow-200"
         )}>
           <div className="flex items-center gap-2 mb-1">
-            {compliance.energyCompliant ? (
+            {('energyCompliant' in compliance ? compliance.energyCompliant : compliance.energyEfficient) ? (
               <Zap className="w-4 h-4 text-green-600" />
             ) : (
               <TrendingUp className="w-4 h-4 text-yellow-600" />
@@ -343,20 +343,20 @@ const ComplianceInfo: React.FC<ComplianceInfoProps> = ({ fitting }) => {
             <span className="font-medium">Energy Efficiency</span>
           </div>
           <p className="text-sm text-gray-600">
-            {compliance.energyCompliant ? "Energy efficient design" : "Consider efficiency improvements"}
+            {('energyCompliant' in compliance ? compliance.energyCompliant : compliance.energyEfficient) ? "Energy efficient design" : "Consider efficiency improvements"}
           </p>
         </div>
       </div>
 
       {/* Warnings */}
-      {fitting.warnings && fitting.warnings.length > 0 && (
+      {('components' in fitting) && 'warnings' in fitting.compliance && fitting.compliance.warnings && fitting.compliance.warnings.length > 0 && (
         <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
           <div className="flex items-center gap-2 mb-2">
             <AlertTriangle className="w-4 h-4 text-yellow-600" />
             <span className="font-medium text-yellow-800">Warnings</span>
           </div>
           <ul className="space-y-1">
-            {fitting.warnings.map((warning, index) => (
+            {(('components' in fitting) && 'warnings' in fitting.compliance ? fitting.compliance.warnings : []).map((warning, index) => (
               <li key={index} className="text-sm text-yellow-700">• {warning}</li>
             ))}
           </ul>
@@ -364,14 +364,14 @@ const ComplianceInfo: React.FC<ComplianceInfoProps> = ({ fitting }) => {
       )}
 
       {/* Notes */}
-      {fitting.notes && fitting.notes.length > 0 && (
+      {('components' in fitting) && 'validationNotes' in fitting.compliance && fitting.compliance.validationNotes && fitting.compliance.validationNotes.length > 0 && (
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
           <div className="flex items-center gap-2 mb-2">
             <Info className="w-4 h-4 text-blue-600" />
             <span className="font-medium text-blue-800">Engineering Notes</span>
           </div>
           <ul className="space-y-1">
-            {fitting.notes.map((note, index) => (
+            {(('components' in fitting) && 'validationNotes' in fitting.compliance ? fitting.compliance.validationNotes : []).map((note, index) => (
               <li key={index} className="text-sm text-blue-700">• {note}</li>
             ))}
           </ul>
@@ -400,6 +400,9 @@ export const FittingConfirmationDialog: React.FC<FittingConfirmationDialogProps>
 }) => {
   const [selectedFitting, setSelectedFitting] = useState<FittingRecommendation | ComplexFittingSolution>(primaryRecommendation);
   const [activeTab, setActiveTab] = useState('overview');
+
+  // Determine if the selected fitting is a complex solution
+  const isComplexSolution = 'components' in selectedFitting;
 
   // Update selected fitting when primary recommendation changes
   useEffect(() => {

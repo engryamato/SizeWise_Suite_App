@@ -59,7 +59,7 @@ export class CacheManager implements ICacheManager {
     const cache = await this.getCacheForUrl(url, cacheName);
     if (cache) {
       await cache.put(url, response.clone());
-      this.logger.debug(`Cached resource: ${url} in cache: ${cache.name || 'default'}`);
+      this.logger.debug(`Cached resource: ${url} in cache: default`);
     }
   }
 

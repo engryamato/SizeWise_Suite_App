@@ -198,7 +198,15 @@ export const TouchOptimizedButton: React.FC<TouchOptimizedButtonProps> = ({
     if (!enableTouchFeedback || !buttonRef.current) return;
 
     const rect = buttonRef.current.getBoundingClientRect();
-    const touch = 'touches' in event ? event.touches[0] : event.changedTouches[0];
+    let touch: Touch | React.Touch | undefined;
+
+    if ('touches' in event && event.touches.length > 0) {
+      touch = event.touches[0];
+    } else if ('changedTouches' in event && event.changedTouches.length > 0) {
+      touch = event.changedTouches[0];
+    }
+
+    if (!touch) return;
     
     setTouchFeedback({
       visible: true,

@@ -13,12 +13,13 @@
  */
 
 import * as THREE from 'three';
-import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
-import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer';
-import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass';
-import { OutlinePass } from 'three/examples/jsm/postprocessing/OutlinePass';
-import { FXAAShader } from 'three/examples/jsm/shaders/FXAAShader';
-import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass';
+import { PerspectiveCamera, OrthographicCamera } from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+import { OutlinePass } from 'three/addons/postprocessing/OutlinePass.js';
+import { FXAAShader } from 'three/addons/shaders/FXAAShader.js';
+import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 
 /**
  * 3D rendering quality levels
@@ -673,7 +674,15 @@ export class Renderer3D {
    * Resize renderer
    */
   resize(width: number, height: number): void {
-    this.camera.aspect = width / height;
+    if (this.camera instanceof PerspectiveCamera) {
+      this.camera.aspect = width / height;
+    } else if (this.camera instanceof OrthographicCamera) {
+      const aspect = width / height;
+      this.camera.left = -width / 2;
+      this.camera.right = width / 2;
+      this.camera.top = height / 2;
+      this.camera.bottom = -height / 2;
+    }
     this.camera.updateProjectionMatrix();
     this.renderer.setSize(width, height);
     

@@ -670,6 +670,8 @@ export class ValidationUtils {
         type: snapPoint.type,
         position: positionValidation.sanitizedValue!,
         priority: priorityValidation.sanitizedValue!,
+        elementId: snapPoint.elementId || 'unknown',
+        elementType: snapPoint.elementType || 'segment',
         distance: snapPoint.distance,
         metadata: snapPoint.metadata
       };
@@ -740,8 +742,19 @@ export class ValidationUtils {
         id: idValidation.sanitizedValue!,
         type: centerline.type,
         points: pointsValidation.sanitizedValue!,
+        isComplete: centerline.isComplete || false,
+        isSMACNACompliant: centerline.isSMACNACompliant || false,
+        warnings: centerline.warnings || [],
         radius: centerline.radius,
-        metadata: centerline.metadata
+        width: centerline.width,
+        height: centerline.height,
+        metadata: centerline.metadata || {
+          totalLength: 0,
+          segmentCount: pointsValidation.sanitizedValue!.length - 1,
+          hasArcs: centerline.type === 'arc',
+          createdAt: new Date(),
+          lastModified: new Date()
+        }
       };
 
       return {

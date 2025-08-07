@@ -57,6 +57,7 @@ export interface AirDuctSizerPanelsProps {
   // Drawing Tool FAB
   drawingMode: DrawingMode;
   onDrawingModeChange: (mode: DrawingMode) => void;
+  onPropertyPanelOpen?: () => void;
 
   className?: string;
 }
@@ -74,6 +75,7 @@ export const AirDuctSizerPanels: React.FC<AirDuctSizerPanelsProps> = ({
   warnings,
   drawingMode,
   onDrawingModeChange,
+  onPropertyPanelOpen,
   className = ""
 }) => {
   return (
@@ -86,8 +88,19 @@ export const AirDuctSizerPanels: React.FC<AirDuctSizerPanelsProps> = ({
           <DrawingToolFAB
             drawingMode={drawingMode}
             onDrawingModeChange={onDrawingModeChange}
-            onPropertyPanelOpen={() => {
-              // Handle property panel opening if needed
+            onPropertyPanelOpen={onPropertyPanelOpen}
+            ductProperties={{
+              shape: 'rectangular',
+              width: 8,
+              height: 8,
+              material: 'galvanized_steel',
+              insulation: false,
+              name: 'Default Duct',
+              ductType: 'supply'
+            }}
+            onDuctPropertiesChange={(properties) => {
+              // Handle duct properties change
+              console.log('Duct properties changed:', properties);
             }}
           />
         </Suspense>
@@ -99,8 +112,8 @@ export const AirDuctSizerPanels: React.FC<AirDuctSizerPanelsProps> = ({
           <div className="w-24 h-24 bg-neutral-500/20 rounded-lg animate-pulse" />
         }>
           <ViewCube
-            onOrientationChange={(orientation) => {
-              console.log('ViewCube orientation changed:', orientation);
+            onViewChange={(view) => {
+              console.log('ViewCube view changed:', view);
             }}
           />
         </Suspense>
@@ -125,6 +138,12 @@ export const AirDuctSizerPanels: React.FC<AirDuctSizerPanelsProps> = ({
               position={contextPanelPosition}
               onClose={onCloseContextPanel}
               onElementUpdate={onElementUpdate}
+              onElementDelete={(id) => {
+                console.log('Delete element:', id);
+              }}
+              onElementCopy={(id) => {
+                console.log('Copy element:', id);
+              }}
             />
           </Suspense>
         </div>
@@ -142,6 +161,15 @@ export const AirDuctSizerPanels: React.FC<AirDuctSizerPanelsProps> = ({
               systemSummary={systemSummary}
               calculationResults={calculationResults}
               warnings={warnings}
+              isCalculating={false}
+              onRunCalculation={() => {
+                console.log('Running HVAC calculations...');
+                // TODO: Implement calculation logic
+              }}
+              onJumpToElement={(elementId) => {
+                console.log('Jumping to element:', elementId);
+                // TODO: Implement element navigation
+              }}
             />
           </Suspense>
         </div>
@@ -155,11 +183,8 @@ export const AirDuctSizerPanels: React.FC<AirDuctSizerPanelsProps> = ({
           }>
             <WarningPanel
               warnings={warnings}
-              onDismiss={(warningId) => {
+              onWarningDismiss={(warningId) => {
                 console.log('Dismissing warning:', warningId);
-              }}
-              onDismissAll={() => {
-                console.log('Dismissing all warnings');
               }}
             />
           </Suspense>

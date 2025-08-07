@@ -18,12 +18,15 @@ import {
   DuctShape,
   SMACNAValidationResult
 } from '../standards/SMACNAValidator';
-import { 
+import {
   MLTrainingData,
   TrainingDataCategory,
   HVACDesignPattern,
   MLModelType
 } from './MLArchitecture';
+
+// Re-export types for external use
+export type { TrainingDataCategory, MLTrainingData } from './MLArchitecture';
 import { ValidationUtils } from '../utils/ValidationUtils';
 
 /**
@@ -888,6 +891,13 @@ export class TrainingDataPipeline {
    */
   getProcessingStatistics(): Record<string, any> {
     return Object.fromEntries(this.processingStats);
+  }
+
+  /**
+   * Get training data categories
+   */
+  getTrainingDataCategories(): TrainingDataCategory[] {
+    return Object.values(TrainingDataCategory);
   }
 
   /**

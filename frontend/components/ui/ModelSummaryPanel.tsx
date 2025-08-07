@@ -38,7 +38,7 @@ interface CalculationResult {
   message?: string;
 }
 
-interface SystemSummary {
+export interface SystemSummary {
   totalRooms: number;
   totalDucts: number;
   totalEquipment: number;
@@ -50,6 +50,9 @@ interface SystemSummary {
   systemEfficiency?: number;
   totalLength?: number;
   averageVelocity?: number;
+  totalElements?: number;
+  lastCalculation?: Date;
+  complianceStatus?: 'compliant' | 'non-compliant' | 'pending' | 'unknown';
   compliance: {
     smacna: boolean;
     ashrae: boolean;

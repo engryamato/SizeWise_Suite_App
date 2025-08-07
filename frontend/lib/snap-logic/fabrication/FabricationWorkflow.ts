@@ -759,7 +759,7 @@ export class FabricationWorkflow {
   }
 
   private areAllApprovalsComplete(workOrder: FabricationWorkOrder): boolean {
-    const requiredApprovals = ['design_approval', 'quality_approval'];
+    const requiredApprovals: ('design_approval' | 'material_approval' | 'quality_approval' | 'shipping_approval')[] = ['design_approval', 'quality_approval'];
     const completedApprovals = workOrder.metadata.approvals
       .filter(approval => approval.status === 'approved')
       .map(approval => approval.type);

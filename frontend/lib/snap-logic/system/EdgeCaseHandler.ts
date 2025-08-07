@@ -896,7 +896,14 @@ export class EdgeCaseHandler {
    * Get edge case handling statistics
    */
   getHandlingStatistics(): Record<EdgeCaseType, number> {
-    return Object.fromEntries(this.handlingStats);
+    const stats: Record<EdgeCaseType, number> = {} as Record<EdgeCaseType, number>;
+
+    // Initialize all edge case types with 0
+    Object.values(EdgeCaseType).forEach(type => {
+      stats[type] = this.handlingStats.get(type) || 0;
+    });
+
+    return stats;
   }
 
   /**

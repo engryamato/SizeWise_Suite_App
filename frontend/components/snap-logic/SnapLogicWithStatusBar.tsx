@@ -116,10 +116,22 @@ export const SnapLogicWithStatusBar: React.FC<SnapLogicWithStatusBarProps> = ({
 
   // Default system summary if not provided
   const defaultSystemSummary: SystemSummary = {
+    totalRooms: rooms.length,
+    totalDucts: segments.length,
+    totalEquipment: equipment.length,
+    totalAirflow: 0,
+    totalPressureDrop: 0,
+    maxVelocity: 0,
+    energyConsumption: 0,
     complianceStatus: snapLogic.centerlines.length > 0 ? 'pending' : 'compliant',
     systemEfficiency: 85.5,
     totalElements: rooms.length + segments.length + equipment.length,
-    lastCalculation: new Date()
+    lastCalculation: new Date(),
+    compliance: {
+      smacna: true,
+      ashrae: true,
+      local: true
+    }
   };
 
   const effectiveSystemSummary = systemSummary || defaultSystemSummary;
@@ -165,10 +177,22 @@ export const SnapLogicWithStatusBar: React.FC<SnapLogicWithStatusBarProps> = ({
 export const useSnapLogicWithStatusBar = () => {
   const snapLogic = useSnapLogic();
   const [systemSummary, setSystemSummary] = useState<SystemSummary>({
+    totalRooms: 0,
+    totalDucts: 0,
+    totalEquipment: 0,
+    totalAirflow: 0,
+    totalPressureDrop: 0,
+    maxVelocity: 0,
+    energyConsumption: 0,
     complianceStatus: 'compliant',
     systemEfficiency: 85.5,
     totalElements: 0,
-    lastCalculation: new Date()
+    lastCalculation: new Date(),
+    compliance: {
+      smacna: true,
+      ashrae: true,
+      local: true
+    }
   });
 
   // Update system summary based on snap logic state

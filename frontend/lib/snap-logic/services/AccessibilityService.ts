@@ -189,7 +189,7 @@ export class KeyboardNavigationHandler implements IKeyboardNavigationHandler {
     
     return elements.filter(element => {
       return element.offsetParent !== null && // Element is visible
-             !element.disabled && // Element is not disabled
+             !('disabled' in element && (element as any).disabled) && // Element is not disabled
              element.tabIndex !== -1; // Element is focusable
     });
   }
@@ -398,8 +398,8 @@ export class FocusManager implements IFocusManager {
     const elements = Array.from(container.querySelectorAll(selector)) as HTMLElement[];
     
     return elements.filter(element => {
-      return element.offsetParent !== null && 
-             !element.disabled && 
+      return element.offsetParent !== null &&
+             !('disabled' in element && (element as any).disabled) &&
              element.tabIndex !== -1;
     });
   }
@@ -1161,7 +1161,7 @@ export class AccessibilityService implements IAccessibilityService {
       const htmlEl = el as HTMLElement;
 
       // Check if element is keyboard accessible
-      if (htmlEl.tabIndex < 0 && !htmlEl.disabled) {
+      if (htmlEl.tabIndex < 0 && !('disabled' in htmlEl && (htmlEl as any).disabled)) {
         violations.push({
           id: `keyboard-access-${Date.now()}`,
           rule: 'keyboard-accessible',

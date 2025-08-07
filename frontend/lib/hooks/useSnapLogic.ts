@@ -37,7 +37,7 @@ interface UseSnapLogicConfig extends SnapLogicSystemConfig {
 /**
  * Hook return type
  */
-interface UseSnapLogicReturn {
+export interface UseSnapLogicReturn {
   // System state
   isActive: boolean;
   isDrawing: boolean;
@@ -321,8 +321,9 @@ export const useSnapLogic = (config: UseSnapLogicConfig = {}): UseSnapLogicRetur
     }
 
     const progressTracker = progressTrackerRef.current;
+    let buildResult: BuildDuctworkResult;
 
-    return await progressTracker.trackBuildOperation(async (tracker) => {
+    await progressTracker.trackBuildOperation(async (tracker) => {
       // Step 1: Validation
       tracker.updateStep('Validating Centerlines', 0);
       await new Promise(resolve => setTimeout(resolve, 300)); // Simulate validation time
@@ -347,17 +348,17 @@ export const useSnapLogic = (config: UseSnapLogicConfig = {}): UseSnapLogicRetur
       tracker.updateStep('Finalizing Build', 95);
 
       // Perform actual build
-      const result = systemRef.current!.buildDuctwork();
+      buildResult = systemRef.current!.buildDuctwork();
 
       // Complete
       tracker.updateStep('Complete', 100);
 
-      if (!result.success) {
-        throw new Error(result.errors.join(', '));
+      if (!buildResult.success) {
+        throw new Error(buildResult.errors.join(', '));
       }
-
-      return result;
     });
+
+    return buildResult;
   }, []);
 
   const clearCenterlines = useCallback(() => {

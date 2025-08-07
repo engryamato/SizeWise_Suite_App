@@ -84,7 +84,19 @@ export const AirDuctSizerWorkspace: React.FC<AirDuctSizerWorkspaceProps> = ({
     totalAirflow: 0,
     totalPressureDrop: 0,
     systemEfficiency: 0,
-    complianceStatus: 'pending' as 'compliant' | 'non-compliant' | 'pending'
+    complianceStatus: 'pending' as 'compliant' | 'non-compliant' | 'pending',
+    totalRooms: 0,
+    totalDucts: 0,
+    totalEquipment: 0,
+    maxVelocity: 0,
+    avgVelocity: 0,
+    totalLength: 0,
+    energyConsumption: 0,
+    compliance: {
+      smacna: false,
+      ashrae: false,
+      local: false
+    }
   });
 
   const [calculationResults, setCalculationResults] = useState({
@@ -121,9 +133,26 @@ export const AirDuctSizerWorkspace: React.FC<AirDuctSizerWorkspaceProps> = ({
     } else if (updates.type === 'equipment') {
       setEquipment(prev => prev.map(eq => {
         if (eq.id === elementId) {
-          // Only apply compatible updates to Equipment
-          const { type, ...compatibleUpdates } = updates;
-          return { ...eq, ...compatibleUpdates };
+          // Create a properly typed update object for Equipment
+          const equipmentUpdate: Partial<Equipment> = {};
+
+          // Handle position conversion
+          if (updates.position) {
+            const pos = updates.position;
+            equipmentUpdate.position = new Vector3(pos.x, pos.y, pos.z || 0);
+          }
+
+          // Handle other compatible properties
+          if (updates.name) equipmentUpdate.name = updates.name;
+          if (updates.dimensions) {
+            equipmentUpdate.dimensions = {
+              width: updates.dimensions.width,
+              height: updates.dimensions.height,
+              depth: updates.dimensions.depth || 1
+            };
+          }
+
+          return { ...eq, ...equipmentUpdate };
         }
         return eq;
       }));
@@ -175,7 +204,12 @@ export const AirDuctSizerWorkspace: React.FC<AirDuctSizerWorkspaceProps> = ({
         setSelectedElement({
           id: segment.id,
           type: 'duct',
-          properties: segment
+          name: segment.id,
+          position: { x: segment.start.x, y: segment.start.y, z: segment.start.z },
+          dimensions: { width: segment.width || 8, height: segment.height || 8 },
+          ductType: segment.ductType || 'supply',
+          velocity: segment.velocity,
+          pressureDrop: segment.pressureDrop
         });
       }
     }
@@ -192,13 +226,40 @@ export const AirDuctSizerWorkspace: React.FC<AirDuctSizerWorkspaceProps> = ({
       return sum + (segment.flowProperties?.pressureDrop || 0);
     }, 0);
 
+    const velocities = ductSegments.map(segment => segment.velocity || 0).filter(v => v > 0);
+    const maxVelocity = velocities.length > 0 ? Math.max(...velocities) : 0;
+    const avgVelocity = velocities.length > 0 ? velocities.reduce((sum, v) => sum + v, 0) / velocities.length : 0;
+
+    const totalLength = ductSegments.reduce((sum, segment) => {
+      const start = segment.start;
+      const end = segment.end;
+      const length = Math.sqrt(
+        Math.pow(end.x - start.x, 2) +
+        Math.pow(end.y - start.y, 2) +
+        Math.pow(end.z - start.z, 2)
+      );
+      return sum + length;
+    }, 0);
+
     return {
       totalAirflow,
       totalPressureDrop,
       systemEfficiency: totalAirflow > 0 ? (totalAirflow / (totalPressureDrop + 1)) * 100 : 0,
-      complianceStatus: 'pending' as const
+      complianceStatus: 'pending' as const,
+      totalRooms: 0, // TODO: Calculate from room data when available
+      totalDucts: ductSegments.length,
+      totalEquipment: equipment.length,
+      maxVelocity,
+      avgVelocity,
+      totalLength,
+      energyConsumption: totalAirflow * 0.001, // Rough estimate: 1W per CFM
+      compliance: {
+        smacna: maxVelocity <= 2500, // Basic SMACNA velocity check
+        ashrae: totalPressureDrop <= 1.0, // Basic pressure drop check
+        local: true // Assume local compliance for now
+      }
     };
-  }, [ductSegments]);
+  }, [ductSegments, equipment]);
 
   // Update system summary when calculations change
   useEffect(() => {
@@ -223,19 +284,77 @@ export const AirDuctSizerWorkspace: React.FC<AirDuctSizerWorkspaceProps> = ({
       <div className="absolute inset-0 top-20">
         <Suspense fallback={<Canvas3DLoader />}>
           <Canvas3D
-            drawingMode={drawingMode}
-            onSegmentSelect={handleSegmentSelect}
-            onSegmentHover={handleSegmentHover}
-            onContextMenu={handleContextMenu}
-            cameraPosition={cameraPosition}
-            cameraRotation={cameraRotation}
-            onCameraChange={(position, rotation) => {
-              setCameraPosition(position);
-              setCameraRotation(rotation);
-            }}
-            ductSegments={ductSegments}
+            segments={ductSegments}
             equipment={equipment}
-            selectedElementId={selectedElement?.id || null}
+            selectedIds={selectedElement?.id ? [selectedElement.id] : []}
+            onSegmentAdd={(segment) => setDuctSegments(prev => [...prev, segment])}
+            onSegmentUpdate={(id, updates) => {
+              setDuctSegments(prev => prev.map(seg =>
+                seg.id === id ? { ...seg, ...updates } : seg
+              ));
+            }}
+            onSegmentDelete={(id) => {
+              setDuctSegments(prev => prev.filter(seg => seg.id !== id));
+            }}
+            onEquipmentAdd={(eq) => setEquipment(prev => [...prev, eq])}
+            onSelectionChange={(ids) => {
+              if (ids.length > 0) {
+                const segment = ductSegments.find(s => s.id === ids[0]);
+                const eq = equipment.find(e => e.id === ids[0]);
+
+                if (segment) {
+                  setSelectedElement({
+                    id: segment.id,
+                    type: 'duct',
+                    name: segment.id,
+                    position: { x: segment.start.x, y: segment.start.y, z: segment.start.z },
+                    dimensions: { width: segment.width || 8, height: segment.height || 8 },
+                    ductType: segment.ductType || 'supply',
+                    velocity: segment.velocity,
+                    pressureDrop: segment.pressureDrop
+                  });
+
+                  // Set context panel position near the center of the screen for now
+                  // TODO: Get actual click position from Canvas3D
+                  setContextPanelPosition({
+                    x: window.innerWidth / 2,
+                    y: window.innerHeight / 2
+                  });
+                  setShowContextPanel(true);
+                } else if (eq) {
+                  setSelectedElement({
+                    id: eq.id,
+                    type: 'equipment',
+                    name: eq.name || eq.type,
+                    position: { x: eq.position.x, y: eq.position.y, z: eq.position.z },
+                    dimensions: eq.dimensions ? { width: eq.dimensions.width, height: eq.dimensions.height } : { width: 2, height: 2 },
+                    equipmentType: eq.type,
+                    capacity: eq.capacity,
+                    power: eq.power,
+                    efficiency: eq.efficiency
+                  });
+
+                  // Set context panel position near the center of the screen for now
+                  // TODO: Get actual click position from Canvas3D
+                  setContextPanelPosition({
+                    x: window.innerWidth / 2,
+                    y: window.innerHeight / 2
+                  });
+                  setShowContextPanel(true);
+                }
+              } else {
+                setSelectedElement(null);
+                setShowContextPanel(false);
+              }
+            }}
+            onCameraChange={(position) => {
+              setCameraPosition(position);
+            }}
+            enableDrawing={drawingMode !== 'off'}
+            drawingTool={drawingMode}
+            showGrid={true}
+            showLabels={true}
+            enableControls={true}
           />
         </Suspense>
       </div>

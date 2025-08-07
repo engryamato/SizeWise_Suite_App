@@ -169,12 +169,13 @@ export class SnapPointGenerator {
   static generateEquipmentSnapPoints(equipment: Equipment): SnapPoint[] {
     const snapPoints: SnapPoint[] = [];
     
-    if (!equipment.x || !equipment.y || !equipment.dimensions) {
+    if (!equipment.position?.x || !equipment.position?.y || !equipment.dimensions) {
       return snapPoints;
     }
 
-    const { x, y, dimensions } = equipment;
-    const { length, width } = dimensions;
+    const { position, dimensions } = equipment;
+    const { x, y } = position;
+    const { depth: length, width } = dimensions;
 
     // Equipment connection points (endpoints)
     const connectionPoints = [
@@ -186,11 +187,11 @@ export class SnapPointGenerator {
 
     connectionPoints.forEach((point, index) => {
       snapPoints.push({
-        id: `${equipment.equipment_id}_connection_${index}`,
+        id: `${equipment.id}_connection_${index}`,
         type: 'endpoint',
         position: point,
         priority: 1,
-        elementId: equipment.equipment_id,
+        elementId: equipment.id,
         elementType: 'equipment'
       });
     });

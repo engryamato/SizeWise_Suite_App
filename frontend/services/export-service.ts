@@ -182,7 +182,7 @@ export class ExportService {
     yPosition += 10
 
     project.equipment.forEach(equipment => {
-      pdf.text(`• ${equipment.type}: ${equipment.airflow} CFM`, 25, yPosition)
+      pdf.text(`• ${equipment.type}: ${equipment.flowProperties?.airflow || equipment.properties?.cfmCapacity || 0} CFM`, 25, yPosition)
       yPosition += 8
     })
 

@@ -27,7 +27,7 @@
  */
 
 import { SnapPoint, SnapResult, Centerline, DrawingTool } from '@/types/air-duct-sizer';
-import { DebugData } from '../../components/snap-logic/DebugOverlay';
+import { DebugData } from '@/components/snap-logic/DebugOverlay';
 
 /**
  * Debug event types
@@ -194,9 +194,58 @@ interface ConfigurationTracking {
 }
 
 /**
+ * Debug collector configuration
+ */
+export interface DebugCollectorConfig {
+  enabled: boolean;
+  collectPerformanceMetrics: boolean;
+  collectErrorTracking: boolean;
+  collectSnapStatistics: boolean;
+  collectSystemState: boolean;
+  maxEvents: number;
+  maxErrors: number;
+  maxPerformanceTimings: number;
+  autoExport: boolean;
+  exportInterval: number;
+  verboseLogging: boolean;
+}
+
+/**
+ * Default debug collector configuration
+ */
+const DEFAULT_DEBUG_CONFIG: DebugCollectorConfig = {
+  enabled: true,
+  collectPerformanceMetrics: true,
+  collectPerformance: true,
+  collectErrorTracking: true,
+  collectSnapStatistics: true,
+  collectSystemState: true,
+  collectUserInteractions: true,
+  maxEvents: 1000,
+  maxErrors: 100,
+  maxPerformanceTimings: 500,
+  autoExport: false,
+  exportInterval: 300000, // 5 minutes
+  verboseLogging: false
+};
+
+/**
  * Debug data collector for snap logic system
  */
 export class DebugCollector {
+  // Enhanced debug collection properties
+  private config: DebugCollectorConfig;
+  private events: DebugEventData[] = [];
+  private errors: ErrorTrackingData[] = [];
+  private performanceTimings: PerformanceTimingData[] = [];
+  private snapStatistics: SnapStatistics;
+  private systemStateData: SystemStateData | null = null;
+  private activeTimers: Map<string, number> = new Map();
+  private eventCounter = 0;
+  private exportTimer: NodeJS.Timeout | null = null;
+  private isEnabled = true;
+
+  // Legacy properties for backward compatibility
   private performanceMetrics: PerformanceMetrics;
   private systemState: SystemStateTracking;
   private snapPointStats: SnapPointStatistics;

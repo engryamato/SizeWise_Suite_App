@@ -594,16 +594,26 @@ export class MidSpanBranchingManager {
       // Create mock centerlines for the branch point
       const mainCenterline: Centerline = {
         id: 'main',
+        type: 'straight',
         points: [
           { x: branchPoint.position.x - 100, y: branchPoint.position.y },
           { x: branchPoint.position.x + 100, y: branchPoint.position.y }
         ],
-        width: 24,
-        height: 12
+        isComplete: true,
+        isSMACNACompliant: true,
+        warnings: [],
+        metadata: {
+          totalLength: 200,
+          segmentCount: 1,
+          hasArcs: false,
+          createdAt: new Date(),
+          lastModified: new Date()
+        }
       };
 
       const branchCenterline: Centerline = {
         id: 'branch',
+        type: 'straight',
         points: [
           branchPoint.position,
           {
@@ -611,8 +621,16 @@ export class MidSpanBranchingManager {
             y: branchPoint.position.y + Math.sin(branchPoint.angle * Math.PI / 180) * 50
           }
         ],
-        width: 18,
-        height: 10
+        isComplete: true,
+        isSMACNACompliant: true,
+        warnings: [],
+        metadata: {
+          totalLength: 50,
+          segmentCount: 1,
+          hasArcs: false,
+          createdAt: new Date(),
+          lastModified: new Date()
+        }
       };
 
       const recommendations = this.getAIFittingRecommendations(

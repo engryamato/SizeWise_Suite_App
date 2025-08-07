@@ -380,7 +380,7 @@ export class MeshGenerator {
     
     // Create elbow using extrusion along curved path
     const shape = new THREE.Shape();
-    shape.rect(-width / 2, -height / 2, width, height);
+    (shape as any).rect(-width / 2, -height / 2, width, height);
     
     // Create curved path
     const curve = new THREE.EllipseCurve(
@@ -576,10 +576,10 @@ export class MeshGenerator {
   ): THREE.BufferGeometry {
     // Create custom geometry for rectangular reducer using shape extrusion
     const startShape = new THREE.Shape();
-    startShape.rect(-startDimensions.width / 2, -startDimensions.height / 2, startDimensions.width, startDimensions.height);
-    
+    (startShape as any).rect(-startDimensions.width / 2, -startDimensions.height / 2, startDimensions.width, startDimensions.height);
+
     const endShape = new THREE.Shape();
-    endShape.rect(-endDimensions.width / 2, -endDimensions.height / 2, endDimensions.width, endDimensions.height);
+    (endShape as any).rect(-endDimensions.width / 2, -endDimensions.height / 2, endDimensions.width, endDimensions.height);
     
     // Create loft between shapes (simplified)
     const geometry = new THREE.ExtrudeGeometry(startShape, {
@@ -761,7 +761,18 @@ export class MeshGenerator {
    */
   private calculateVolume(geometry: THREE.BufferGeometry): number {
     // Simplified volume calculation
-    const boundingBox = geometry.boundingBox || new THREE.Box3().setFromBufferAttribute(geometry.attributes.position);
+    const boundingBox = geometry.boundingBox || (() => {
+      const box = new THREE.Box3();
+      const position = geometry.attributes.position;
+      if (position instanceof THREE.BufferAttribute) {
+        box.setFromBufferAttribute(position);
+      } else {
+        // For InterleavedBufferAttribute, compute bounding box manually
+        geometry.computeBoundingBox();
+        return geometry.boundingBox || new THREE.Box3();
+      }
+      return box;
+    })();
     const size = boundingBox.getSize(new THREE.Vector3());
     return size.x * size.y * size.z;
   }
@@ -771,7 +782,18 @@ export class MeshGenerator {
    */
   private calculateSurfaceArea(geometry: THREE.BufferGeometry): number {
     // Simplified surface area calculation
-    const boundingBox = geometry.boundingBox || new THREE.Box3().setFromBufferAttribute(geometry.attributes.position);
+    const boundingBox = geometry.boundingBox || (() => {
+      const box = new THREE.Box3();
+      const position = geometry.attributes.position;
+      if (position instanceof THREE.BufferAttribute) {
+        box.setFromBufferAttribute(position);
+      } else {
+        // For InterleavedBufferAttribute, compute bounding box manually
+        geometry.computeBoundingBox();
+        return geometry.boundingBox || new THREE.Box3();
+      }
+      return box;
+    })();
     const size = boundingBox.getSize(new THREE.Vector3());
     return 2 * (size.x * size.y + size.y * size.z + size.x * size.z);
   }

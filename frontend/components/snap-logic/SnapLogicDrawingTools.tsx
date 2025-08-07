@@ -30,7 +30,7 @@ import { useUIStore } from '@/stores/ui-store';
 import { useSnapLogic } from '@/lib/hooks/useSnapLogic';
 import { TouchOptimizedButton } from './TouchOptimizedButton';
 import { TouchOptimizedToggle } from './TouchOptimizedToggle';
-import { TouchGestureHandler } from '@/lib/snap-logic';
+import { TouchGestureHandler } from '@/lib/snap-logic/system/TouchGestureHandler';
 
 /**
  * Props for SnapLogicDrawingTools component
@@ -202,7 +202,9 @@ export const SnapLogicDrawingTools: React.FC<SnapLogicDrawingToolsProps> = ({
                     : "bg-transparent text-gray-600 hover:bg-gray-100"
                 )}
                 icon={<Icon size={isTouchDevice ? 24 : 20} />}
-              />
+              >
+                <Icon size={isTouchDevice ? 24 : 20} />
+              </TouchOptimizedButton>
 
               {/* Snap logic indicator */}
               {status.isSnapSupported && (

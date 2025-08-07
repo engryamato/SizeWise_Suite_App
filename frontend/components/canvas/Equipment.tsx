@@ -3,6 +3,7 @@
 import React, { useRef } from 'react'
 import { Group, Rect, Circle, Text, Line } from 'react-konva'
 import Konva from 'konva'
+import { Vector3 } from 'three'
 import { Equipment as EquipmentType } from '@/types/air-duct-sizer'
 import { useProjectStore } from '@/stores/project-store'
 import { useUIStore } from '@/stores/ui-store'
@@ -18,8 +19,8 @@ export const Equipment: React.FC<EquipmentProps> = ({ equipment, isSelected, onS
   const { updateEquipment } = useProjectStore()
   const { grid } = useUIStore()
   
-  const x = equipment.x || 0
-  const y = equipment.y || 0
+  const x = equipment.position?.x || 0
+  const y = equipment.position?.y || 0
   
   // Handle dragging
   const handleDragEnd = (e: Konva.KonvaEventObject<DragEvent>) => {
@@ -34,7 +35,9 @@ export const Equipment: React.FC<EquipmentProps> = ({ equipment, isSelected, onS
       node.position({ x: newX, y: newY })
     }
     
-    updateEquipment(equipment.equipment_id, { x: newX, y: newY })
+    updateEquipment(equipment.id, {
+      position: new Vector3(newX, newY, equipment.position?.z || 0)
+    })
   }
   
   // Get equipment dimensions and appearance based on type
@@ -185,25 +188,25 @@ export const Equipment: React.FC<EquipmentProps> = ({ equipment, isSelected, onS
         {/* Airflow */}
         <Text
           y={labelY + fontSize + 2}
-          text={`${equipment.airflow} CFM`}
+          text={`${equipment.flowProperties?.airflow || equipment.properties?.cfmCapacity || 0} CFM`}
           fontSize={fontSize * 0.9}
           fontFamily="Arial"
           fill="#059669"
           align="center"
-          offsetX={`${equipment.airflow} CFM`.length * fontSize / 4.5}
+          offsetX={`${equipment.flowProperties?.airflow || equipment.properties?.cfmCapacity || 0} CFM`.length * fontSize / 4.5}
           listening={false}
         />
         
         {/* Model (if specified) */}
-        {equipment.model && (
+        {equipment.properties?.model && (
           <Text
             y={labelY + fontSize * 2 + 4}
-            text={equipment.model}
+            text={equipment.properties.model}
             fontSize={fontSize * 0.8}
             fontFamily="Arial"
             fill="#6b7280"
             align="center"
-            offsetX={equipment.model.length * fontSize / 5}
+            offsetX={equipment.properties.model.length * fontSize / 5}
             listening={false}
           />
         )}

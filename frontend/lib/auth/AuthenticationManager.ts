@@ -322,13 +322,11 @@ export class AuthenticationManager {
   /**
    * Validate super admin session
    */
-  async validateSuperAdminSession(sessionId: string): Promise<SuperAdminValidationResult> {
+  async validateSuperAdminSession(sessionId: string): Promise<SuperAdminAuthResult> {
     const validation = await this.superAdminManager.validateSuperAdminSession(sessionId);
     return {
-      isValid: validation.valid,
-      sessionId: validation.session?.sessionId,
-      permissions: validation.session?.superAdminPermissions,
-      emergencyAccess: validation.session?.emergencyAccess,
+      success: validation.valid,
+      session: validation.session,
       error: validation.error
     };
   }

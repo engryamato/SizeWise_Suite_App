@@ -14,24 +14,24 @@ export const EquipmentPanel: React.FC<EquipmentPanelProps> = ({ equipment }) => 
   const [isEditing, setIsEditing] = useState(false)
   const [formData, setFormData] = useState({
     type: equipment.type,
-    manufacturer: equipment.manufacturer || '',
-    model: equipment.model || '',
-    airflow: equipment.airflow,
-    static_pressure: equipment.static_pressure || 0,
+    manufacturer: equipment.properties?.manufacturer || '',
+    model: equipment.properties?.model || '',
+    airflow: equipment.flowProperties?.airflow || equipment.properties?.cfmCapacity || 0,
+    static_pressure: equipment.properties?.staticPressureCapacity || 0,
   })
   
   const handleSave = () => {
-    updateEquipment(equipment.equipment_id, formData)
+    updateEquipment(equipment.id, formData)
     setIsEditing(false)
   }
   
   const handleCancel = () => {
     setFormData({
       type: equipment.type,
-      manufacturer: equipment.manufacturer || '',
-      model: equipment.model || '',
-      airflow: equipment.airflow,
-      static_pressure: equipment.static_pressure || 0,
+      manufacturer: equipment.properties?.manufacturer || '',
+      model: equipment.properties?.model || '',
+      airflow: equipment.flowProperties?.airflow || equipment.properties?.cfmCapacity || 0,
+      static_pressure: equipment.properties?.staticPressureCapacity || 0,
     })
     setIsEditing(false)
   }
@@ -95,7 +95,7 @@ export const EquipmentPanel: React.FC<EquipmentPanelProps> = ({ equipment }) => 
             {isEditing ? (
               <select
                 value={formData.type}
-                onChange={(e) => setFormData({ ...formData, type: e.target.value })}
+                onChange={(e) => setFormData({ ...formData, type: e.target.value as any })}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 {equipmentTypes.map((type) => (
@@ -120,7 +120,7 @@ export const EquipmentPanel: React.FC<EquipmentPanelProps> = ({ equipment }) => 
                 placeholder="Enter manufacturer"
               />
             ) : (
-              <p className="text-gray-900">{equipment.manufacturer || 'Not specified'}</p>
+              <p className="text-gray-900">{equipment.properties?.manufacturer || 'Not specified'}</p>
             )}
           </div>
           
@@ -137,7 +137,7 @@ export const EquipmentPanel: React.FC<EquipmentPanelProps> = ({ equipment }) => 
                 placeholder="Enter model number"
               />
             ) : (
-              <p className="text-gray-900">{equipment.model || 'Not specified'}</p>
+              <p className="text-gray-900">{equipment.properties?.model || 'Not specified'}</p>
             )}
           </div>
         </div>
@@ -160,7 +160,7 @@ export const EquipmentPanel: React.FC<EquipmentPanelProps> = ({ equipment }) => 
                 min="0"
               />
             ) : (
-              <p className="text-gray-900">{equipment.airflow} CFM</p>
+              <p className="text-gray-900">{equipment.flowProperties?.airflow || equipment.properties?.cfmCapacity || 0} CFM</p>
             )}
           </div>
           
@@ -178,7 +178,7 @@ export const EquipmentPanel: React.FC<EquipmentPanelProps> = ({ equipment }) => 
                 min="0"
               />
             ) : (
-              <p className="text-gray-900">{equipment.static_pressure || 'Not specified'} in. w.g.</p>
+              <p className="text-gray-900">{equipment.properties?.staticPressureCapacity || 'Not specified'} in. w.g.</p>
             )}
           </div>
         </div>
@@ -192,14 +192,14 @@ export const EquipmentPanel: React.FC<EquipmentPanelProps> = ({ equipment }) => 
             <label className="block text-sm font-medium text-gray-700 mb-1">
               X Position
             </label>
-            <p className="text-gray-900">{equipment.x?.toFixed(0) || 0} px</p>
+            <p className="text-gray-900">{equipment.position?.x?.toFixed(0) || 0} px</p>
           </div>
           
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Y Position
             </label>
-            <p className="text-gray-900">{equipment.y?.toFixed(0) || 0} px</p>
+            <p className="text-gray-900">{equipment.position?.y?.toFixed(0) || 0} px</p>
           </div>
         </div>
       </div>

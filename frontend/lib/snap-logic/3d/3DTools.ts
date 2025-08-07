@@ -256,7 +256,7 @@ export class Tools3D {
    */
   private raycast(): THREE.Intersection[] {
     this.raycaster.setFromCamera(this.mouse, this.camera3D.getCamera());
-    const scene = this.scene3D.getScene ? this.scene3D.getScene() : this.renderer.getScene();
+    const scene = this.renderer.getScene();
     return this.raycaster.intersectObjects(scene.children, true);
   }
 

@@ -299,8 +299,7 @@ export class SnapLogicSystem {
     // Use debounced update for performance during rapid centerline changes
     this.performanceOptimizer.debounceDrawingOperation(
       'updateSnapPoints',
-      () => this.updateSnapPointsFromCenterlinesInternal(),
-      32 // 30fps for snap point updates
+      () => this.updateSnapPointsFromCenterlinesInternal()
     );
   }
 
@@ -715,15 +714,15 @@ export class SnapLogicSystem {
       performanceImprovement: spatialMetrics.performanceImprovement
     });
 
-    // Update snap cache performance metrics
-    const cacheStats = this.snapManager.getSnapCacheStatistics();
+    // Update snap cache performance metrics using comprehensive metrics
+    const comprehensiveMetrics = this.snapManager.getComprehensiveMetrics();
     this.debugCollector.updateSnapCacheMetrics({
-      cacheHitRate: cacheStats.hitRate,
-      memoryUsage: cacheStats.memoryUsage,
-      entryCount: cacheStats.entryCount,
-      averageAccessTime: cacheStats.averageAccessTime,
-      evictionCount: cacheStats.evictionCount,
-      cachedSearchTime: spatialMetrics.cachedSearchTime || 0
+      cacheHitRate: comprehensiveMetrics.hitRate,
+      memoryUsage: comprehensiveMetrics.memoryUsage,
+      entryCount: comprehensiveMetrics.entryCount,
+      averageAccessTime: comprehensiveMetrics.averageAccessTime,
+      evictionCount: comprehensiveMetrics.evictionCount,
+      cachedSearchTime: comprehensiveMetrics.cachedSearchTime || 0
     });
 
     // Update performance optimizer metrics

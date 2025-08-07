@@ -14,7 +14,8 @@ import { useUIStore } from '@/stores/ui-store';
 import { SnapVisualFeedback, SnapLegend, SnapContextMenu } from './SnapVisualFeedback';
 import { FittingConfirmationDialog } from './FittingConfirmationDialog';
 import { Room, Segment, Equipment } from '@/types/air-duct-sizer';
-import { FittingRecommendation, ComplexFittingSolution, TouchGestureHandler, TouchGestureEvent } from '@/lib/snap-logic';
+import { FittingRecommendation, ComplexFittingSolution, TouchGestureEvent } from '@/lib/snap-logic';
+import { TouchGestureHandler } from '@/lib/snap-logic/system/TouchGestureHandler';
 
 /**
  * Props for SnapLogicCanvas component
@@ -23,7 +24,7 @@ interface SnapLogicCanvasProps {
   rooms: Room[];
   segments: Segment[];
   equipment: Equipment[];
-  viewport: {
+  viewport?: {
     x: number;
     y: number;
     scale: number;
@@ -31,6 +32,7 @@ interface SnapLogicCanvasProps {
   onCursorMove?: (position: { x: number; y: number }) => void;
   onCanvasClick?: (position: { x: number; y: number }) => void;
   onCanvasRightClick?: () => void;
+  onViewportChange?: (viewport: { x: number; y: number; scale: number }) => void;
   children?: React.ReactNode;
   className?: string;
 }
@@ -42,10 +44,11 @@ export const SnapLogicCanvas: React.FC<SnapLogicCanvasProps> = ({
   rooms,
   segments,
   equipment,
-  viewport,
+  viewport = { x: 0, y: 0, scale: 1 },
   onCursorMove,
   onCanvasClick,
   onCanvasRightClick,
+  onViewportChange,
   children,
   className
 }) => {
@@ -219,7 +222,7 @@ export const SnapLogicCanvas: React.FC<SnapLogicCanvasProps> = ({
       canvas.removeEventListener('touch-redo', handleTouchRedo as EventListener);
       canvas.removeEventListener('touch-click', handleTouchClick as EventListener);
     };
-  }, [canvasRef, handleClick, onCanvasClick, screenToWorld]);
+  }, [canvasRef, handleClick, onCanvasClick]);
 
   /**
    * Convert screen coordinates to world coordinates
@@ -428,9 +431,7 @@ export const SnapLogicCanvas: React.FC<SnapLogicCanvasProps> = ({
     // Set up gesture event listeners
     touchHandler.on('longPress', handleTouchLongPress);
     touchHandler.on('twoFingerPan', handleTouchTwoFingerPan);
-    touchHandler.on('twoFingerPinch', handleTouchPinch);
-    touchHandler.on('swipeLeft', handleTouchSwipeLeft);
-    touchHandler.on('swipeRight', handleTouchSwipeRight);
+    touchHandler.on('pinch', handleTouchPinch);
     touchHandler.on('tap', handleTouchTap);
     touchHandler.on('doubleTap', handleTouchDoubleTap);
     touchHandler.on('threeFingerTap', handleTouchThreeFingerTap);
@@ -591,7 +592,7 @@ export const SnapLogicCanvas: React.FC<SnapLogicCanvasProps> = ({
     const worldPos = screenToWorld(event.position.x, event.position.y);
 
     // Handle tap as click
-    handleClick(worldPos.x, worldPos.y);
+    handleClick(worldPos);
 
     // Hide feedback after short delay
     setTimeout(() => {

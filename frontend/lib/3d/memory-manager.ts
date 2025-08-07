@@ -168,10 +168,10 @@ export class MemoryManager {
     const info = THREE.WebGLRenderer.prototype.info || { memory: {}, render: {} };
     
     return {
-      geometries: info.memory?.geometries || 0,
-      materials: info.memory?.materials || 0,
-      textures: info.memory?.textures || 0,
-      programs: info.programs?.length || 0,
+      geometries: (info.memory && 'geometries' in info.memory && typeof info.memory.geometries === 'number') ? info.memory.geometries : 0,
+      materials: (info.memory && 'materials' in info.memory && typeof info.memory.materials === 'number') ? info.memory.materials : 0,
+      textures: (info.memory && 'textures' in info.memory && typeof info.memory.textures === 'number') ? info.memory.textures : 0,
+      programs: (info && 'programs' in info && Array.isArray(info.programs)) ? info.programs.length : 0,
       totalMemoryMB: this.estimateMemoryUsage(),
       timestamp: Date.now()
     };

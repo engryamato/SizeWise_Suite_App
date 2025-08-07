@@ -70,14 +70,10 @@ export interface BuildDuctworkProgress {
 }
 
 /**
- * System summary interface (from existing AirDuctSizerStatusBar)
+ * Use the comprehensive SystemSummary interface from ModelSummaryPanel
  */
-export interface SystemSummary {
-  complianceStatus: 'compliant' | 'non-compliant' | 'pending';
-  systemEfficiency: number;
-  totalElements: number;
-  lastCalculation: Date;
-}
+import type { SystemSummary } from '@/components/ui/ModelSummaryPanel';
+export type { SystemSummary } from '@/components/ui/ModelSummaryPanel';
 
 /**
  * Props for SnapLogicStatusBar component

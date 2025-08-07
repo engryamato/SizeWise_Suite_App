@@ -3,6 +3,7 @@
 import React, { useRef, useEffect, useState } from 'react'
 import { Stage, Layer } from 'react-konva'
 import Konva from 'konva'
+import { Vector3, Euler } from 'three'
 import { useUIStore } from '@/stores/ui-store'
 import { useProjectStore } from '@/stores/project-store'
 import { Grid } from './Grid'
@@ -193,11 +194,53 @@ export const CanvasContainer: React.FC<CanvasContainerProps> = ({ width, height 
     // Equipment is placed immediately, no dragging
     const snappedPos = snapToGrid(worldPos)
     addEquipment({
-      equipment_id: `equipment_${Date.now()}`,
+      id: `equipment_${Date.now()}`,
       type: 'AHU',
-      airflow: 1000,
-      x: snappedPos.x,
-      y: snappedPos.y,
+      position: new Vector3(snappedPos.x, snappedPos.y, 0),
+      rotation: new Euler(0, 0, 0),
+      dimensions: { width: 4, height: 3, depth: 2 },
+      properties: {
+        cfmCapacity: 1000,
+        staticPressureCapacity: 2.0
+      },
+      material: 'steel',
+      flowProperties: {
+        airflow: 1000,
+        velocity: 0,
+        pressureDrop: 0,
+        frictionRate: 0.1,
+        reynoldsNumber: 50000,
+        temperature: 70,
+        density: 0.075,
+        isCalculated: false,
+        lastUpdated: new Date()
+      },
+      connectionRelationships: {
+        upstreamSegments: [],
+        downstreamSegments: [],
+        connectedEquipment: [],
+        connectedFittings: [],
+        flowPath: [],
+        branchLevel: 0
+      },
+      calculationState: {
+        needsRecalculation: false,
+        isCalculating: false,
+        lastCalculated: new Date(),
+        calculationDependencies: [],
+        calculationOrder: 0,
+        validationWarnings: [],
+        calculationErrors: []
+      },
+      connectionPoints: [],
+      operatingConditions: {
+        currentAirflow: 0,
+        currentPressure: 0,
+        currentEfficiency: 0.85,
+        loadPercentage: 0
+      },
+      isSource: true,
+      isTerminal: false,
     })
   }
 
@@ -410,10 +453,10 @@ export const CanvasContainer: React.FC<CanvasContainerProps> = ({ width, height 
           {/* Render equipment */}
           {currentProject.equipment.map(equipment => (
             <Equipment
-              key={equipment.equipment_id}
+              key={equipment.id}
               equipment={equipment}
-              isSelected={selectedObjects.includes(equipment.equipment_id)}
-              onSelect={() => selectObject(equipment.equipment_id)}
+              isSelected={selectedObjects.includes(equipment.id)}
+              onSelect={() => selectObject(equipment.id)}
             />
           ))}
 

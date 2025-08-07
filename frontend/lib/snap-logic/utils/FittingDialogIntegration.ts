@@ -192,7 +192,7 @@ export class FittingDialogIntegration {
         angles: Array(branchCount).fill(0).map((_, i) => 45 + (i * 30)),
         pressureLoss: branchCount <= 2 ? 0.15 : 0.3,
         velocityRatio: 1.0,
-        fabricationComplexity: complexity
+        fabricationComplexity: complexity === 'expert' ? 'custom' : complexity
       },
       compliance: {
         smacnaCompliant: branchCount <= 2,
@@ -214,7 +214,7 @@ export class FittingDialogIntegration {
         maintenanceAccess: branchCount <= 2 ? 0.9 : 0.6
       },
       installation: {
-        difficulty: branchCount <= 2 ? 'easy' : 'complex',
+        difficulty: branchCount <= 2 ? 'easy' : 'difficult',
         spaceRequired: { width: 36, height: 18, shape: 'rectangular', gauge: 22 },
         supportRequirements: ['Standard hangers'],
         accessRequirements: ['Standard access']
@@ -343,7 +343,7 @@ export class FittingDialogIntegration {
         angles: [],
         pressureLoss: 0.4,
         velocityRatio: 1.0,
-        fabricationComplexity: 'expert'
+        fabricationComplexity: 'complex'
       },
       compliance: {
         smacnaCompliant: false,
@@ -382,12 +382,23 @@ export class FittingDialogIntegration {
   private createMockCenterline(center: Point2D, id: string): Centerline {
     return {
       id,
+      type: 'straight',
       points: [
         { x: center.x - 50, y: center.y },
         { x: center.x + 50, y: center.y }
       ],
+      isComplete: true,
+      isSMACNACompliant: true,
+      warnings: [],
       width: 24,
-      height: 12
+      height: 12,
+      metadata: {
+        totalLength: 100,
+        segmentCount: 1,
+        hasArcs: false,
+        createdAt: new Date(),
+        lastModified: new Date()
+      }
     };
   }
 }

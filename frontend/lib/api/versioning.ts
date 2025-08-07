@@ -5,7 +5,7 @@
  * version negotiation and backward compatibility handling.
  */
 
-import { ApiVersion, ApiVersionManager, VersionUtils, defaultApiVersionConfig } from '@/shared/api/ApiVersioning';
+import { ApiVersion, ApiVersionManager, VersionUtils, defaultApiVersionConfig } from '../../../shared/api/ApiVersioning';
 
 // =============================================================================
 // Client Configuration

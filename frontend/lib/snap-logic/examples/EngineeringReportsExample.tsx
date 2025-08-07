@@ -71,7 +71,17 @@ export const EngineeringReportsExample: React.FC = () => {
       centerline: {
         id: 'main_supply_1',
         type: 'straight' as const,
-        points: [{ x: 0, y: 0 }, { x: 100, y: 0 }]
+        points: [{ x: 0, y: 0 }, { x: 100, y: 0 }],
+        isComplete: true,
+        isSMACNACompliant: true,
+        warnings: [],
+        metadata: {
+          totalLength: 100,
+          segmentCount: 1,
+          hasArcs: false,
+          createdAt: new Date(),
+          lastModified: new Date()
+        }
       },
       ductDimensions: { width: 24, height: 12 },
       ductShape: DuctShape.RECTANGULAR,
@@ -82,7 +92,17 @@ export const EngineeringReportsExample: React.FC = () => {
         id: 'branch_arc_1',
         type: 'arc' as const,
         points: [{ x: 100, y: 0 }, { x: 125, y: 25 }, { x: 150, y: 50 }],
-        radius: 18
+        radius: 18,
+        isComplete: true,
+        isSMACNACompliant: true,
+        warnings: [],
+        metadata: {
+          totalLength: 70.7,
+          segmentCount: 2,
+          hasArcs: true,
+          createdAt: new Date(),
+          lastModified: new Date()
+        }
       },
       ductDimensions: { width: 16, height: 10 },
       ductShape: DuctShape.RECTANGULAR,
@@ -92,7 +112,17 @@ export const EngineeringReportsExample: React.FC = () => {
       centerline: {
         id: 'return_round_1',
         type: 'straight' as const,
-        points: [{ x: 200, y: 0 }, { x: 300, y: 0 }]
+        points: [{ x: 200, y: 0 }, { x: 300, y: 0 }],
+        isComplete: true,
+        isSMACNACompliant: true,
+        warnings: [],
+        metadata: {
+          totalLength: 100,
+          segmentCount: 1,
+          hasArcs: false,
+          createdAt: new Date(),
+          lastModified: new Date()
+        }
       },
       ductDimensions: { width: 0, height: 0, diameter: 20 },
       ductShape: DuctShape.ROUND,
@@ -103,7 +133,17 @@ export const EngineeringReportsExample: React.FC = () => {
         id: 'problematic_arc',
         type: 'arc' as const,
         points: [{ x: 300, y: 0 }, { x: 310, y: 10 }, { x: 320, y: 0 }],
-        radius: 4 // Too small radius for 18" duct
+        radius: 4, // Too small radius for 18" duct
+        isComplete: true,
+        isSMACNACompliant: false,
+        warnings: ['Radius too small for duct diameter', 'High velocity detected'],
+        metadata: {
+          totalLength: 31.4,
+          segmentCount: 2,
+          hasArcs: true,
+          createdAt: new Date(),
+          lastModified: new Date()
+        }
       },
       ductDimensions: { width: 0, height: 0, diameter: 18 },
       ductShape: DuctShape.ROUND,
@@ -113,7 +153,17 @@ export const EngineeringReportsExample: React.FC = () => {
       centerline: {
         id: 'high_aspect_ratio',
         type: 'straight' as const,
-        points: [{ x: 400, y: 0 }, { x: 500, y: 0 }]
+        points: [{ x: 400, y: 0 }, { x: 500, y: 0 }],
+        isComplete: true,
+        isSMACNACompliant: false,
+        warnings: ['Aspect ratio exceeds 4:1 limit'],
+        metadata: {
+          totalLength: 100,
+          segmentCount: 1,
+          hasArcs: false,
+          createdAt: new Date(),
+          lastModified: new Date()
+        }
       },
       ductDimensions: { width: 30, height: 6 }, // 5:1 aspect ratio (exceeds 4:1 limit)
       ductShape: DuctShape.RECTANGULAR,

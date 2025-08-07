@@ -1,5 +1,8 @@
 // Type definitions for Air Duct Sizer based on data-models-schemas.md
 
+// Import comprehensive interfaces from Canvas3D
+import type { Equipment, DuctSegment } from '@/components/3d/types/Canvas3DTypes';
+
 export interface Project {
   id?: string
   project_name: string
@@ -10,7 +13,7 @@ export interface Project {
   computational_properties?: ComputationalProperties
   rooms: Room[]
   segments: Segment[]
-  equipment: Equipment[]
+  equipment: Equipment[] // Now uses the comprehensive Canvas3D Equipment interface
   plan_pdf?: string
   plan_scale?: number
   created_at: string
@@ -44,7 +47,11 @@ export interface Room {
   selected?: boolean
 }
 
-export interface Segment {
+// Use the comprehensive DuctSegment interface from Canvas3D
+export type { DuctSegment } from '@/components/3d/types/Canvas3DTypes';
+
+// Legacy Segment interface for backward compatibility
+export interface LegacySegment {
   segment_id: string
   type: 'straight' | 'elbow' | 'branch' | 'reducer' | 'tee'
   material: string
@@ -64,7 +71,14 @@ export interface Segment {
   connected_rooms?: string[] // Room IDs this segment connects
 }
 
-export interface Equipment {
+// Alias for backward compatibility
+export type Segment = LegacySegment;
+
+// Use the comprehensive Equipment interface from Canvas3D
+export type { Equipment } from '@/components/3d/types/Canvas3DTypes';
+
+// Legacy Equipment interface for backward compatibility
+export interface LegacyEquipment {
   equipment_id: string
   type: string
   manufacturer?: string

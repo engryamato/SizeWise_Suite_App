@@ -51,7 +51,12 @@ export interface DuctSegment {
   diameter?: number; // For round ducts
   shape: 'rectangular' | 'round';
   type: 'supply' | 'return' | 'exhaust';
+  ductType?: 'supply' | 'return' | 'exhaust'; // Alias for type
   material: string;
+
+  // Direct access properties for convenience
+  velocity?: number; // Current velocity in FPM
+  pressureDrop?: number; // Current pressure drop in inches w.g.
 
   // Enhanced properties for real-time calculation connectivity
   flowProperties: FlowProperties;
@@ -123,6 +128,7 @@ export interface DuctFitting {
 // Equipment interface for HVAC components - Enhanced for real-time calculations
 export interface Equipment {
   id: string;
+  name?: string; // Display name for the equipment
   type: 'Fan' | 'AHU' | 'VAV Box' | 'Damper' | 'Filter' | 'Coil' | 'Custom';
   position: Vector3;
   rotation: Euler;
@@ -141,6 +147,11 @@ export interface Equipment {
     pressureLossCoefficient?: number; // Pressure loss through equipment
   };
   material: string;
+
+  // Direct access properties for convenience
+  capacity?: number; // Alias for cfmCapacity
+  power?: number; // Alias for powerConsumption
+  efficiency?: number; // Alias for properties.efficiency
 
   // Enhanced properties for real-time calculation connectivity
   flowProperties: FlowProperties;

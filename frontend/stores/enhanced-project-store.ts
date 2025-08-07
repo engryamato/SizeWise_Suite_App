@@ -215,23 +215,23 @@ export const useEnhancedProjectStore = create<EnhancedProjectState>((set, get) =
   updateEquipment: (equipmentId, updates) => set((state) => ({
     currentProject: state.currentProject ? {
       ...state.currentProject,
-      equipment: state.currentProject.equipment.map(e => e.equipment_id === equipmentId ? { ...e, ...updates } : e)
+      equipment: state.currentProject.equipment.map(e => e.id === equipmentId ? { ...e, ...updates } : e)
     } : null
   })),
   
   deleteEquipment: (equipmentId) => set((state) => ({
     currentProject: state.currentProject ? {
       ...state.currentProject,
-      equipment: state.currentProject.equipment.filter(e => e.equipment_id !== equipmentId)
+      equipment: state.currentProject.equipment.filter(e => e.id !== equipmentId)
     } : null,
-    selectedEquipment: state.selectedEquipment?.equipment_id === equipmentId ? null : state.selectedEquipment
+    selectedEquipment: state.selectedEquipment?.id === equipmentId ? null : state.selectedEquipment
   })),
   
   setSelectedEquipment: (equipment) => set({ selectedEquipment: equipment }),
   
   getEquipmentById: (equipmentId) => {
     const state = get();
-    return state.currentProject?.equipment.find(e => e.equipment_id === equipmentId);
+    return state.currentProject?.equipment.find(e => e.id === equipmentId);
   },
 
   // Enhanced actions

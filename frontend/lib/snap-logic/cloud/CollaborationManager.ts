@@ -823,7 +823,7 @@ export class CollaborationManager {
     }
   }
 
-  private emit(event: string, data?: any): void {
+  public emit(event: string, data?: any): void {
     const callbacks = this.eventCallbacks.get(event) || [];
     callbacks.forEach(callback => {
       try {

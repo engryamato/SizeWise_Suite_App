@@ -1,14 +1,23 @@
 /**
  * Snap Logic System - Main Export
  * SizeWise Suite - Centerline Drawing and Magnetic Snapping System
- * 
+ *
  * This module provides a comprehensive snap logic system for HVAC centerline drawing
  * with magnetic snapping, priority hierarchy, and SMACNA compliance validation.
- * 
+ *
  * @fileoverview Main entry point for the snap logic system
  * @version 1.0.0
  * @author SizeWise Suite Development Team
- * 
+ */
+
+// Core system imports
+import { SnapLogicSystem } from './SnapLogicSystem';
+import { PerformanceMonitor } from './system/PerformanceMonitor';
+import { ErrorHandler } from './system/ErrorHandler';
+import { SpatialIndex } from './system/SpatialIndex';
+import { SnapCache } from './system/SnapCache';
+
+/**
  * @example Basic Usage
  * ```typescript
  * import { SnapLogicSystem, useSnapLogic } from '@/lib/snap-logic';
@@ -80,20 +89,19 @@ export {
   TouchSnapIndicator,
   TouchContextMenu
 } from '../../components/snap-logic/TouchOptimizedUI';
+export { DebugOverlay } from '../../components/snap-logic/DebugOverlay';
 export {
-  DebugOverlay,
   DebugModeIntegration,
   DebugStatusIndicator
 } from '../../components/snap-logic/DebugModeIntegration';
 export {
-  SnapLogicStatusBar,
   SnapLogicWithStatusBar,
   useSnapLogicWithStatusBar,
   StatusBarUtils
 } from '../../components/snap-logic/SnapLogicWithStatusBar';
 
-// Touch gesture handler
-export { TouchGestureHandler } from './magnetic/TouchGestureHandler';
+// Touch gesture handler (using the more feature-rich system version)
+// export { TouchGestureHandler } from './magnetic/TouchGestureHandler'; // DEPRECATED - use system version
 
 // Debug system
 export { DebugCollector } from './system/DebugCollector';
@@ -123,7 +131,7 @@ export { FittingAI } from './system/FittingAI';
 export { ComplexFittings } from './system/ComplexFittings';
 
 // Fitting confirmation dialog component
-export { FittingConfirmationDialog } from '../components/snap-logic/FittingConfirmationDialog';
+export { FittingConfirmationDialog } from '../../components/snap-logic/FittingConfirmationDialog';
 
 // Fitting dialog integration utilities
 export { FittingDialogIntegration, fittingDialogIntegration } from './utils/FittingDialogIntegration';
@@ -135,9 +143,9 @@ export { TouchGestureHandler } from './system/TouchGestureHandler';
 export { TouchEventProcessor } from './utils/TouchEventProcessor';
 
 // Touch-specific UI components
-export { TouchOptimizedButton } from '../components/snap-logic/TouchOptimizedButton';
-export { TouchOptimizedToggle } from '../components/snap-logic/TouchOptimizedToggle';
-export { TouchSnapIndicator } from '../components/snap-logic/TouchSnapIndicator';
+export { TouchOptimizedButton } from '../../components/snap-logic/TouchOptimizedButton';
+export { TouchOptimizedToggle } from '../../components/snap-logic/TouchOptimizedToggle';
+export { TouchSnapIndicator } from '../../components/snap-logic/TouchSnapIndicator';
 
 // Error handling system
 export { ErrorHandler } from './system/ErrorHandler';
@@ -149,8 +157,8 @@ export {
   CenterlineError,
   SMACNAValidationError
 } from './system/SnapLogicError';
-export { ErrorBoundary, withErrorBoundary } from '../components/snap-logic/ErrorBoundary';
-export { ErrorNotificationSystem } from '../components/snap-logic/ErrorNotificationSystem';
+export { ErrorBoundary, withErrorBoundary } from '../../components/snap-logic/ErrorBoundary';
+export { ErrorNotificationSystem } from '../../components/snap-logic/ErrorNotificationSystem';
 
 // Input validation and sanitization
 export { ValidationUtils } from './utils/ValidationUtils';
@@ -182,9 +190,9 @@ export { DesignSuggestions } from './ai/DesignSuggestions';
 export {
   MLModelType,
   TrainingDataCategory,
-  ConfidenceLevel,
-  SuggestionType
+  ConfidenceLevel
 } from './ai/MLArchitecture';
+export { SuggestionType } from './ai/DesignSuggestions';
 
 // Type exports
 export type {
@@ -212,20 +220,21 @@ export type {
   BranchFittingType
 } from './MidSpanBranchingManager';
 
-export type {
-  TouchGestureType,
-  SwipeDirection,
-  TouchPoint,
-  GestureEvent,
-  TouchGestureConfig,
-  TouchGestureCallbacks
-} from './magnetic/TouchGestureHandler';
+// DEPRECATED: Use system TouchGestureHandler types instead
+// export type {
+//   TouchGestureType,
+//   SwipeDirection,
+//   TouchPoint,
+//   GestureEvent,
+//   TouchGestureConfig,
+//   TouchGestureCallbacks
+// } from './magnetic/TouchGestureHandler';
 
 export type {
   BuildDuctworkStatus,
   BuildDuctworkProgress,
   SystemSummary
-} from '../components/snap-logic/SnapLogicStatusBar';
+} from '../../components/snap-logic/SnapLogicStatusBar';
 
 export type {
   Point2D,
@@ -314,17 +323,17 @@ export type {
   TouchButtonSize,
   HapticPattern,
   TouchOptimizedButtonProps
-} from '../components/snap-logic/TouchOptimizedButton';
+} from '../../components/snap-logic/TouchOptimizedButton';
 
 export type {
   TouchToggleSize,
   TouchOptimizedToggleProps
-} from '../components/snap-logic/TouchOptimizedToggle';
+} from '../../components/snap-logic/TouchOptimizedToggle';
 
 export type {
   TouchSnapSize,
   TouchSnapIndicatorProps
-} from '../components/snap-logic/TouchSnapIndicator';
+} from '../../components/snap-logic/TouchSnapIndicator';
 
 export type {
   DebugEventType,
@@ -336,9 +345,12 @@ export type {
   DebugCollectorConfig
 } from './system/DebugCollector';
 
-export type {
+export {
   ErrorSeverity,
-  ErrorCategory,
+  ErrorCategory
+} from './system/SnapLogicError';
+
+export type {
   RecoveryStrategy,
   ErrorContext,
   ErrorReportData

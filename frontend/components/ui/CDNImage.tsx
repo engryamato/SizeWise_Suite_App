@@ -59,7 +59,7 @@ export const CDNImage = forwardRef<HTMLImageElement, CDNImageProps>(({
     quality,
     format,
     responsive,
-    sizes: typeof sizes === 'string' ? sizes : undefined,
+    sizes: typeof sizes === 'string' ? undefined : sizes,
     width: props.width as number,
     height: props.height as number
   });

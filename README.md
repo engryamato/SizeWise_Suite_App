@@ -184,6 +184,81 @@ SizeWise_Suite_App/
 
 For detailed setup instructions, see the [Developer Getting Started Guide](docs/developer-guide/getting-started.md).
 
+## 🐳 Docker Deployment
+
+### Quick Docker Setup (Recommended)
+
+The fastest way to get SizeWise Suite running is using Docker. This method works on any system with Docker installed and provides a consistent environment.
+
+**Prerequisites:**
+- Docker 24.0+ and Docker Compose 2.0+
+- 4GB+ RAM (8GB+ recommended for production)
+- 20GB+ free disk space
+
+**One-Command Development Setup:**
+```bash
+# Clone and start development environment
+git clone https://github.com/engryamato/SizeWise_Suite_App.git
+cd SizeWise_Suite_App
+./scripts/docker-dev-setup.sh
+```
+
+**Access URLs:**
+- **Frontend:** http://localhost:3000
+- **Backend API:** http://localhost:5050/api
+- **Auth API:** http://localhost:5051/api
+
+**Docker Management Commands:**
+```bash
+# Development
+./scripts/docker-utils.sh dev-start    # Start development environment
+./scripts/docker-utils.sh dev-stop     # Stop development environment
+./scripts/docker-utils.sh dev-logs -f  # Follow logs
+
+# Production
+./scripts/docker-utils.sh prod-start   # Start production environment
+./scripts/docker-utils.sh health       # Check service health
+./scripts/docker-utils.sh backup       # Create database backup
+
+# Utilities
+./scripts/docker-utils.sh shell -s backend  # Open shell in backend container
+./scripts/docker-utils.sh clean             # Clean up Docker resources
+```
+
+**Manual Docker Commands:**
+```bash
+# Development environment
+docker-compose -f docker-compose.dev.yml up -d
+
+# Production environment
+docker-compose -f docker-compose.prod.yml --env-file docker/.env.prod up -d
+
+# View logs
+docker-compose -f docker-compose.dev.yml logs -f
+
+# Stop services
+docker-compose -f docker-compose.dev.yml down
+```
+
+### Docker Architecture
+
+The Docker setup includes:
+- **Frontend Container**: Next.js with hot reloading (development) or optimized build (production)
+- **Backend Container**: Python Flask API with auto-reload (development) or Gunicorn (production)
+- **Auth Server Container**: Authentication microservice with JWT support
+- **PostgreSQL Container**: Primary database with health checks
+- **Redis Container**: Caching and session storage
+- **NGINX Container**: Reverse proxy and load balancer (production only)
+
+### Cross-Platform Compatibility
+
+The Docker setup works consistently across:
+- **Windows**: Docker Desktop with WSL2
+- **macOS**: Docker Desktop (Intel and Apple Silicon)
+- **Linux**: Docker Engine with Docker Compose
+
+For detailed Docker documentation, see [docker/README.md](docker/README.md).
+
 ## Glassmorphism Components (Next.js Frontend)
 
 The Next.js frontend includes several reusable glassmorphism components:

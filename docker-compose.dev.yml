@@ -1,62 +1,90 @@
+# SizeWise Suite Development Environment
+# This docker-compose file is optimized for local development with hot reloading,
+# debugging capabilities, and development-friendly configurations.
+
 services:
   # PostgreSQL Database
   postgres:
     image: postgres:15-alpine
     container_name: sizewise-postgres-dev
+    restart: unless-stopped
     environment:
       POSTGRES_DB: sizewise_dev
       POSTGRES_USER: sizewise
       POSTGRES_PASSWORD: sizewise_dev_password
+      POSTGRES_INITDB_ARGS: "--auth-host=scram-sha-256 --auth-local=scram-sha-256"
     ports:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./docker/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - ./docker/postgres/postgresql.conf:/etc/postgresql/postgresql.conf
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U sizewise -d sizewise_dev"]
       interval: 10s
       timeout: 5s
       retries: 5
+      start_period: 10s
     networks:
       - sizewise-network
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+        reservations:
+          memory: 256M
 
-  # Redis for caching (optional)
+  # Redis for caching and sessions
   redis:
     image: redis:7-alpine
     container_name: sizewise-redis-dev
+    restart: unless-stopped
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
     ports:
       - "6379:6379"
     volumes:
       - redis_data:/data
+      - ./docker/redis/redis-dev.conf:/usr/local/etc/redis/redis.conf
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
       timeout: 5s
       retries: 5
+      start_period: 5s
     networks:
       - sizewise-network
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+        reservations:
+          memory: 128M
 
   # Backend API
   backend:
     build:
       context: .
       dockerfile: docker/backend/Dockerfile
-      target: dev
+      target: development
     container_name: sizewise-backend-dev
+    restart: unless-stopped
     environment:
       - FLASK_ENV=development
       - FLASK_DEBUG=true
-      - DATABASE_URL=postgresql://sizewise:sizewise_dev_password@postgres:5432/sizewise_dev
+      - DATABASE_URL=postgresql://sizewise:${POSTGRES_PASSWORD:-sizewise_dev_password}@postgres:5432/sizewise_dev
       - REDIS_URL=redis://redis:6379/0
-      - SECRET_KEY=dev-secret-key-change-in-production
+      - SECRET_KEY=${SECRET_KEY:-dev-secret-key-change-in-production}
       - SENTRY_DSN=${SENTRY_DSN}
       - SENTRY_ENVIRONMENT=development
+      - LOG_LEVEL=${LOG_LEVEL:-DEBUG}
     ports:
       - "5050:5000"
     volumes:
-      - ./backend:/app/backend
-      - ./core:/app/core
-      - ./data:/app/data
+      - ./backend:/app/backend:cached
+      - ./core:/app/core:cached
+      - ./data:/app/data:delegated
+      - ./logs:/app/logs:delegated
+      - backend_cache:/app/.cache
     depends_on:
       postgres:
         condition: service_healthy
@@ -64,66 +92,136 @@ services:
         condition: service_healthy
     networks:
       - sizewise-network
-    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+        reservations:
+          memory: 256M
+    develop:
+      watch:
+        - action: sync
+          path: ./backend
+          target: /app/backend
+        - action: sync
+          path: ./core
+          target: /app/core
 
   # Authentication Server
   auth-server:
     build:
       context: .
       dockerfile: docker/auth-server/Dockerfile
-      target: dev
+      target: development
     container_name: sizewise-auth-dev
+    restart: unless-stopped
     environment:
       - FLASK_ENV=development
+      - FLASK_DEBUG=true
       - PORT=5001
-      - DATABASE_URL=postgresql://sizewise:sizewise_dev_password@postgres:5432/sizewise_auth_dev
-      - SECRET_KEY=auth-secret-key-change-in-production
-      - JWT_SECRET_KEY=jwt-secret-key-change-in-production
+      - DATABASE_URL=postgresql://sizewise:${POSTGRES_PASSWORD:-sizewise_dev_password}@postgres:5432/sizewise_auth_dev
+      - REDIS_URL=redis://redis:6379/2
+      - SECRET_KEY=${AUTH_SECRET_KEY:-auth-secret-key-change-in-production}
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY:-jwt-secret-key-change-in-production}
       - SENTRY_DSN=${SENTRY_DSN}
       - SENTRY_ENVIRONMENT=development
+      - LOG_LEVEL=${LOG_LEVEL:-DEBUG}
     ports:
       - "5051:5001"
     volumes:
-      - ./auth-server:/app
+      - ./auth-server:/app:cached
+      - ./logs:/app/logs:delegated
+      - auth_cache:/app/.cache
     depends_on:
       postgres:
         condition: service_healthy
+      redis:
+        condition: service_healthy
     networks:
       - sizewise-network
-    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+        reservations:
+          memory: 128M
+    develop:
+      watch:
+        - action: sync
+          path: ./auth-server
+          target: /app
 
   # Frontend (Next.js)
   frontend:
     build:
       context: .
       dockerfile: docker/frontend/Dockerfile
-      target: dev
+      target: development
     container_name: sizewise-frontend-dev
+    restart: unless-stopped
     environment:
       - NODE_ENV=development
-      - NEXT_PUBLIC_API_URL=http://localhost:5000/api
-      - NEXT_PUBLIC_AUTH_URL=http://localhost:5001/api
+      - NEXT_PUBLIC_API_URL=http://localhost:5050/api
+      - NEXT_PUBLIC_AUTH_URL=http://localhost:5051/api
       - NEXT_PUBLIC_APP_ENV=development
       - NEXT_PUBLIC_ENABLE_DEBUG=true
+      - NEXT_PUBLIC_ENABLE_DEVTOOLS=true
       - SENTRY_DSN=${SENTRY_DSN}
       - SENTRY_ENVIRONMENT=development
+      - FAST_REFRESH=true
     ports:
       - "3000:3000"
     volumes:
-      - ./frontend:/app
-      - /app/node_modules
-      - /app/.next
+      - ./frontend:/app:cached
+      - frontend_node_modules:/app/node_modules
+      - frontend_next:/app/.next
+      - ./logs:/app/logs:delegated
     depends_on:
       - backend
       - auth-server
     networks:
       - sizewise-network
-    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+        reservations:
+          memory: 256M
+    develop:
+      watch:
+        - action: sync
+          path: ./frontend
+          target: /app
+          ignore:
+            - node_modules/
+            - .next/
 
+# =============================================================================
+# VOLUMES
+# =============================================================================
 volumes:
+  # Database volumes
   postgres_data:
+    driver: local
   redis_data:
+    driver: local
 
+  # Application cache volumes
+  backend_cache:
+    driver: local
+  auth_cache:
+    driver: local
+  frontend_node_modules:
+    driver: local
+  frontend_next:
+    driver: local
+
+# =============================================================================
+# NETWORKS
+# =============================================================================
 networks:
   sizewise-network:
     driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16

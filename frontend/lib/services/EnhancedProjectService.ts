@@ -173,6 +173,50 @@ export class EnhancedProjectService {
   // Duct Segment Management
   // =============================================================================
 
+  async addDuctSegment(segment: EnhancedDuctSegment): Promise<void> {
+    try {
+      const segmentRecord: Omit<ProjectSegment, 'id' | 'lastModified' | 'syncStatus'> = {
+        uuid: segment.segment_id,
+        projectUuid: segment.segment_id.split('-')[0] || 'unknown', // Extract project ID from segment ID
+        segmentType: 'duct',
+        name: `Duct ${segment.segment_id}`,
+        calculationData: {
+          type: segment.type,
+          material: segment.material,
+          size: segment.size,
+          length: segment.length,
+          airflow: segment.airflow,
+          velocity: segment.velocity,
+          pressure_loss: segment.pressure_loss,
+          warnings: segment.warnings
+        },
+        geometryData: {
+          points: segment.points,
+          geometry3D: segment.geometry3D,
+          connections: segment.connections,
+          ductNode: segment.ductNode ? {
+            id: segment.ductNode.id,
+            shapeType: segment.ductNode.shapeType,
+            dimensions: segment.ductNode.dimensions,
+            material: segment.ductNode.material,
+            systemProperties: segment.ductNode.systemProperties,
+            position: segment.ductNode.position,
+            metadata: segment.ductNode.metadata
+          } : null
+        },
+        validationResults: {
+          warnings: segment.warnings || [],
+          complianceStatus: segment.warnings?.length > 0 ? 'warning' : 'compliant'
+        }
+      };
+
+      await this.db.saveProjectSegment(segmentRecord);
+    } catch (error) {
+      console.error('❌ Failed to add duct segment:', error);
+      throw new Error(`Failed to add duct segment: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+
   private async saveDuctSegments(projectId: string, segments: EnhancedDuctSegment[]): Promise<void> {
     const segmentRecords: Omit<ProjectSegment, 'id' | 'lastModified' | 'syncStatus'>[] = segments.map(segment => ({
       uuid: segment.segment_id,

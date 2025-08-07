@@ -293,13 +293,13 @@ export interface LightingConfig {
   directional: {
     intensity: number;
     color: string;
-    position: Vector3;
+    position: [number, number, number];
     castShadow: boolean;
   };
   point: {
     intensity: number;
     color: string;
-    position: Vector3;
+    position: [number, number, number];
     distance: number;
     decay: number;
   };

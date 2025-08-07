@@ -6,11 +6,12 @@
  * along centerlines with multi-way fitting suggestions and SMACNA compliance.
  */
 
-import { 
-  Centerline, 
-  CenterlinePoint, 
+import {
+  Centerline,
+  CenterlinePoint,
   SnapPoint,
-  Segment
+  Segment,
+  Point2D
 } from '@/types/air-duct-sizer';
 import { CenterlineUtils } from './CenterlineUtils';
 import { FittingAI, FittingRecommendation, FittingAnalysisInput } from './system/FittingAI';

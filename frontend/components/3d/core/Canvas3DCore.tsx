@@ -19,6 +19,7 @@ import {
   Line,
   Box
 } from '@react-three/drei';
+import * as THREE from 'three';
 import { Vector3, Vector2, Raycaster, Quaternion, Euler } from 'three';
 import { 
   DuctSegment, 
@@ -40,6 +41,9 @@ interface Canvas3DCoreProps {
   lightingConfig: LightingConfig;
   onSelectionChange?: (selectedIds: string[]) => void;
   onCameraChange?: (position: Vector3, target: Vector3) => void;
+  onCanvasClick?: (event: any) => void;
+  onCanvasMouseMove?: (event: any) => void;
+  enableDrawing?: boolean;
   children?: React.ReactNode;
 }
 
@@ -86,15 +90,15 @@ const SceneContent: React.FC<{
   return (
     <>
       {/* Lighting */}
-      <ambientLight 
-        intensity={lightingConfig.ambient.intensity} 
-        color={lightingConfig.ambient.color} 
+      <ambientLight
+        intensity={lightingConfig.ambient?.intensity || 0.4}
+        color={lightingConfig.ambient?.color || '#ffffff'}
       />
       <directionalLight
-        position={lightingConfig.directional.position}
-        intensity={lightingConfig.directional.intensity}
-        color={lightingConfig.directional.color}
-        castShadow={lightingConfig.directional.castShadow}
+        position={lightingConfig.directional?.position || [10, 10, 5]}
+        intensity={lightingConfig.directional?.intensity || 1.0}
+        color={lightingConfig.directional?.color || '#ffffff'}
+        castShadow={lightingConfig.directional?.castShadow || true}
         shadow-mapSize-width={2048}
         shadow-mapSize-height={2048}
         shadow-camera-far={50}
@@ -104,11 +108,11 @@ const SceneContent: React.FC<{
         shadow-camera-bottom={-20}
       />
       <pointLight
-        position={lightingConfig.point.position}
-        intensity={lightingConfig.point.intensity}
-        color={lightingConfig.point.color}
-        distance={lightingConfig.point.distance}
-        decay={lightingConfig.point.decay}
+        position={lightingConfig.point?.position || [0, 10, 0]}
+        intensity={lightingConfig.point?.intensity || 0.5}
+        color={lightingConfig.point?.color || '#ffffff'}
+        distance={lightingConfig.point?.distance || 100}
+        decay={lightingConfig.point?.decay || 2}
       />
 
       {/* Grid */}
@@ -170,11 +174,11 @@ const DuctSegmentMesh: React.FC<{
   const meshRef = useRef<any>(null);
 
   const geometry = useMemo(() => {
-    const start = segment.start;
-    const end = segment.end;
+    const start = segment.start || new Vector3(0, 0, 0);
+    const end = segment.end || new Vector3(1, 0, 0);
     const direction = new Vector3().subVectors(end, start);
-    const length = direction.length();
-    
+    const length = direction.length() || 1;
+
     if (segment.shape === 'round') {
       const radius = (segment.diameter || 12) / 2;
       return { type: 'cylinder', args: [radius, radius, length, 16] };
@@ -186,14 +190,20 @@ const DuctSegmentMesh: React.FC<{
   }, [segment]);
 
   const position = useMemo(() => {
-    return new Vector3().addVectors(segment.start, segment.end).multiplyScalar(0.5);
-  }, [segment.start, segment.end]);
+    const start = segment.start || new Vector3(0, 0, 0);
+    const end = segment.end || new Vector3(1, 0, 0);
+    const pos = new Vector3().addVectors(start, end).multiplyScalar(0.5);
+    return [pos.x, pos.y, pos.z] as [number, number, number];
+  }, [segment]);
 
   const rotation = useMemo(() => {
-    const direction = new Vector3().subVectors(segment.end, segment.start).normalize();
+    const start = segment.start || new Vector3(0, 0, 0);
+    const end = segment.end || new Vector3(1, 0, 0);
+    const direction = new Vector3().subVectors(end, start).normalize();
     const quaternion = new Quaternion().setFromUnitVectors(new Vector3(0, 0, 1), direction);
-    return new Euler().setFromQuaternion(quaternion);
-  }, [segment.start, segment.end]);
+    const euler = new Euler().setFromQuaternion(quaternion);
+    return [euler.x, euler.y, euler.z] as [number, number, number];
+  }, [segment]);
 
   const material = useMemo(() => {
     const color = segment.type === 'supply' ? '#4CAF50' : 
@@ -255,8 +265,8 @@ const EquipmentMesh: React.FC<{
   return (
     <mesh
       ref={meshRef}
-      position={equipment.position}
-      rotation={equipment.rotation}
+      position={equipment.position || [0, 0, 0]}
+      rotation={equipment.rotation || [0, 0, 0]}
       onClick={onClick}
       onPointerMove={onPointerMove}
       userData={{ id: equipment.id, type: 'equipment' }}
@@ -312,8 +322,8 @@ const FittingMesh: React.FC<{
   return (
     <mesh
       ref={meshRef}
-      position={fitting.position}
-      rotation={fitting.rotation}
+      position={fitting.position || [0, 0, 0]}
+      rotation={fitting.rotation || [0, 0, 0]}
       onClick={onClick}
       onPointerMove={onPointerMove}
       userData={{ id: fitting.id, type: 'fitting' }}
@@ -335,27 +345,104 @@ export const Canvas3DCore: React.FC<Canvas3DCoreProps> = ({
   lightingConfig,
   onSelectionChange,
   onCameraChange,
+  onCanvasClick,
+  onCanvasMouseMove,
+  enableDrawing = false,
   children
 }) => {
   const canvasRef = useRef<HTMLDivElement>(null);
 
   const handleCameraChange = useCallback((state: any) => {
-    if (onCameraChange) {
+    if (onCameraChange && state?.camera?.position && state?.target) {
       onCameraChange(state.camera.position, state.target);
     }
   }, [onCameraChange]);
 
+  // Handle canvas click for drawing
+  const handleCanvasClick = useCallback((event: any) => {
+    if (enableDrawing && onCanvasClick) {
+      // Get world position from the click event
+      const intersectionPoint = event.intersections?.[0]?.point;
+      if (intersectionPoint) {
+        onCanvasClick({ ...event, point: intersectionPoint });
+      } else {
+        // If no intersection with geometry, project the click onto a ground plane using raycasting
+        raycaster.setFromCamera(mouse.current, camera);
+
+        // Create a ground plane at Y=0
+        const groundPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+        const intersectionPoint = new THREE.Vector3();
+
+        // Calculate intersection with ground plane
+        const ray = raycaster.ray;
+        const intersectPoint = ray.intersectPlane(groundPlane, intersectionPoint);
+
+        if (intersectPoint) {
+          onCanvasClick({ ...event, point: intersectPoint });
+        } else {
+          // Fallback: project mouse position to a point in front of camera
+          const direction = new THREE.Vector3();
+          camera.getWorldDirection(direction);
+          const distance = 10; // 10 units in front of camera
+          const fallbackPoint = camera.position.clone().add(direction.multiplyScalar(distance));
+          onCanvasClick({ ...event, point: fallbackPoint });
+        }
+      }
+    }
+  }, [enableDrawing, onCanvasClick, raycaster, mouse, camera]);
+
+  // Handle canvas mouse move for drawing preview
+  const handleCanvasMouseMove = useCallback((event: any) => {
+    if (enableDrawing && onCanvasMouseMove) {
+      // Get world position from the mouse move event
+      const intersectionPoint = event.intersections?.[0]?.point;
+      if (intersectionPoint) {
+        onCanvasMouseMove({ ...event, point: intersectionPoint });
+      } else {
+        // If no intersection with geometry, project the mouse position onto a ground plane using raycasting
+        raycaster.setFromCamera(mouse.current, camera);
+
+        // Create a ground plane at Y=0
+        const groundPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+        const intersectionPoint = new THREE.Vector3();
+
+        // Calculate intersection with ground plane
+        const ray = raycaster.ray;
+        const intersectPoint = ray.intersectPlane(groundPlane, intersectionPoint);
+
+        if (intersectPoint) {
+          onCanvasMouseMove({ ...event, point: intersectPoint });
+        } else {
+          // Fallback: project mouse position to a point in front of camera
+          const direction = new THREE.Vector3();
+          camera.getWorldDirection(direction);
+          const distance = 10; // 10 units in front of camera
+          const fallbackPoint = camera.position.clone().add(direction.multiplyScalar(distance));
+          onCanvasMouseMove({ ...event, point: fallbackPoint });
+        }
+      }
+    }
+  }, [enableDrawing, onCanvasMouseMove, raycaster, mouse, camera]);
+
   return (
     <div ref={canvasRef} className="w-full h-full">
       <Canvas
+        key="sizewise-3d-canvas"
         camera={{ position: [10, 10, 10], fov: 50 }}
         shadows={performanceConfig.enableShadows}
         dpr={performanceConfig.pixelRatio}
         frameloop={performanceConfig.frameloop}
-        gl={{ 
+        gl={{
           antialias: performanceConfig.enableAntialiasing,
-          powerPreference: performanceConfig.powerPreference
+          powerPreference: performanceConfig.powerPreference,
+          alpha: true,
+          preserveDrawingBuffer: false,
+          stencil: false,
+          depth: true,
+          failIfMajorPerformanceCaveat: false
         }}
+        onClick={handleCanvasClick}
+        onPointerMove={handleCanvasMouseMove}
       >
         {/* Environment */}
         <Environment

@@ -5,11 +5,12 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { Vector3, Euler } from 'three'
 import { useToast } from '@/lib/hooks/useToaster'
 import { Equipment } from '@/utils/EquipmentFactory'
+import { EnhancedProjectService } from '@/lib/services/EnhancedProjectService'
+import { useProjectStore } from '@/stores/project-store'
+import { SizeWiseDatabase } from '@/lib/database/DexieDatabase'
 
-// Dynamic imports for heavy components
-const Canvas3D = lazy(() => import('@/components/3d/Canvas3D').then(module => ({
-  default: module.Canvas3D
-})));
+// Direct import for debugging
+import { Canvas3D } from '@/components/3d/Canvas3D';
 
 // Loading component for Canvas3D
 const Canvas3DLoader = () => (
@@ -61,6 +62,11 @@ export const AirDuctSizerWorkspace: React.FC<AirDuctSizerWorkspaceProps> = ({
   className = ""
 }) => {
   const { toast } = useToast();
+  const { currentProject, updateProject } = useProjectStore();
+  const projectService = useMemo(() => {
+    const db = new SizeWiseDatabase();
+    return new EnhancedProjectService(db, 'current-user'); // TODO: Get actual user ID
+  }, []);
 
   // Core state management
   const [drawingMode, setDrawingMode] = useState<DrawingMode>('off');
@@ -115,6 +121,128 @@ export const AirDuctSizerWorkspace: React.FC<AirDuctSizerWorkspaceProps> = ({
       duration: 2000,
     });
   }, [toast]);
+
+  // Enhanced segment handlers with database persistence
+  const handleSegmentAdd = useCallback(async (segment: DuctSegment) => {
+    try {
+      // Calculate segment length from start/end points
+      const segmentLength = segment.start.distanceTo(segment.end);
+
+      // Update local state immediately for responsive UI
+      setDuctSegments(prev => [...prev, segment]);
+
+      // Update system summary counts
+      setSystemSummary(prev => ({
+        ...prev,
+        totalDucts: prev.totalDucts + 1,
+        totalLength: prev.totalLength + segmentLength
+      }));
+
+      // Persist to database if we have a current project
+      if (currentProject && projectService) {
+        // Convert DuctSegment to EnhancedDuctSegment for database storage
+        const enhancedSegment = {
+          segment_id: segment.id,
+          type: 'straight' as const,
+          material: segment.material || 'galvanized_steel',
+          size: segment.shape === 'round'
+            ? { diameter: segment.diameter || 12 }
+            : { width: segment.width || 12, height: segment.height || 8 },
+          length: segmentLength,
+          airflow: segment.flowProperties?.airflow || 0,
+          velocity: segment.velocity || 0,
+          pressure_loss: segment.pressureDrop || 0,
+          warnings: [],
+          points: [segment.start.x, segment.start.y, segment.end.x, segment.end.y],
+          ductNode: null, // Will be created by the service
+          material3D: {
+            type: (segment.material === 'aluminum' || segment.material === 'stainless_steel')
+              ? segment.material as 'aluminum' | 'stainless_steel'
+              : 'galvanized_steel',
+            gauge: '26' as const,
+            finish: 'standard' as const
+          },
+          geometry3D: {
+            position: { x: segment.start.x, y: segment.start.y, z: segment.start.z },
+            rotation: { x: 0, y: 0, z: 0 },
+            scale: { x: 1, y: 1, z: 1 }
+          },
+          connections: {}
+        };
+
+        await projectService.addDuctSegment(enhancedSegment);
+
+        // Update project in store
+        updateProject(currentProject.id, {
+          ...currentProject,
+          last_modified: new Date().toISOString()
+        });
+
+        toast({
+          type: 'success',
+          title: "Duct Added",
+          message: `Duct segment added and saved to project`,
+          duration: 3000,
+        });
+      }
+    } catch (error) {
+      console.error('Failed to add duct segment:', error);
+      toast({
+        type: 'error',
+        title: "Error Adding Duct",
+        message: `Failed to save duct segment: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        duration: 5000,
+      });
+
+      // Revert local state on error
+      const revertLength = segment.start.distanceTo(segment.end);
+      setDuctSegments(prev => prev.filter(s => s.id !== segment.id));
+      setSystemSummary(prev => ({
+        ...prev,
+        totalDucts: Math.max(0, prev.totalDucts - 1),
+        totalLength: Math.max(0, prev.totalLength - revertLength)
+      }));
+    }
+  }, [currentProject, projectService, updateProject, toast]);
+
+  const handleEquipmentAdd = useCallback(async (equipment: Equipment) => {
+    try {
+      // Update local state immediately
+      setEquipment(prev => [...prev, equipment]);
+
+      // Update system summary counts
+      setSystemSummary(prev => ({
+        ...prev,
+        totalEquipment: prev.totalEquipment + 1
+      }));
+
+      // Persist to database if we have a current project
+      if (currentProject && projectService) {
+        // TODO: Implement equipment persistence
+        toast({
+          type: 'success',
+          title: "Equipment Added",
+          message: `Equipment added to project`,
+          duration: 3000,
+        });
+      }
+    } catch (error) {
+      console.error('Failed to add equipment:', error);
+      toast({
+        type: 'error',
+        title: "Error Adding Equipment",
+        message: `Failed to save equipment: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        duration: 5000,
+      });
+
+      // Revert local state on error
+      setEquipment(prev => prev.filter(e => e.id !== equipment.id));
+      setSystemSummary(prev => ({
+        ...prev,
+        totalEquipment: Math.max(0, prev.totalEquipment - 1)
+      }));
+    }
+  }, [currentProject, projectService, updateProject, toast]);
 
   const handleElementUpdate = useCallback((elementId: string, updates: Partial<ElementProperties>) => {
     // Handle element updates
@@ -282,12 +410,19 @@ export const AirDuctSizerWorkspace: React.FC<AirDuctSizerWorkspaceProps> = ({
 
       {/* Main 3D Canvas Workspace */}
       <div className="absolute inset-0 top-20">
-        <Suspense fallback={<Canvas3DLoader />}>
+        <Suspense fallback={
+          <div className="w-full h-full flex items-center justify-center bg-neutral-50 dark:bg-neutral-900">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>
+              <p className="text-sm text-neutral-600 dark:text-neutral-400">Loading 3D Canvas...</p>
+            </div>
+          </div>
+        }>
           <Canvas3D
             segments={ductSegments}
             equipment={equipment}
             selectedIds={selectedElement?.id ? [selectedElement.id] : []}
-            onSegmentAdd={(segment) => setDuctSegments(prev => [...prev, segment])}
+            onSegmentAdd={handleSegmentAdd}
             onSegmentUpdate={(id, updates) => {
               setDuctSegments(prev => prev.map(seg =>
                 seg.id === id ? { ...seg, ...updates } : seg
@@ -296,7 +431,9 @@ export const AirDuctSizerWorkspace: React.FC<AirDuctSizerWorkspaceProps> = ({
             onSegmentDelete={(id) => {
               setDuctSegments(prev => prev.filter(seg => seg.id !== id));
             }}
-            onEquipmentAdd={(eq) => setEquipment(prev => [...prev, eq])}
+            onEquipmentAdd={handleEquipmentAdd}
+            enableDrawing={drawingMode !== 'off'}
+            drawingTool={drawingMode === 'duct' ? 'duct' : null}
             onSelectionChange={(ids) => {
               if (ids.length > 0) {
                 const segment = ductSegments.find(s => s.id === ids[0]);
@@ -350,8 +487,6 @@ export const AirDuctSizerWorkspace: React.FC<AirDuctSizerWorkspaceProps> = ({
             onCameraChange={(position) => {
               setCameraPosition(position);
             }}
-            enableDrawing={drawingMode !== 'off'}
-            drawingTool={drawingMode}
             showGrid={true}
             showLabels={true}
             enableControls={true}

@@ -24,6 +24,7 @@ import { Canvas3DCore } from './core/Canvas3DCore';
 import { Canvas3DControls, CAMERA_PRESETS } from './core/Canvas3DControls';
 import { Canvas3DPerformance, PerformanceUtils } from './core/Canvas3DPerformance';
 import { DuctRenderer } from './duct/DuctRenderer';
+import { DrawingPreview } from './drawing/DrawingPreview';
 import {
   Canvas3DProps,
   DuctSegment,
@@ -65,13 +66,13 @@ const defaultLightingConfig: LightingConfig = {
   directional: {
     intensity: 1.0,
     color: '#ffffff',
-    position: new Vector3(10, 10, 5),
+    position: [10, 10, 5] as [number, number, number],
     castShadow: true
   },
   point: {
     intensity: 0.5,
     color: '#ffffff',
-    position: new Vector3(0, 10, 0),
+    position: [0, 10, 0] as [number, number, number],
     distance: 100,
     decay: 2
   }
@@ -178,6 +179,11 @@ export const Canvas3D: React.FC<Canvas3DProps> = ({
   // Refs
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
+  // Drawing state
+  const [isDrawing, setIsDrawing] = useState(false);
+  const [drawingStart, setDrawingStart] = useState<Vector3 | null>(null);
+  const [drawingPreview, setDrawingPreview] = useState<Vector3 | null>(null);
+
   // Event handlers
   const handleSelectionChange = useCallback((ids: string[]) => {
     setSelectionState(prev => ({ ...prev, selectedIds: ids }));
@@ -204,6 +210,80 @@ export const Canvas3D: React.FC<Canvas3DProps> = ({
     setSelectionState(prev => ({ ...prev, hoveredId: segmentId }));
   }, []);
 
+  // Drawing event handlers
+  const handleCanvasClick = useCallback((event: any) => {
+    if (!enableDrawing || !drawingTool) return;
+
+    const point = event.point as Vector3;
+    if (!point) return;
+
+    if (drawingTool === 'duct') {
+      if (!isDrawing) {
+        // Start drawing
+        setIsDrawing(true);
+        setDrawingStart(point);
+        setDrawingPreview(point);
+      } else {
+        // Finish drawing
+        if (drawingStart && onSegmentAdd) {
+          const newSegment: DuctSegment = {
+            id: `duct-${Date.now()}`,
+            start: drawingStart,
+            end: point,
+            shape: 'rectangular',
+            type: 'supply',
+            material: 'galvanized_steel',
+            width: 12,
+            height: 8,
+            flowProperties: {
+              airflow: 0,
+              velocity: 0,
+              pressureDrop: 0,
+              frictionRate: 0,
+              reynoldsNumber: 0,
+              temperature: 70,
+              density: 0.075,
+              isCalculated: false,
+              lastUpdated: new Date()
+            },
+            connectionRelationships: {
+              upstreamSegments: [],
+              downstreamSegments: [],
+              connectedEquipment: [],
+              connectedFittings: [],
+              flowPath: [],
+              branchLevel: 0
+            },
+            calculationState: {
+              needsRecalculation: false,
+              isCalculating: false,
+              lastCalculated: null,
+              calculationDependencies: [],
+              calculationOrder: 0,
+              validationWarnings: [],
+              calculationErrors: []
+            }
+          };
+
+          onSegmentAdd(newSegment);
+        }
+
+        setIsDrawing(false);
+        setDrawingStart(null);
+        setDrawingPreview(null);
+      }
+    }
+  }, [enableDrawing, drawingTool, isDrawing, drawingStart, onSegmentAdd]);
+
+  const handleCanvasMouseMove = useCallback((event: any) => {
+    if (!enableDrawing || !isDrawing || !drawingStart) return;
+
+    const point = event.point as Vector3;
+    if (point) {
+      setDrawingPreview(point);
+    }
+  }, [enableDrawing, isDrawing, drawingStart]);
+
   const handleCameraChange = useCallback((camera: any) => {
     // Handle camera state changes for performance optimization
   }, []);
@@ -229,6 +309,9 @@ export const Canvas3D: React.FC<Canvas3DProps> = ({
         lightingConfig={defaultLightingConfig}
         onSelectionChange={handleSelectionChange}
         onCameraChange={handleCameraChange}
+        onCanvasClick={handleCanvasClick}
+        onCanvasMouseMove={handleCanvasMouseMove}
+        enableDrawing={enableDrawing}
       >
         {/* Performance monitoring */}
         <Canvas3DPerformance
@@ -259,6 +342,14 @@ export const Canvas3D: React.FC<Canvas3DProps> = ({
           showConnectionPoints={enableDrawing}
           onSegmentClick={handleSegmentClick}
           onSegmentHover={handleSegmentHover}
+        />
+
+        {/* Drawing Preview */}
+        <DrawingPreview
+          startPoint={drawingStart}
+          currentPoint={drawingPreview}
+          isDrawing={isDrawing}
+          drawingTool={drawingTool}
         />
       </Canvas3DCore>
 

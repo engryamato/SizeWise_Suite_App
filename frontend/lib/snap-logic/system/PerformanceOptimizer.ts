@@ -249,7 +249,11 @@ export class PerformanceOptimizer {
   ): void {
     if (!this.config.enableBatching) {
       // Process immediately if batching is disabled
-      this.processOperation(operation);
+      const fullOperation: BatchOperation = {
+        ...operation,
+        timestamp: performance.now()
+      };
+      this.processOperation(fullOperation);
       return;
     }
 

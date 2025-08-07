@@ -153,6 +153,7 @@ export const ResponsiveImage = forwardRef<HTMLImageElement, ResponsiveImageProps
   format = 'webp',
   className,
   containerClassName,
+  onError,
   ...props
 }, ref) => {
   const [isLoading, setIsLoading] = useState(true);
@@ -178,7 +179,12 @@ export const ResponsiveImage = forwardRef<HTMLImageElement, ResponsiveImageProps
   const handleResponsiveImageError = useCallback((event: React.SyntheticEvent<HTMLImageElement, Event>) => {
     setImageError(true);
     setIsLoading(false);
-  }, []);
+    // Call original onError if provided
+    if (onError) {
+      const error = new Error(`Image failed to load: ${src}`);
+      onError(error);
+    }
+  }, [onError, src]);
 
 
   if (!responsive) {

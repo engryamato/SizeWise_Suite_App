@@ -355,9 +355,5 @@ export interface EquipmentDimensions {
   length?: number // Optional length property for compatibility
 }
 
-// Enhanced Equipment interface with missing properties
-export interface EnhancedEquipment extends Equipment {
-  dimensions?: EquipmentDimensions
-  isSource?: boolean
-  isTerminal?: boolean
-}
+// Note: EnhancedEquipment is no longer needed as the Canvas3D Equipment interface
+// already includes isSource and isTerminal properties. Use Equipment directly.

@@ -253,8 +253,8 @@ export const SystemValidationOverlay: React.FC<SystemValidationOverlayProps> = (
 // Status Tab Component
 const StatusTab: React.FC<{ calculationState: RealTimeCalculationState }> = ({ calculationState }) => {
   const totalElements = calculationState.calculationResults.size;
-  const calculatedElements = Array.from(calculationState.calculationResults.values()).filter(r => r.success).length;
-  const failedElements = Array.from(calculationState.calculationResults.values()).filter(r => !r.success).length;
+  const calculatedElements = Array.from(calculationState.calculationResults.values()).filter((r: any) => r.success).length;
+  const failedElements = Array.from(calculationState.calculationResults.values()).filter((r: any) => !r.success).length;
   const progress = totalElements > 0 ? (calculatedElements / totalElements) * 100 : 0;
 
   return (

@@ -1316,22 +1316,26 @@ export class ErrorRecoveryService implements IErrorRecoveryService {
   private getDefaultGuidanceTemplates(): Record<ErrorCategory, UserGuidance> {
     const defaultGuidance: UserGuidance = {
       title: 'Error Guidance',
-      description: 'Please try the following steps to resolve this issue.',
+      message: 'Please try the following steps to resolve this issue.',
       steps: [
         {
+          id: 'refresh-page',
           title: 'Refresh the page',
           description: 'Try refreshing the page to see if the issue resolves.',
-          action: 'refresh'
+          action: 'refresh',
+          isRequired: true,
+          order: 1
         }
       ],
       helpLinks: [
         {
           title: 'Contact Support',
           url: '/support',
+          type: 'support',
           description: 'Get help from our support team'
         }
       ],
-      estimatedTime: '2-5 minutes'
+      estimatedResolutionTime: 5
     };
 
     return {
@@ -1354,6 +1358,12 @@ export class ErrorRecoveryService implements IErrorRecoveryService {
       [ErrorCategory.PERFORMANCE_MONITORING]: { ...defaultGuidance, title: 'Performance Monitoring Error Guidance' },
       [ErrorCategory.CONFIGURATION]: { ...defaultGuidance, title: 'Configuration Error Guidance' },
       [ErrorCategory.INITIALIZATION]: { ...defaultGuidance, title: 'Initialization Error Guidance' },
+      [ErrorCategory.AUTHENTICATION]: { ...defaultGuidance, title: 'Authentication Error Guidance' },
+      [ErrorCategory.AUTHORIZATION]: { ...defaultGuidance, title: 'Authorization Error Guidance' },
+      [ErrorCategory.BUSINESS_LOGIC]: { ...defaultGuidance, title: 'Business Logic Error Guidance' },
+      [ErrorCategory.SYSTEM]: { ...defaultGuidance, title: 'System Error Guidance' },
+      [ErrorCategory.EXTERNAL_SERVICE]: { ...defaultGuidance, title: 'External Service Error Guidance' },
+      [ErrorCategory.ACCESSIBILITY]: { ...defaultGuidance, title: 'Accessibility Error Guidance' },
       [ErrorCategory.UNKNOWN]: { ...defaultGuidance, title: 'Unknown Error Guidance' }
     };
   }

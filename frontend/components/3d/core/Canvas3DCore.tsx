@@ -55,13 +55,19 @@ const SceneContent: React.FC<{
   gridConfig: GridConfig;
   lightingConfig: LightingConfig;
   onSelectionChange?: (selectedIds: string[]) => void;
-}> = ({ 
-  segments, 
-  equipment, 
-  fittings, 
-  gridConfig, 
+  onCanvasClick?: (event: any) => void;
+  onCanvasMouseMove?: (event: any) => void;
+  enableDrawing?: boolean;
+}> = ({
+  segments,
+  equipment,
+  fittings,
+  gridConfig,
   lightingConfig,
-  onSelectionChange 
+  onSelectionChange,
+  onCanvasClick,
+  onCanvasMouseMove,
+  enableDrawing
 }) => {
   const { camera, gl, scene } = useThree();
   const raycaster = useMemo(() => new Raycaster(), []);
@@ -76,16 +82,82 @@ const SceneContent: React.FC<{
   const handleClick = useCallback((event: any) => {
     raycaster.setFromCamera(mouse.current, camera);
     const intersects = raycaster.intersectObjects(scene.children, true);
-    
+
     if (intersects.length > 0) {
       const selectedObject = intersects[0].object;
       const selectedId = selectedObject.userData?.id;
-      
+
       if (selectedId && onSelectionChange) {
         onSelectionChange([selectedId]);
       }
     }
   }, [camera, scene, raycaster, onSelectionChange]);
+
+  // Handle canvas click for drawing
+  const handleCanvasClick = useCallback((event: any) => {
+    if (enableDrawing && onCanvasClick) {
+      // Get world position from the click event
+      const intersectionPoint = event.intersections?.[0]?.point;
+      if (intersectionPoint) {
+        onCanvasClick({ ...event, point: intersectionPoint });
+      } else {
+        // If no intersection with geometry, project the click onto a ground plane using raycasting
+        raycaster.setFromCamera(mouse.current, camera);
+
+        // Create a ground plane at Y=0
+        const groundPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+        const intersectionPoint = new THREE.Vector3();
+
+        // Calculate intersection with ground plane
+        const ray = raycaster.ray;
+        const intersectPoint = ray.intersectPlane(groundPlane, intersectionPoint);
+
+        if (intersectPoint) {
+          onCanvasClick({ ...event, point: intersectPoint });
+        } else {
+          // Fallback: project mouse position to a point in front of camera
+          const direction = new THREE.Vector3();
+          camera.getWorldDirection(direction);
+          const distance = 10; // 10 units in front of camera
+          const fallbackPoint = camera.position.clone().add(direction.multiplyScalar(distance));
+          onCanvasClick({ ...event, point: fallbackPoint });
+        }
+      }
+    }
+  }, [enableDrawing, onCanvasClick, raycaster, mouse, camera]);
+
+  // Handle canvas mouse move for drawing preview
+  const handleCanvasMouseMove = useCallback((event: any) => {
+    if (enableDrawing && onCanvasMouseMove) {
+      // Get world position from the mouse move event
+      const intersectionPoint = event.intersections?.[0]?.point;
+      if (intersectionPoint) {
+        onCanvasMouseMove({ ...event, point: intersectionPoint });
+      } else {
+        // If no intersection with geometry, project the mouse position onto a ground plane using raycasting
+        raycaster.setFromCamera(mouse.current, camera);
+
+        // Create a ground plane at Y=0
+        const groundPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+        const intersectionPoint = new THREE.Vector3();
+
+        // Calculate intersection with ground plane
+        const ray = raycaster.ray;
+        const intersectPoint = ray.intersectPlane(groundPlane, intersectionPoint);
+
+        if (intersectPoint) {
+          onCanvasMouseMove({ ...event, point: intersectPoint });
+        } else {
+          // Fallback: project mouse position to a point in front of camera
+          const direction = new THREE.Vector3();
+          camera.getWorldDirection(direction);
+          const distance = 10; // 10 units in front of camera
+          const fallbackPoint = camera.position.clone().add(direction.multiplyScalar(distance));
+          onCanvasMouseMove({ ...event, point: fallbackPoint });
+        }
+      }
+    }
+  }, [enableDrawing, onCanvasMouseMove, raycaster, mouse, camera]);
 
   return (
     <>
@@ -130,6 +202,20 @@ const SceneContent: React.FC<{
           followCamera={false}
           infiniteGrid={gridConfig.infiniteGrid}
         />
+      )}
+
+      {/* Invisible drawing plane for capturing clicks in empty space */}
+      {enableDrawing && (
+        <mesh
+          position={[0, 0, 0]}
+          rotation={[-Math.PI / 2, 0, 0]}
+          onClick={handleCanvasClick}
+          onPointerMove={handleCanvasMouseMove}
+          visible={false}
+        >
+          <planeGeometry args={[1000, 1000]} />
+          <meshBasicMaterial transparent opacity={0} />
+        </mesh>
       )}
 
       {/* Duct Segments */}
@@ -358,71 +444,7 @@ export const Canvas3DCore: React.FC<Canvas3DCoreProps> = ({
     }
   }, [onCameraChange]);
 
-  // Handle canvas click for drawing
-  const handleCanvasClick = useCallback((event: any) => {
-    if (enableDrawing && onCanvasClick) {
-      // Get world position from the click event
-      const intersectionPoint = event.intersections?.[0]?.point;
-      if (intersectionPoint) {
-        onCanvasClick({ ...event, point: intersectionPoint });
-      } else {
-        // If no intersection with geometry, project the click onto a ground plane using raycasting
-        raycaster.setFromCamera(mouse.current, camera);
 
-        // Create a ground plane at Y=0
-        const groundPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
-        const intersectionPoint = new THREE.Vector3();
-
-        // Calculate intersection with ground plane
-        const ray = raycaster.ray;
-        const intersectPoint = ray.intersectPlane(groundPlane, intersectionPoint);
-
-        if (intersectPoint) {
-          onCanvasClick({ ...event, point: intersectPoint });
-        } else {
-          // Fallback: project mouse position to a point in front of camera
-          const direction = new THREE.Vector3();
-          camera.getWorldDirection(direction);
-          const distance = 10; // 10 units in front of camera
-          const fallbackPoint = camera.position.clone().add(direction.multiplyScalar(distance));
-          onCanvasClick({ ...event, point: fallbackPoint });
-        }
-      }
-    }
-  }, [enableDrawing, onCanvasClick, raycaster, mouse, camera]);
-
-  // Handle canvas mouse move for drawing preview
-  const handleCanvasMouseMove = useCallback((event: any) => {
-    if (enableDrawing && onCanvasMouseMove) {
-      // Get world position from the mouse move event
-      const intersectionPoint = event.intersections?.[0]?.point;
-      if (intersectionPoint) {
-        onCanvasMouseMove({ ...event, point: intersectionPoint });
-      } else {
-        // If no intersection with geometry, project the mouse position onto a ground plane using raycasting
-        raycaster.setFromCamera(mouse.current, camera);
-
-        // Create a ground plane at Y=0
-        const groundPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
-        const intersectionPoint = new THREE.Vector3();
-
-        // Calculate intersection with ground plane
-        const ray = raycaster.ray;
-        const intersectPoint = ray.intersectPlane(groundPlane, intersectionPoint);
-
-        if (intersectPoint) {
-          onCanvasMouseMove({ ...event, point: intersectPoint });
-        } else {
-          // Fallback: project mouse position to a point in front of camera
-          const direction = new THREE.Vector3();
-          camera.getWorldDirection(direction);
-          const distance = 10; // 10 units in front of camera
-          const fallbackPoint = camera.position.clone().add(direction.multiplyScalar(distance));
-          onCanvasMouseMove({ ...event, point: fallbackPoint });
-        }
-      }
-    }
-  }, [enableDrawing, onCanvasMouseMove, raycaster, mouse, camera]);
 
   return (
     <div ref={canvasRef} className="w-full h-full">
@@ -441,8 +463,7 @@ export const Canvas3DCore: React.FC<Canvas3DCoreProps> = ({
           depth: true,
           failIfMajorPerformanceCaveat: false
         }}
-        onClick={handleCanvasClick}
-        onPointerMove={handleCanvasMouseMove}
+
       >
         {/* Environment */}
         <Environment
@@ -476,6 +497,9 @@ export const Canvas3DCore: React.FC<Canvas3DCoreProps> = ({
           gridConfig={gridConfig}
           lightingConfig={lightingConfig}
           onSelectionChange={onSelectionChange}
+          onCanvasClick={onCanvasClick}
+          onCanvasMouseMove={onCanvasMouseMove}
+          enableDrawing={enableDrawing}
         />
 
         {/* Additional children */}

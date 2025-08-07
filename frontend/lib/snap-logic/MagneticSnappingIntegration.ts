@@ -26,6 +26,28 @@ import {
 } from './system/TouchGestureHandler';
 
 /**
+ * Touch gesture callbacks interface
+ */
+export interface TouchGestureCallbacks {
+  onTap?: (event: GestureEvent) => void;
+  onLongPress?: (event: GestureEvent) => void;
+  onPinch?: (event: GestureEvent) => void;
+  onPan?: (event: GestureEvent) => void;
+}
+
+/**
+ * Gesture event interface
+ */
+export interface GestureEvent {
+  type: string;
+  position: { x: number; y: number };
+  timestamp: number;
+  direction?: { x: number; y: number };
+  touches?: Array<{ x: number; y: number }>;
+  data?: any;
+}
+
+/**
  * Magnetic snapping configuration
  */
 interface MagneticSnappingConfig {
@@ -274,9 +296,9 @@ export class MagneticSnappingIntegration {
     if (this.touchElement) {
       let action: 'undo' | 'redo' | null = null;
 
-      if (event.direction === 'left') {
+      if (event.direction && event.direction.x < -0.5) {
         action = 'undo';
-      } else if (event.direction === 'right') {
+      } else if (event.direction && event.direction.x > 0.5) {
         action = 'redo';
       }
 
@@ -628,7 +650,7 @@ export class MagneticSnappingIntegration {
 
     if (this.touchGestureHandler) {
       this.touchGestureHandler.updateConfig({
-        enableHapticFeedback: this.config.touchGestures.hapticFeedback
+        hapticFeedback: this.config.touchGestures.hapticFeedback
       });
     }
   }

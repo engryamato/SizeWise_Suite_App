@@ -269,9 +269,9 @@ export class SnapLogicSystem {
     this.magneticIntegration.setCurrentTool(tool);
     
     // Activate/deactivate based on tool
-    if (tool === 'pencil') {
+    if (tool === ('pencil' as DrawingTool)) {
       this.activate();
-    } else if (this.state.currentTool === 'pencil' && tool !== 'pencil') {
+    } else if (this.state.currentTool === ('pencil' as DrawingTool) && tool !== ('pencil' as DrawingTool)) {
       this.deactivate();
     }
   }

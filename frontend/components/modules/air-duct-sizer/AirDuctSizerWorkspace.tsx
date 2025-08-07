@@ -158,7 +158,7 @@ export const AirDuctSizerWorkspace: React.FC<AirDuctSizerWorkspaceProps> = ({
           material3D: {
             type: (segment.material === 'aluminum' || segment.material === 'stainless_steel')
               ? segment.material as 'aluminum' | 'stainless_steel'
-              : 'galvanized_steel',
+              : 'galvanized_steel' as const,
             gauge: '26' as const,
             finish: 'standard' as const
           },

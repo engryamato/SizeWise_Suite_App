@@ -211,6 +211,8 @@ export interface AccessibleComponentProps {
   'aria-colindex'?: number;
   'aria-rowspan'?: number;
   'aria-colspan'?: number;
+  'aria-modal'?: boolean;
+  'aria-orientation'?: 'horizontal' | 'vertical';
 
   // Keyboard navigation
   tabIndex?: number;

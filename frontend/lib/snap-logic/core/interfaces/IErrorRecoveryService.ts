@@ -24,16 +24,45 @@ export enum ErrorSeverity {
  * Error categories
  */
 export enum ErrorCategory {
+  // Core system errors
+  SNAP_LOGIC = 'snap_logic',
+  PERFORMANCE = 'performance',
   VALIDATION = 'validation',
+
+  // Drawing and geometry errors
+  CENTERLINE = 'centerline',
+  GEOMETRY = 'geometry',
+  SPATIAL_INDEX = 'spatial_index',
+
+  // User interaction errors
+  TOUCH_GESTURE = 'touch_gesture',
+  USER_INPUT = 'user_input',
+  UI_COMPONENT = 'ui_component',
+
+  // System integration errors
+  CACHE = 'cache',
+  STORAGE = 'storage',
   NETWORK = 'network',
+
+  // HVAC specific errors
+  SMACNA_VALIDATION = 'smacna_validation',
+  FITTING_CALCULATION = 'fitting_calculation',
+  BRANCH_ANALYSIS = 'branch_analysis',
+
+  // Debug and monitoring errors
+  DEBUG_COLLECTION = 'debug_collection',
+  PERFORMANCE_MONITORING = 'performance_monitoring',
+
+  // General system errors
   AUTHENTICATION = 'authentication',
   AUTHORIZATION = 'authorization',
   BUSINESS_LOGIC = 'business_logic',
   SYSTEM = 'system',
-  USER_INPUT = 'user_input',
   EXTERNAL_SERVICE = 'external_service',
-  PERFORMANCE = 'performance',
-  ACCESSIBILITY = 'accessibility'
+  ACCESSIBILITY = 'accessibility',
+  CONFIGURATION = 'configuration',
+  INITIALIZATION = 'initialization',
+  UNKNOWN = 'unknown'
 }
 
 /**

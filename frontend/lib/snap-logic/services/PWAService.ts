@@ -68,10 +68,10 @@ export class CacheManager implements ICacheManager {
     if (cache) {
       const response = await cache.match(url);
       if (response) {
-        this.recordCacheHit(cache.name || 'default');
+        this.recordCacheHit('default');
         return response;
       } else {
-        this.recordCacheMiss(cache.name || 'default');
+        this.recordCacheMiss('default');
       }
     }
     return null;
@@ -848,7 +848,7 @@ export class PWAService implements IPWAService {
   async setupBackgroundSync(config: BackgroundSyncConfig): Promise<void> {
     if ('serviceWorker' in navigator && 'sync' in window.ServiceWorkerRegistration.prototype) {
       const registration = await navigator.serviceWorker.ready;
-      await registration.sync.register(config.tag);
+      await (registration as any).sync?.register(config.tag);
       this.logger.info(`Background sync registered: ${config.tag}`);
     } else {
       this.logger.warn('Background sync not supported');

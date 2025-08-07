@@ -191,7 +191,7 @@ export const ElbowGeometry: React.FC<ElbowGeometryProps> = ({
         adjustedHeight,
         sceneRadius,
         angle,
-        throatType
+        throatType as 'square' | 'radius'
       );
     }
   }, [shape, sceneWidth, sceneHeight, sceneDiameter, sceneRadius, angle, throatType, wallThickness]);

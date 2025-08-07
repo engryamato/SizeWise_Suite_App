@@ -190,7 +190,7 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
         currentProject: {
           ...state.currentProject,
           equipment: state.currentProject.equipment.map(e =>
-            e.equipment_id === equipmentId ? { ...e, ...updates } : e
+            e.id === equipmentId ? { ...e, ...updates } : e
           )
         }
       };
@@ -227,7 +227,7 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
       return {
         currentProject: {
           ...state.currentProject,
-          equipment: state.currentProject.equipment.filter(e => e.equipment_id !== equipmentId)
+          equipment: state.currentProject.equipment.filter(e => e.id !== equipmentId)
         }
       };
     });
@@ -286,7 +286,7 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
 
   getEquipmentById: (equipmentId: string) => {
     const state = get();
-    return state.currentProject?.equipment.find(e => e.equipment_id === equipmentId);
+    return state.currentProject?.equipment.find(e => e.id === equipmentId);
   },
 
   setSelectedRoom: (room: Room | null) => {

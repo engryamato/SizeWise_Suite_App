@@ -102,7 +102,11 @@ export const useAuthStore = create<AuthState>((set, get) => {
 
   // Initialize on store creation
   if (typeof window !== 'undefined') {
-    setTimeout(initializeAuth, 0);
+    // NEXT_PUBLIC_* envs are inlined by Next.js at build-time; use direct comparison
+    const enableOfflineAuth = process.env.NEXT_PUBLIC_ENABLE_OFFLINE_AUTH !== 'false';
+    if (enableOfflineAuth) {
+      setTimeout(initializeAuth, 0);
+    }
   }
 
   return {
@@ -123,11 +127,21 @@ export const useAuthStore = create<AuthState>((set, get) => {
       // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 1000));
 
+      // Validate credentials (only allow known super admin in mock)
+      const VALID_EMAIL = 'admin@sizewise.com';
+      const VALID_PASSWORD = 'SizeWise2024!6EAF4610705941';
+      const isValid = email === VALID_EMAIL && password === VALID_PASSWORD;
+      if (!isValid) {
+        set({ isLoading: false });
+        return false;
+      }
+
       const mockUser: User = {
         id: '1',
         email,
-        name: 'Test User',
-        tier: 'pro',
+        name: 'Super Admin',
+        tier: 'super_admin',
+        is_super_admin: true,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
       };
@@ -135,13 +149,24 @@ export const useAuthStore = create<AuthState>((set, get) => {
       const mockToken = 'mock-jwt-token-' + Date.now();
       const mockTierStatus: TierStatus = {
         tier: mockUser.tier,
-        features: { unlimited: mockUser.tier === 'enterprise' },
+        features: { unlimited: true },
         usage: { projects: 1 },
-        limits: { projects: mockUser.tier === 'free' ? 3 : 100 }
+        limits: { projects: 1000 }
       };
 
       // Store token in cookie for middleware access
       setCookie('auth-token', mockToken, 7);
+
+      // Persist lightweight auth data for tests and app features expecting localStorage
+      try {
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('sizewise_token', mockToken);
+          localStorage.setItem('sizewise_user', JSON.stringify(mockUser));
+          localStorage.setItem('sizewise_tier_status', JSON.stringify(mockTierStatus));
+        }
+      } catch (e) {
+        console.warn('Failed to persist auth data to localStorage:', e);
+      }
 
       set({
         user: mockUser,
@@ -150,7 +175,7 @@ export const useAuthStore = create<AuthState>((set, get) => {
         token: mockToken,
         tierStatus: mockTierStatus,
         lastSync: new Date().toISOString(),
-        canEditComputationalProperties: mockUser.tier === 'pro' || mockUser.tier === 'enterprise' || mockUser.tier === 'super_admin'
+        canEditComputationalProperties: true
       });
 
       return true;
@@ -206,6 +231,15 @@ export const useAuthStore = create<AuthState>((set, get) => {
   logout: () => {
     // Remove token from cookie
     deleteCookie('auth-token');
+
+    // Clear persisted auth data
+    try {
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('sizewise_token');
+        localStorage.removeItem('sizewise_user');
+        localStorage.removeItem('sizewise_tier_status');
+      }
+    } catch {}
 
     set({
       user: null,

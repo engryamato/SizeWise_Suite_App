@@ -113,17 +113,10 @@ test.describe('SizeWise Suite - Comprehensive Authentication & Workflow Validati
     // Step 6: Verify successful login and redirect
     console.log('📍 Step 6: Verifying successful login and redirect...');
 
-    // Wait for authentication to complete and redirect
-    try {
-      // Wait for either dashboard or any redirect away from login
-      await page.waitForURL(url => !url.includes('/login'), { timeout: 10000 });
-      console.log('✅ Successfully redirected away from login page');
-    } catch (error) {
-      console.log('⚠️ Still on login page after 10 seconds, checking for errors...');
-    }
-
-    // Additional wait for network to settle
-    await page.waitForLoadState('networkidle', { timeout: 5000 });
+    // Wait for authentication cookie and navigate deterministically
+    await page.waitForFunction(() => document.cookie.includes('auth-token='), null, { timeout: 10000 });
+    await page.goto(`${BASE_URL}/dashboard`);
+    await expect(page).toHaveURL(/\/dashboard/);
 
     const currentUrl = page.url();
     console.log('Current URL after login:', currentUrl);

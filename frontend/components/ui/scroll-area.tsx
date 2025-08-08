@@ -10,6 +10,7 @@ const ScrollAreaPrimitive = {
       {children}
     </div>
   )),
+
   Viewport: React.forwardRef<HTMLDivElement, any>(({ className, children, ...props }, ref) => (
     <div ref={ref} className={cn("h-full w-full rounded-[inherit] overflow-auto", className)} {...props}>
       {children}
@@ -53,6 +54,13 @@ const ScrollAreaPrimitive = {
 };
 
 // Add displayName for compatibility
+// Additional displayNames for ESLint react/display-name rule
+ScrollAreaPrimitive.Root.displayName = "ScrollAreaRoot";
+ScrollAreaPrimitive.Viewport.displayName = "ScrollAreaViewport";
+ScrollAreaPrimitive.Scrollbar.displayName = "ScrollAreaScrollbar";
+ScrollAreaPrimitive.Thumb.displayName = "ScrollAreaThumb";
+ScrollAreaPrimitive.ScrollAreaThumb.displayName = "ScrollAreaThumb";
+
 ScrollAreaPrimitive.ScrollAreaScrollbar.displayName = "ScrollAreaScrollbar";
 
 const ScrollArea = React.forwardRef<

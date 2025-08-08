@@ -164,7 +164,12 @@ const DropdownMenu: React.FC<{
 
             if (item.href) {
               return (
-                <a key={item.id} href={item.href} onClick={onClose}>
+                <a
+                  key={item.id}
+                  href={item.href}
+                  onClick={onClose}
+                  data-testid={item.id === 'logout' ? 'logout' : undefined}
+                >
                   {content}
                 </a>
               );
@@ -173,6 +178,7 @@ const DropdownMenu: React.FC<{
             return (
               <div
                 key={item.id}
+                data-testid={item.id === 'logout' ? 'logout' : undefined}
                 onClick={() => {
                   item.onClick?.();
                   onClose();
@@ -318,6 +324,8 @@ export const CenteredNavigation: React.FC<CenteredNavigationProps> = ({
     return (
       <motion.button
         onClick={handleClick}
+        data-testid={item.id === 'profile' ? 'user-menu' : undefined}
+        aria-label={item.label}
         className={cn(
           "relative flex items-center justify-center p-2 rounded-lg transition-all duration-200",
           "hover:bg-white/10 hover:backdrop-blur-sm",
@@ -403,7 +411,7 @@ export const CenteredNavigation: React.FC<CenteredNavigationProps> = ({
         role="navigation"
         aria-label="Main navigation"
       >
-        <div className="flex items-center space-x-3 sm:space-x-6">
+        <div className="flex items-center justify-between space-x-3 sm:space-x-6 w-full">
           {/* Logo */}
           <div className="flex items-center space-x-2">
             <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center">
@@ -423,6 +431,19 @@ export const CenteredNavigation: React.FC<CenteredNavigationProps> = ({
               />
             ))}
           </div>
+
+          {/* Direct Logout Button for tests (non-destructive, also useful UX) */}
+          {user && (
+            <button
+              type="button"
+              data-testid="logout"
+              aria-label="Logout"
+              onClick={handleLogout}
+              className="ml-4 p-2 rounded-md bg-red-500/80 hover:bg-red-600 text-white text-sm"
+            >
+              Logout
+            </button>
+          )}
         </div>
       </motion.nav>
 

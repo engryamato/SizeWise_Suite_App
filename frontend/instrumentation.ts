@@ -6,10 +6,7 @@
 import * as Sentry from '@sentry/nextjs';
 
 export async function register() {
-  // Temporarily disable Sentry instrumentation to test if it's causing server hang
-  console.log('Instrumentation register called - temporarily disabled');
-  return;
-
+  // Sentry instrumentation is enabled
   if (process.env.NEXT_RUNTIME === 'nodejs') {
     // Server-side instrumentation
     await import('./sentry.server.config');

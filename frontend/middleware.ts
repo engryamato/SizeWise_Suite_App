@@ -256,51 +256,46 @@ function createForbiddenResponse(): NextResponse {
 // =============================================================================
 
 export function middleware(request: NextRequest) {
-  // Temporarily disable middleware to test if it's causing server hang
-  console.log('Middleware called for:', request.nextUrl.pathname);
-  return NextResponse.next();
+  const { pathname } = request.nextUrl;
 
-  // Original middleware logic (temporarily disabled):
-  // const { pathname } = request.nextUrl;
+  // Skip middleware for public routes
+  if (isPublicRoute(pathname)) {
+    return NextResponse.next();
+  }
 
-  // // Skip middleware for public routes
-  // if (isPublicRoute(pathname)) {
-  //   return NextResponse.next();
-  // }
+  // Get and validate authentication token (cookie name: 'auth-token')
+  const token = getAuthToken(request);
+  const validation = validateToken(token || '');
 
-  // // Get and validate authentication token
-  // const token = getAuthToken(request);
-  // const validation = validateToken(token || '');
+  // Handle unauthenticated requests
+  if (!validation.valid) {
+    if (isProtectedApiRoute(pathname)) {
+      return createUnauthorizedResponse();
+    }
+    return createLoginRedirect(request);
+  }
 
-  // // Handle unauthenticated requests
-  // if (!validation.valid) {
-  //   if (isProtectedApiRoute(pathname)) {
-  //     return createUnauthorizedResponse();
-  //   }
-  //   return createLoginRedirect(request);
-  // }
+  // Handle admin routes - require super admin privileges
+  if (isAdminRoute(pathname)) {
+    if (!validation.isSuperAdmin) {
+      if (isProtectedApiRoute(pathname)) {
+        return createForbiddenResponse();
+      }
+      // Redirect non-API admin routes to main app
+      return NextResponse.redirect(new URL('/', request.url));
+    }
+  }
 
-  // // Handle admin routes - require super admin privileges
-  // if (isAdminRoute(pathname)) {
-  //   if (!validation.isSuperAdmin) {
-  //     if (isProtectedApiRoute(pathname)) {
-  //       return createForbiddenResponse();
-  //     }
-  //     // Redirect non-API admin routes to main app
-  //     return NextResponse.redirect(new URL('/', request.url));
-  //   }
-  // }
+  // Add user info to headers for downstream components
+  const response = NextResponse.next();
+  if (validation.user) {
+    response.headers.set('x-user-id', validation.user.id);
+    response.headers.set('x-user-email', validation.user.email);
+    response.headers.set('x-user-tier', validation.user.tier);
+    response.headers.set('x-is-super-admin', validation.isSuperAdmin ? 'true' : 'false');
+  }
 
-  // // Add user info to headers for downstream components
-  // const response = NextResponse.next();
-  // if (validation.user) {
-  //   response.headers.set('x-user-id', validation.user.id);
-  //   response.headers.set('x-user-email', validation.user.email);
-  //   response.headers.set('x-user-tier', validation.user.tier);
-  //   response.headers.set('x-is-super-admin', validation.isSuperAdmin ? 'true' : 'false');
-  // }
-
-  // return response;
+  return response;
 }
 
 // =============================================================================

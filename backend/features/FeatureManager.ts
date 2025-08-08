@@ -43,6 +43,12 @@ export class FeatureManager {
         : `Requires ${required} tier`,
     };
   }
+
+  // Added to align with usages from FileManager
+  async getUserTier(userId?: string): Promise<'free' | 'pro' | 'enterprise'> {
+    // TODO: Integrate with user repository; default to 'pro' for dev
+    return 'pro';
+  }
 }
 
 export default FeatureManager;

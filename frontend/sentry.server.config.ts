@@ -27,17 +27,18 @@ Sentry.init({
   ],
 
   // Environment configuration
-  environment: process.env.NODE_ENV,
+  environment: process.env.NEXT_PUBLIC_SENTRY_ENVIRONMENT || process.env.NODE_ENV,
 
   // Release tracking
-  release: process.env.NEXT_PUBLIC_SENTRY_RELEASE,
+  release: process.env.NEXT_PUBLIC_SENTRY_RELEASE || process.env.VERCEL_GIT_COMMIT_SHA || process.env.GITHUB_SHA,
 
   // Custom tags for SizeWise Suite server
   initialScope: {
     tags: {
       component: "server",
       platform: "nodejs",
-      application: "sizewise-suite"
+      application: "sizewise-suite",
+      deployment_env: process.env.NEXT_PUBLIC_SENTRY_ENVIRONMENT || process.env.NODE_ENV,
     },
   },
 

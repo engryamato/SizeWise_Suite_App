@@ -161,3 +161,6 @@ playwright-report/
 **/test-results/**/*.webm
 **/playwright-report/**/*.webm
 
+# Jest cache
+.jest-cache/
+

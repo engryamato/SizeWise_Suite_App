@@ -150,7 +150,7 @@ export class HardwareFingerprint {
       
       for (const [name, addrs] of Object.entries(interfaces)) {
         if (addrs) {
-          for (const addr of addrs) {
+          for (const addr of addrs as any[]) {
             if (addr.mac && addr.mac !== '00:00:00:00:00:00' && !addr.internal) {
               macAddresses.push(addr.mac);
             }

@@ -1,9 +1,9 @@
 /**
  * TierEnforcer - Business Logic Tier Enforcement Engine
- * 
+ *
  * MISSION-CRITICAL: Service layer for tier-based business logic enforcement
  * Complements UI tier enforcement with server-side validation and limits
- * 
+ *
  * @see docs/implementation/tier-system/tier-boundaries-specification.md
  * @see docs/developer-guide/tier-implementation-checklist.md section 2.5
  */
@@ -453,6 +453,45 @@ export class TierEnforcer {
         reason: `Validation error: ${error.message}`,
         currentTier: 'free'
       };
+    }
+  }
+
+
+  /**
+   * Validate generic file access based on tier (read/write)
+   * Non-destructive additive method to align with Electron FileManager usage
+   */
+  public async validateFileAccess(userId: string, mode: 'read' | 'write'): Promise<EnforcementResult> {
+    try {
+      const userTier = await this.getUserTier(userId);
+      // For now, allow both read and write for free tier, align with feature flags later
+      return { allowed: true, currentTier: userTier };
+    } catch (error) {
+      return { allowed: false, currentTier: 'free', reason: `Validation error: ${error.message}` };
+    }
+  }
+
+  /**
+   * Validate import access based on file extension and size
+   * Aligns with FileManager.importProject usage; uses export limits heuristically
+   */
+  public async validateImportAccess(userId: string, extension: string, sizeBytes?: number): Promise<EnforcementResult> {
+    try {
+      const userTier = await this.getUserTier(userId);
+      const limits = TierEnforcer.TIER_LIMITS[userTier];
+      // Basic size gating similar to FileManager
+      const sizeLimit = userTier === 'free' ? 10 * 1024 * 1024 : userTier === 'pro' ? 100 * 1024 * 1024 : 1024 * 1024 * 1024;
+      if (sizeBytes && sizeBytes > sizeLimit) {
+        return {
+          allowed: false,
+          currentTier: userTier,
+          reason: `Import size exceeds tier limit`,
+          requiredTier: sizeBytes > 100 * 1024 * 1024 ? 'enterprise' : 'pro'
+        };
+      }
+      return { allowed: true, currentTier: userTier };
+    } catch (error) {
+      return { allowed: false, currentTier: 'free', reason: `Validation error: ${error.message}` };
     }
   }
 

@@ -144,7 +144,7 @@ export class KeystoreManager {
     try {
       const key = this.getEncryptionKey();
       const iv = crypto.randomBytes(16);
-      const cipher = crypto.createCipher('aes-256-gcm', key);
+      const cipher = crypto.createCipheriv('aes-256-gcm', Buffer.from(key, 'hex'), iv);
       
       let encrypted = cipher.update(JSON.stringify(license), 'utf8', 'hex');
       encrypted += cipher.final('hex');
@@ -173,7 +173,7 @@ export class KeystoreManager {
       const key = this.getEncryptionKey();
       const data = JSON.parse(Buffer.from(encryptedData, 'base64').toString('utf8'));
       
-      const decipher = crypto.createDecipher('aes-256-gcm', key);
+      const decipher = crypto.createDecipheriv('aes-256-gcm', Buffer.from(key, 'hex'), Buffer.from(data.iv, 'hex'));
       decipher.setAuthTag(Buffer.from(data.authTag, 'hex'));
       
       let decrypted = decipher.update(data.data, 'hex', 'utf8');

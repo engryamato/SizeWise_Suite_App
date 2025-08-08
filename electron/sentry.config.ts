@@ -295,10 +295,10 @@ export function captureElectronError(
         scope.setTag('electron.operation', context.operation);
       }
       
-      if (context.windowId) {
-        scope.setTag('electron.window_id', context.windowId);
+      if (context.windowId != null) {
+        scope.setTag('electron.window_id', String(context.windowId));
       }
-      
+
       if (context.metadata) {
         scope.setContext('electron_metadata', context.metadata);
       }

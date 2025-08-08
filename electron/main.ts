@@ -1,12 +1,14 @@
 /**
  * Electron Main Process - Desktop Application Entry Point
- * 
+ *
  * MISSION-CRITICAL: Main Electron process with Next.js integration and tier enforcement
  * Provides secure desktop foundation with feature flag initialization and license validation
- * 
+ *
  * @see docs/implementation/tier-system/tier-boundaries-specification.md
  * @see docs/developer-guide/tier-implementation-checklist.md section 3.1
  */
+
+/// <reference path="./types/shims.d.ts" />
 
 import { app, BrowserWindow, ipcMain, dialog, shell, Menu } from 'electron';
 import { join } from 'path';
@@ -175,9 +177,8 @@ class ElectronApp {
         ? join(__dirname, '../data/sizewise-dev.db')
         : join(app.getPath('userData'), 'sizewise.db');
 
-      this.state.dbManager = new DatabaseManager({ 
-        filePath: dbPath,
-        encryption: true // Enable encryption for desktop
+      this.state.dbManager = new DatabaseManager({
+        filePath: dbPath
       });
 
       await this.state.dbManager.initialize();
@@ -250,7 +251,6 @@ class ElectronApp {
         webPreferences: {
           nodeIntegration: false,
           contextIsolation: true,
-          enableRemoteModule: false,
           preload: join(__dirname, 'preload.js'),
           webSecurity: true,
           allowRunningInsecureContent: false,

@@ -1,7 +1,7 @@
 ---
-type: "always_apply"
+type: "agent_requested"
+description: "Example description"
 ---
-
 # Error-Fix
 
 Certainly. Here’s a **comprehensive, serious, and systematic Markdown instruction** you can give to an AI agent or developer (such as Augment) to guide error fixing with maximum discipline and production-readiness:

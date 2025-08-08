@@ -8,8 +8,8 @@
  * @see docs/developer-guide/tier-implementation-checklist.md section 2.5
  */
 
-import { FeatureManager } from '../../../backend/features/FeatureManager';
-import { DatabaseManager } from '../../../backend/database/DatabaseManager';
+import { FeatureManager } from '../../features/FeatureManager';
+import { DatabaseManager } from '../../database/DatabaseManager';
 import AirDuctCalculator, { DuctSizingInputs, DuctSizingResults } from '../calculations/AirDuctCalculator';
 import SMACNAValidator, { CalculationData, ValidationResult } from '../calculations/SMACNAValidator';
 

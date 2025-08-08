@@ -1,3 +1,7 @@
+---
+type: "agent_requested"
+description: "Example description"
+---
 # Sentry Usage Guidelines for SizeWise Suite
 
 These rules provide guidance for correctly implementing Sentry functionality within the SizeWise Suite project.

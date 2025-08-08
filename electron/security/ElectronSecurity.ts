@@ -10,7 +10,7 @@
 
 import { app, BrowserWindow, WebContents, session } from 'electron';
 import { join } from 'path';
-import { SecurityManager } from '../../backend/security/SecurityManager';
+import { SecurityManager } from './SecurityManager';
 
 /**
  * Security configuration options
@@ -227,9 +227,9 @@ export class ElectronSecurity {
       });
     }
 
-    // Handle crashes
-    webContents.on('crashed', (event, killed) => {
-      console.error('💥 Renderer process crashed:', { killed });
+    // Handle crashes (modern API)
+    webContents.on('render-process-gone', (_event, details) => {
+      console.error('💥 Renderer process gone:', details);
     });
 
     // Handle unresponsive renderer

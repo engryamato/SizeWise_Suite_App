@@ -42,7 +42,8 @@ export interface MigrationInfo {
  * Database manager for SQLite operations with schema migration support
  */
 export class DatabaseManager {
-  private db: Database.Database | null = null;
+  // Using 'any' for compatibility with ambient better-sqlite3 types during Electron build
+  private db: any | null = null;
   private config: DatabaseConfig;
 
   constructor(config: DatabaseConfig) {
@@ -96,7 +97,7 @@ export class DatabaseManager {
    * @returns Database connection
    * @throws {DatabaseError} If database not initialized
    */
-  getConnection(): Database.Database {
+  getConnection(): any {
     if (!this.db) {
       throw new DatabaseError('Database not initialized. Call initialize() first.', 'getConnection');
     }

@@ -13,7 +13,7 @@ import { join } from 'path';
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'fs';
 import * as keytar from 'keytar';
 import { createHash, createHmac, randomBytes } from 'crypto';
-import { SecurityManager } from '../../backend/security/SecurityManager';
+import { SecurityManager } from '../security/SecurityManager';
 
 /**
  * License information structure

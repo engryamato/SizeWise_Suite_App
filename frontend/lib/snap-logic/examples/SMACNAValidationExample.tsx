@@ -194,6 +194,7 @@ export const SMACNAValidationExample: React.FC = () => {
               SMACNA Standard
             </label>
             <select
+              aria-label="SMACNA Standard"
               value={selectedStandard}
               onChange={(e) => setSelectedStandard(e.target.value as SMACNAStandard)}
               className="w-full p-2 border border-gray-300 rounded-md"
@@ -209,6 +210,7 @@ export const SMACNAValidationExample: React.FC = () => {
               Pressure Class
             </label>
             <select
+              aria-label="Pressure Class"
               value={selectedPressureClass}
               onChange={(e) => setSelectedPressureClass(e.target.value as PressureClass)}
               className="w-full p-2 border border-gray-300 rounded-md"
@@ -223,6 +225,7 @@ export const SMACNAValidationExample: React.FC = () => {
           
           <div className="flex items-end">
             <button
+              type="button"
               onClick={updateValidatorConfig}
               className="w-full p-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors"
             >
@@ -243,17 +246,18 @@ export const SMACNAValidationExample: React.FC = () => {
                 <div>Shape: {testCase.ductShape}</div>
                 <div>
                   Dimensions: {testCase.ductShape === DuctShape.ROUND 
-                    ? `${testCase.ductDimensions.diameter}" diameter`
-                    : `${testCase.ductDimensions.width}" × ${testCase.ductDimensions.height}"`
+                    ? `${testCase.ductDimensions.diameter}{"\""} diameter`
+                    : `${testCase.ductDimensions.width}{"\""} × ${testCase.ductDimensions.height}{"\""}`
                   }
                 </div>
                 <div>Airflow: {testCase.airflow} CFM</div>
                 <div>Type: {testCase.centerline.type}</div>
                 {testCase.centerline.radius && (
-                  <div>Radius: {testCase.centerline.radius}"</div>
+                  <div>Radius: {testCase.centerline.radius}{"\""}</div>
                 )}
               </div>
               <button
+                type="button"
                 onClick={() => runValidationTest(testCase)}
                 className="w-full p-2 bg-green-500 text-white rounded-md hover:bg-green-600 transition-colors"
               >
@@ -265,6 +269,7 @@ export const SMACNAValidationExample: React.FC = () => {
         
         <div className="mt-4">
           <button
+            type="button"
             onClick={clearResults}
             className="px-4 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600 transition-colors"
           >

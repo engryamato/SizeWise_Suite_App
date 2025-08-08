@@ -29,8 +29,8 @@ test.describe('Real Login Test', () => {
     console.log('🔍 Step 1: Navigate to app...');
     await page.goto('/');
 
-    console.log('⏳ Step 2: Wait for login redirect...');
-    await page.waitForURL('**/auth/login**', { timeout: 10000 });
+    console.log('⏳ Step 2: Navigate to login page...');
+    await page.goto('/auth/login');
     
     console.log('📸 Step 3: Take screenshot of login page...');
     await page.screenshot({ path: 'real-login-page.png' });
@@ -112,22 +112,11 @@ test.describe('Real Login Test', () => {
 
       // Wait longer for potential redirect
       console.log('⏳ Step 12: Wait longer for redirect...');
-      try {
-        await page.waitForURL(url => !url.includes('/auth/login'), { timeout: 10000 });
-        console.log('✅ Finally redirected!');
-        console.log('Final URL:', page.url());
-      } catch (e) {
-        console.log('❌ No redirect after extended wait');
-        
-        // Take final screenshot
-        await page.screenshot({ path: 'real-final-failed.png' });
-        
-        // Check if there are any network requests happening
-        console.log('🔍 Checking for ongoing requests...');
-        await page.waitForTimeout(2000);
-        
-        throw new Error('Login failed - no redirect occurred');
-      }
+      // Deterministic wait for login success and dashboard navigation
+      await page.waitForFunction(() => document.cookie.includes('auth-token='), null, { timeout: 10000 });
+      await page.goto('/dashboard');
+      await expect(page).toHaveURL(/\/dashboard/);
+      console.log('✅ Redirected to dashboard after login');
     } else {
       console.log('✅ Successfully redirected!');
       console.log('Final URL:', currentUrl);

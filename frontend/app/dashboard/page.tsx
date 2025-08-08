@@ -1,7 +1,9 @@
 "use client";
 
-import React from "react";
+import React, { useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useAuthStore } from "@/stores/auth-store";
 import {
   Wrench,
   FileText,
@@ -16,11 +18,24 @@ import {
 
 // Dashboard Component with App Shell
 export default function DashboardPage() {
+  const router = useRouter();
+  const { isAuthenticated } = useAuthStore();
+
+  useEffect(() => {
+    if (!isAuthenticated) {
+      router.replace('/auth/login');
+    }
+  }, [isAuthenticated, router]);
+
+  if (!isAuthenticated) {
+    return <div className="p-6">Redirecting...</div>;
+  }
+
   return (
     <div className="p-6 space-y-8">
       {/* Welcome Section */}
       <div className="text-center mb-8">
-        <h1 className="text-3xl font-bold text-neutral-900 dark:text-white mb-4">
+        <h1 className="text-3xl font-bold text-neutral-900 dark:text-white mb-4" data-testid="dashboard-title">
           Welcome to SizeWise Suite
         </h1>
         <p className="text-lg text-neutral-600 dark:text-neutral-300 max-w-2xl mx-auto">

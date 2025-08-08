@@ -164,6 +164,7 @@ export default function ExportPage() {
         {/* Header */}
         <div className="flex items-center gap-4 mb-8">
           <button
+            type="button"
             onClick={() => router.back()}
             className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors"
           >
@@ -358,6 +359,11 @@ export default function ExportPage() {
                     <div 
                       className="bg-blue-600 h-3 rounded-full transition-all duration-300"
                       style={{ width: `${exportProgress}%` }}
+                      aria-label="Export progress"
+                      aria-valuenow={Number(exportProgress)}
+                      aria-valuemin={0}
+                      aria-valuemax={100}
+                      role="progressbar"
                     />
                   </div>
                   <div className="flex justify-between text-sm text-gray-600">
@@ -402,6 +408,7 @@ export default function ExportPage() {
               </div>
 
               <button
+                type="button"
                 onClick={startExport}
                 disabled={selectedFormats.length === 0 || isExporting}
                 className="w-full mt-6 px-4 py-3 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
@@ -436,7 +443,7 @@ export default function ExportPage() {
                     <div className="text-sm font-medium">Office_HVAC.pdf</div>
                     <div className="text-xs text-gray-500">2 hours ago</div>
                   </div>
-                  <button className="text-blue-600 hover:text-blue-700 text-sm">Download</button>
+                  <button type="button" className="text-blue-600 hover:text-blue-700 text-sm">Download</button>
                 </div>
                 <div className="flex items-center gap-3 p-2 border rounded">
                   <File className="w-4 h-4 text-gray-400" />
@@ -444,7 +451,7 @@ export default function ExportPage() {
                     <div className="text-sm font-medium">HVAC_Data.xlsx</div>
                     <div className="text-xs text-gray-500">Yesterday</div>
                   </div>
-                  <button className="text-blue-600 hover:text-blue-700 text-sm">Download</button>
+                  <button type="button" className="text-blue-600 hover:text-blue-700 text-sm">Download</button>
                 </div>
               </div>
             </div>

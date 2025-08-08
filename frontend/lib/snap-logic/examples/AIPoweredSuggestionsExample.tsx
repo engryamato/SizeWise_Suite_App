@@ -280,7 +280,7 @@ export const AIPoweredSuggestionsExample: React.FC = () => {
           <div>
             <h3 className="font-medium mb-2">Constraints</h3>
             <div className="space-y-1 text-gray-600">
-              <div>Max Pressure Drop: {exampleContext.constraints.maxPressureDrop}" w.g.</div>
+              <div>Max Pressure Drop: {exampleContext.constraints.maxPressureDrop}{"\""} w.g.</div>
               <div>Max Velocity: {exampleContext.constraints.maxVelocity.toLocaleString()} fpm</div>
               <div>Budget: ${exampleContext.constraints.budgetLimit.toLocaleString()}</div>
             </div>
@@ -291,6 +291,7 @@ export const AIPoweredSuggestionsExample: React.FC = () => {
       {/* Generate Suggestions */}
       <div className="mb-6">
         <button
+          type="button"
           onClick={generateSuggestions}
           disabled={isGenerating || !designSuggestions}
           className="px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:bg-gray-400 transition-colors font-medium"
@@ -399,18 +400,21 @@ export const AIPoweredSuggestionsExample: React.FC = () => {
                 </div>
                 <div className="flex space-x-2">
                   <button
+                    type="button"
                     onClick={() => handleSuggestionFeedback(suggestion.id, true, false, 4)}
                     className="px-3 py-1 text-sm bg-green-100 text-green-800 rounded hover:bg-green-200 transition-colors"
                   >
                     👍 Helpful
                   </button>
                   <button
+                    type="button"
                     onClick={() => handleSuggestionFeedback(suggestion.id, false, false, 2)}
                     className="px-3 py-1 text-sm bg-red-100 text-red-800 rounded hover:bg-red-200 transition-colors"
                   >
                     👎 Not Helpful
                   </button>
                   <button
+                    type="button"
                     onClick={() => handleSuggestionFeedback(suggestion.id, true, true, 5)}
                     className="px-3 py-1 text-sm bg-blue-100 text-blue-800 rounded hover:bg-blue-200 transition-colors"
                   >

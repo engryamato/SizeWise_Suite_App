@@ -15,17 +15,18 @@ Sentry.init({
   debug: process.env.NODE_ENV === 'development',
 
   // Environment configuration
-  environment: process.env.NODE_ENV,
+  environment: process.env.NEXT_PUBLIC_SENTRY_ENVIRONMENT || process.env.NODE_ENV,
 
   // Release tracking
-  release: process.env.NEXT_PUBLIC_SENTRY_RELEASE,
+  release: process.env.NEXT_PUBLIC_SENTRY_RELEASE || process.env.VERCEL_GIT_COMMIT_SHA || process.env.GITHUB_SHA,
 
   // Custom tags for SizeWise Suite edge functions
   initialScope: {
     tags: {
       component: "edge",
       platform: "edge-runtime",
-      application: "sizewise-suite"
+      application: "sizewise-suite",
+      deployment_env: process.env.NEXT_PUBLIC_SENTRY_ENVIRONMENT || process.env.NODE_ENV,
     },
   },
 });

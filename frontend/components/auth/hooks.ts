@@ -199,12 +199,14 @@ export const useAuthentication = () => {
   const login = useCallback(async (credentials: AuthFormData): Promise<AuthResult> => {
     try {
       const success = await authStore.login(credentials.email, credentials.password);
-      
+
       if (success) {
+        // Read fresh state after login to avoid stale closure values
+        const { user, token } = (useAuthStore as any).getState?.() || { user: authStore.user, token: authStore.token };
         return {
           success: true,
-          user: authStore.user,
-          token: authStore.token || undefined,
+          user,
+          token: token || undefined,
         };
       } else {
         return {
@@ -243,7 +245,7 @@ export const useAuthentication = () => {
   // Logout handler
   const logout = useCallback(async () => {
     try {
-      await authStore.logout();
+      authStore.logout();
     } catch (error) {
       console.error('Logout error:', error);
     }

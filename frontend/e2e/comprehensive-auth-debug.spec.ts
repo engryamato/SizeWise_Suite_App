@@ -219,19 +219,14 @@ test.describe('Comprehensive Authentication Debug', () => {
     // Step 7: Form Submission with Comprehensive Monitoring
     console.log('📍 Step 7: Form Submission with Comprehensive Monitoring');
     
-    // Set up promise to catch any navigation
-    const navigationPromise = page.waitForURL(url => !url.includes('/auth/login'), { timeout: 5000 }).catch(() => null);
-    
-    // Submit form
+    // Submit form and wait for cookie then navigate deterministically
     await submitButton.click();
     console.log('✅ Submit button clicked');
     await page.screenshot({ path: 'debug-04-after-submit-click.png', fullPage: true });
 
-    // Wait for potential navigation or errors
-    await Promise.race([
-      navigationPromise,
-      page.waitForTimeout(3000)
-    ]);
+    await page.waitForFunction(() => document.cookie.includes('auth-token='), null, { timeout: 10000 });
+    await page.goto(`${BASE_URL}/dashboard`);
+    await expect(page).toHaveURL(/\/dashboard/);
 
     // Step 8: Post-Submit Analysis
     console.log('📍 Step 8: Post-Submit Analysis');

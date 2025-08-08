@@ -90,10 +90,10 @@ export const DrawingPreview: React.FC<DrawingPreviewProps> = ({
       {/* Cylinder-based centerline for better visibility */}
       {lineGeometry && (
         <mesh
-          position={[lineGeometry.position.x, lineGeometry.position.y, lineGeometry.position.z] as [number, number, number]}
-          rotation={[lineGeometry.rotation.x, lineGeometry.rotation.y, lineGeometry.rotation.z] as [number, number, number]}
+          position={[lineGeometry.position.x, lineGeometry.position.y, lineGeometry.position.z] as unknown as any}
+          rotation={[lineGeometry.rotation.x, lineGeometry.rotation.y, lineGeometry.rotation.z] as unknown as any}
         >
-          <cylinderGeometry args={[0.02, 0.02, lineGeometry.length, 8] as [number, number, number, number]} />
+          <cylinderGeometry args={[0.02, 0.02, lineGeometry.length, 8] as unknown as any} />
           <meshBasicMaterial color="#ff0000" />
         </mesh>
       )}
@@ -117,7 +117,7 @@ export const DrawingPreview: React.FC<DrawingPreviewProps> = ({
         anchorX="center"
         anchorY="middle"
       >
-        {distance.toFixed(1)}'
+        {distance.toFixed(1)}{"'"}
       </Text>
 
       {/* Start point indicator - Enhanced visibility */}

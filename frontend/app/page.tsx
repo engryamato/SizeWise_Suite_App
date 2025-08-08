@@ -7,8 +7,8 @@ export default function HomePage() {
   const router = useRouter();
 
   useEffect(() => {
-    // Redirect to dashboard for proper user experience
-    router.replace('/dashboard');
+    // For unauthenticated users, send to login; authenticated users will be redirected onward by login page
+    router.replace('/auth/login');
   }, [router]);
 
   // Show loading state while redirecting

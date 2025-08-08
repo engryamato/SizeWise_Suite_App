@@ -16,7 +16,7 @@ import { EmailInput, PasswordInput, InputGroup } from './FormInput';
 import { SocialButtonGroup, SocialDivider } from './SocialButton';
 import { RememberMeToggle } from './ToggleSwitch';
 import { OfflineIndicator, useNetworkStatus } from './OfflineIndicator';
-import { TrialManagerCompact } from './TrialManager';
+
 import Particles from './Particles';
 import PerformanceMonitor from '../debug/PerformanceMonitor';
 import {
@@ -43,7 +43,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({
   const router = useRouter();
   const { rememberMe, setRememberMe } = useRememberMe();
   const { user, isAuthenticated, login, socialLogin, socialLoading } = useAuthentication();
-  const { isOnline, isRetrying } = useNetworkStatus();
+  const { isOnline } = useNetworkStatus();
   // Password visibility is handled by PasswordInput component
 
   // Form management
@@ -51,7 +51,8 @@ export const LoginPage: React.FC<LoginPageProps> = ({
     const result = await login(data);
 
     if (result.success) {
-      onLoginSuccess?.(result);
+      // Pass only the user object to onLoginSuccess to match expected signature
+      onLoginSuccess?.(result.user);
       // Use returnUrl if provided, otherwise use default redirect
       const redirectUrl = returnUrl && returnUrl !== '/' ? returnUrl : AUTH_REDIRECTS.afterLogin;
       router.push(redirectUrl);

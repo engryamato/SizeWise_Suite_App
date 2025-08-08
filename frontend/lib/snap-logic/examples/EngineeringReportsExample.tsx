@@ -19,14 +19,10 @@ import {
   EngineeringReports,
   ReportType,
   ReportFormat,
-  EngineeringReportData,
-  EngineeringReportConfig
+  EngineeringReportData
 } from '@/lib/snap-logic';
-import { 
-  DuctShape,
-  DuctDimensions,
-  SMACNAStandard,
-  PressureClass
+import {
+  DuctShape
 } from '@/lib/snap-logic';
 import { Centerline } from '@/types/air-duct-sizer';
 
@@ -262,6 +258,7 @@ export const EngineeringReportsExample: React.FC = () => {
               Report Type
             </label>
             <select
+              aria-label="Report Type"
               value={selectedReportType}
               onChange={(e) => setSelectedReportType(e.target.value as ReportType)}
               className="w-full p-2 border border-gray-300 rounded-md"
@@ -279,6 +276,7 @@ export const EngineeringReportsExample: React.FC = () => {
               Export Format
             </label>
             <select
+              aria-label="Export Format"
               value={selectedFormat}
               onChange={(e) => setSelectedFormat(e.target.value as ReportFormat)}
               className="w-full p-2 border border-gray-300 rounded-md"
@@ -293,6 +291,7 @@ export const EngineeringReportsExample: React.FC = () => {
           
           <div className="flex items-end">
             <button
+              type="button"
               onClick={updateReportConfig}
               className="w-full p-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors"
             >
@@ -315,13 +314,13 @@ export const EngineeringReportsExample: React.FC = () => {
                   <div>Shape: {item.ductShape}</div>
                   <div>
                     Size: {item.ductShape === DuctShape.ROUND 
-                      ? `${item.ductDimensions.diameter}" diameter`
-                      : `${item.ductDimensions.width}" × ${item.ductDimensions.height}"`
+                      ? `${item.ductDimensions.diameter}{"\""} diameter`
+                      : `${item.ductDimensions.width}{"\""} × ${item.ductDimensions.height}{"\""}`
                     }
                   </div>
                   <div>Airflow: {item.airflow} CFM</div>
                   {item.centerline.radius && (
-                    <div>Radius: {item.centerline.radius}"</div>
+                    <div>Radius: {item.centerline.radius}{"\""}</div>
                   )}
                 </div>
               </div>
@@ -333,6 +332,7 @@ export const EngineeringReportsExample: React.FC = () => {
       {/* Generate Report */}
       <div className="mb-6">
         <button
+          type="button"
           onClick={generateReport}
           className="px-6 py-3 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors font-medium"
         >
@@ -346,6 +346,7 @@ export const EngineeringReportsExample: React.FC = () => {
           <div className="flex items-center justify-between">
             <h2 className="text-xl font-semibold">Generated Report</h2>
             <button
+              type="button"
               onClick={downloadReport}
               className="px-4 py-2 bg-purple-500 text-white rounded-md hover:bg-purple-600 transition-colors"
             >

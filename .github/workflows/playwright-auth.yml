@@ -37,7 +37,7 @@ jobs:
         run: |
           npx playwright test e2e/01-authentication-flow-testing.spec.ts \
             --project=chromium --project=webkit \
-            --reporter=line
+            --reporter=html,line
 
       - name: Upload Playwright report
         if: always()
@@ -95,7 +95,7 @@ jobs:
         run: |
           npx playwright test e2e/01-authentication-flow-testing.spec.ts \
             --project="Microsoft Edge" \
-            --reporter=line
+            --reporter=html,line
 
       - name: Upload Playwright report (Edge)
         if: always()

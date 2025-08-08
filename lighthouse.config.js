@@ -10,7 +10,7 @@ module.exports = {
         'http://localhost:3000/estimating-app'
       ],
       startServerCommand: 'npm run start',
-      startServerReadyPattern: 'ready on',
+      startServerReadyPattern: 'started server on',
       startServerReadyTimeout: 120000,
       numberOfRuns: 3,
       settings: {

@@ -7,7 +7,7 @@ on:
     branches: [main]
 
 jobs:
-  e2e-auth:
+  e2e-auth-linux:
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -26,24 +26,24 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Install Playwright Browsers
-        run: npx playwright install --with-deps chromium webkit msedge
+      - name: Install Playwright Browsers (Chromium + WebKit)
+        run: npx playwright install --with-deps chromium webkit
 
-      - name: Run Playwright auth suite (Chromium + WebKit + Edge)
+      - name: Run Playwright auth suite (Chromium + WebKit)
         env:
           NEXT_PUBLIC_ENABLE_OFFLINE_AUTH: "false"
           NEXT_PUBLIC_SENTRY_ENVIRONMENT: "ci"
           NEXT_PUBLIC_SENTRY_RELEASE: ${{ github.sha }}
         run: |
           npx playwright test e2e/01-authentication-flow-testing.spec.ts \
-            --project=chromium --project=webkit --project="Microsoft Edge" \
+            --project=chromium --project=webkit \
             --reporter=line
 
       - name: Upload Playwright report
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: playwright-report
+          name: playwright-report-linux
           path: frontend/playwright-report
           retention-days: 7
 
@@ -51,7 +51,7 @@ jobs:
         if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: playwright-traces
+          name: playwright-traces-linux
           path: frontend/test-results/**/trace.zip
           retention-days: 7
 
@@ -59,7 +59,65 @@ jobs:
         if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: playwright-media
+          name: playwright-media-linux
+          path: |
+            frontend/test-results/**/screenshot-*.png
+            frontend/test-results/**/*.webm
+          retention-days: 7
+
+  e2e-auth-edge:
+    runs-on: windows-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "18"
+          cache: "npm"
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright Browser (Microsoft Edge)
+        run: npx playwright install msedge
+
+      - name: Run Playwright auth suite (Edge)
+        env:
+          NEXT_PUBLIC_ENABLE_OFFLINE_AUTH: "false"
+          NEXT_PUBLIC_SENTRY_ENVIRONMENT: "ci"
+          NEXT_PUBLIC_SENTRY_RELEASE: ${{ github.sha }}
+        run: |
+          npx playwright test e2e/01-authentication-flow-testing.spec.ts \
+            --project="Microsoft Edge" \
+            --reporter=line
+
+      - name: Upload Playwright report (Edge)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report-edge
+          path: frontend/playwright-report
+          retention-days: 7
+
+      - name: Upload Playwright traces (Edge)
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-traces-edge
+          path: frontend/test-results/**/trace.zip
+          retention-days: 7
+
+      - name: Upload Playwright screenshots and videos (Edge)
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-media-edge
           path: |
             frontend/test-results/**/screenshot-*.png
             frontend/test-results/**/*.webm

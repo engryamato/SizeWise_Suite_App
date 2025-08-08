@@ -241,14 +241,14 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Download backend results
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         continue-on-error: true
         with:
           name: backend-load-test-results
           path: backend-results/
 
       - name: Download frontend results
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         continue-on-error: true
         with:
           name: frontend-load-test-results

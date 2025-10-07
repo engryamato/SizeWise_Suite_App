@@ -10,8 +10,8 @@ marshmallow==3.23.2
 
 # Mathematical calculations
 numpy==1.26.4
-scipy==1.14.1
-pandas==2.2.3
+scipy==1.16.2
+pandas==2.3.3
 
 # Unit conversion and validation
 pint==0.24.4

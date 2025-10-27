@@ -165,7 +165,7 @@ jobs:
         run: npm ci
         
       - name: Download all shadow test artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v6
         with:
           pattern: shadow-test-results-*
           path: test-results/
